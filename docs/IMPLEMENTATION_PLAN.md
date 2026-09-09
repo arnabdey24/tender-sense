@@ -423,6 +423,26 @@ recommendation matrix is asserted cell by cell — a wrong cell is a wrong
 business decision shown to a customer with nothing failing — and an expired
 deadline overrides every cell.
 
+**The pipeline runs end to end.** `process_tender` extracts, embeds and fans out
+to every tenant; `rematch_org` runs the other way, one tenant against the open
+pool, and is what a profile edit triggers. Both degrade rather than fail — a
+notice whose extraction errors is still embedded and still matched, and one
+organization failing does not abandon the rest, because a tender vanishing from
+a customer's feed on a transient error is worse than one scored on less
+information.
+
+Verified against Postgres with the deterministic client: a relevant notice
+outscores an irrelevant one through the real pipeline, reprocessing an unchanged
+notice skips the work, history records movement rather than every run, editing a
+profile moves the score, and deleting a service stops its vector scoring.
+
+One design gap found while testing: `rematch_org` scored tenders that had never
+been through `process_tender` and so had no vectors, storing a 0.0-similarity
+C-grade match — a row in the customer's feed saying "we looked and found
+nothing" when nothing had been looked at. It now re-scores only tenders that
+already carry vectors for the active model; the rest are matched when
+`process_tender` reaches them.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

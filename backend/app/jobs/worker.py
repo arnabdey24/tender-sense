@@ -28,6 +28,7 @@ from app.db.session import dispose_engine
 from app.jobs.queue import QUEUE_DEFAULT, QUEUE_SCRAPE, redis_settings
 from app.jobs.tasks.email import PUMP_CRON_SECOND, pump_email_outbox
 from app.jobs.tasks.maintenance import ping
+from app.jobs.tasks.matching import process_tender, rematch_org
 
 logger = get_logger(__name__)
 
@@ -36,7 +37,12 @@ COMMON_FUNCTIONS: list[Any] = [ping]
 
 #: Tasks only the default worker runs. The scrape worker must not drain the
 #: outbox: it is capped at one job at a time and long scrapes would stall mail.
-DEFAULT_QUEUE_FUNCTIONS: list[Any] = [*COMMON_FUNCTIONS, pump_email_outbox]
+DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
+    *COMMON_FUNCTIONS,
+    pump_email_outbox,
+    process_tender,
+    rematch_org,
+]
 
 
 async def startup(ctx: dict[str, Any]) -> None:

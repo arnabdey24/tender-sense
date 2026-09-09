@@ -443,6 +443,28 @@ nothing" when nothing had been looked at. It now re-scores only tenders that
 already carry vectors for the active model; the rest are matched when
 `process_tender` reaches them.
 
+**Profile and match APIs.** Reads are open to any member, writes are admin-only,
+because the profile decides what the whole organization sees in its feed. Every
+write bumps the profile version — which is exactly what invalidates each stored
+match's fingerprint — and schedules a re-match debounced to 30 seconds, so
+filling in a form costs one re-score rather than one per save.
+
+Certifications are stored under a canonical code, so "ISO 9001", "iso-9001" and
+"ISO 9001:2015" are one entry a rule can match rather than three the eligibility
+engine would double-count. Sector and certification option lists are served from
+`/taxonomies` so a form cannot offer a sector the matcher does not understand.
+
+The feed defaults to open notices sorted by fit; `/matches/today` narrows to S
+and A grades seen since yesterday, and `/pipeline` to bid-or-hold ordered by
+deadline. Tenancy is asserted directly: a second organization cannot read the
+first's verdict or reach its profile rows by id, even though both see the same
+shared pool.
+
+One bug found by a test: preset views build their filters with
+`model_copy(update=...)`, which skips pydantic validation, so a raw `"deadline_at"`
+string reached `ORDER BY` and crashed on `.value`. The sort field is now coerced
+back through its enum before it is used.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

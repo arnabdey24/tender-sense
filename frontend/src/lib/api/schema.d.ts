@@ -566,6 +566,203 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the profile
+         * @description The organization's capability profile, created empty on first read.
+         */
+        get: operations["read_profile_api_v1_profile_get"];
+        /**
+         * Update the profile
+         * @description Update the profile and schedule a re-match of the open pool.
+         */
+        put: operations["update_profile_api_v1_profile_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/completeness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * How complete the profile is
+         * @description A weighted score plus the next section worth filling in.
+         */
+        get: operations["read_completeness_api_v1_profile_completeness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/rematch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-score now
+         * @description Queue a re-score without changing anything.
+         *
+         *     Repeated calls inside the debounce window collapse into one run.
+         */
+        post: operations["trigger_rematch_api_v1_profile_rematch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/taxonomies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Profile option lists
+         * @description Served from the backend so the forms cannot offer a sector the matcher
+         *     does not understand.
+         */
+        get: operations["read_taxonomies_api_v1_taxonomies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a service */
+        post: operations["add_service_api_v1_profile_services_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/services/{service_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Service */
+        put: operations["update_service_api_v1_profile_services__service_id__put"];
+        post?: never;
+        /**
+         * Delete Service
+         * @description Removing a service also drops its embedding, so it stops scoring.
+         */
+        delete: operations["delete_service_api_v1_profile_services__service_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a past project */
+        post: operations["add_project_api_v1_profile_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Project */
+        put: operations["update_project_api_v1_profile_projects__project_id__put"];
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_project_api_v1_profile_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/certifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a certification
+         * @description Codes are canonicalised, so "ISO 9001" and "iso-9001" are one entry.
+         */
+        post: operations["add_certification_api_v1_profile_certifications_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/profile/certifications/{certification_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Certification */
+        delete: operations["delete_certification_api_v1_profile_certifications__certification_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tenders": {
         parameters: {
             query?: never;
@@ -638,6 +835,112 @@ export interface paths {
          * @description Portals TenderSense ingests from, with their current health.
          */
         get: operations["list_sources_api_v1_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The match feed
+         * @description This organization's graded tenders, best fit first by default.
+         *
+         *     Defaults to open notices only: a feed leading with tenders that already
+         *     closed wastes the reader's attention on decisions they cannot make.
+         */
+        get: operations["list_matches_api_v1_matches_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Feed counts
+         * @description Counts under the same filters as the list, for chips and the dashboard.
+         */
+        get: operations["match_stats_api_v1_matches_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Today's shortlist
+         * @description What arrived since yesterday, worth acting on.
+         *
+         *     Narrower than the feed on purpose: S and A grades that are not already
+         *     ruled out. The point of a shortlist is that it is short.
+         */
+        get: operations["today_shortlist_api_v1_matches_today_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches/{tender_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One match
+         * @description This organization's verdict on one tender, with its provenance.
+         */
+        get: operations["get_match_api_v1_matches__tender_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pipeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Matches worth acting on
+         * @description Everything recommended as a bid or a hold, soonest deadline first.
+         */
+        get: operations["pipeline_api_v1_pipeline_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -741,6 +1044,31 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** CertificationIn */
+        CertificationIn: {
+            /** Label */
+            label: string;
+            /** Issuer */
+            issuer?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+        };
+        /** CertificationRead */
+        CertificationRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
+            /** Issuer */
+            issuer?: string | null;
+            /** Valid Until */
+            valid_until?: string | null;
+        };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
             /** Current Password */
@@ -748,6 +1076,34 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /**
+         * CompletenessRead
+         * @description What is filled in, and what to nudge the user towards next.
+         */
+        CompletenessRead: {
+            /** Score */
+            score: number;
+            /** Sections */
+            sections: components["schemas"]["CompletenessSection"][];
+            /** Next Step */
+            next_step?: string | null;
+        };
+        /** CompletenessSection */
+        CompletenessSection: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Complete */
+            complete: boolean;
+            /** Weight */
+            weight: number;
+        };
+        /**
+         * EligibilityStatus
+         * @enum {string}
+         */
+        EligibilityStatus: "eligible" | "needs_verification" | "ineligible";
         /**
          * EmailRequest
          * @description Used by resend-verification and forgot-password.
@@ -759,6 +1115,11 @@ export interface components {
              */
             email: string;
         };
+        /**
+         * ExplanationKind
+         * @enum {string}
+         */
+        ExplanationKind: "templated" | "llm";
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -860,6 +1221,146 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** MatchDetail */
+        MatchDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            /** Similarity */
+            similarity: number;
+            grade: components["schemas"]["MatchGrade"];
+            eligibility_status: components["schemas"]["EligibilityStatus"];
+            recommendation: components["schemas"]["Recommendation"];
+            urgency: components["schemas"]["Urgency"];
+            explanation_kind: components["schemas"]["ExplanationKind"];
+            /** Explanation */
+            explanation?: {
+                [key: string]: unknown;
+            };
+            /** Explanation Text */
+            explanation_text?: string | null;
+            /** Score Breakdown */
+            score_breakdown?: {
+                [key: string]: unknown;
+            };
+            /** Rule Results */
+            rule_results?: unknown[];
+            /** First Matched At */
+            first_matched_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            tender: components["schemas"]["TenderSummary"];
+            /** Profile Version */
+            profile_version: number;
+            /** Thresholds Version */
+            thresholds_version: number;
+            /** Embedding Model */
+            embedding_model: string;
+            /** Extraction Id */
+            extraction_id?: string | null;
+        };
+        /**
+         * MatchGrade
+         * @description How well the tender fits, before eligibility is considered.
+         * @enum {string}
+         */
+        MatchGrade: "S" | "A" | "B" | "C";
+        /**
+         * MatchRead
+         * @description One graded tender, with enough of the notice to render a feed row.
+         */
+        MatchRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            /** Similarity */
+            similarity: number;
+            grade: components["schemas"]["MatchGrade"];
+            eligibility_status: components["schemas"]["EligibilityStatus"];
+            recommendation: components["schemas"]["Recommendation"];
+            urgency: components["schemas"]["Urgency"];
+            explanation_kind: components["schemas"]["ExplanationKind"];
+            /** Explanation */
+            explanation?: {
+                [key: string]: unknown;
+            };
+            /** Explanation Text */
+            explanation_text?: string | null;
+            /** Score Breakdown */
+            score_breakdown?: {
+                [key: string]: unknown;
+            };
+            /** Rule Results */
+            rule_results?: unknown[];
+            /** First Matched At */
+            first_matched_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            tender: components["schemas"]["TenderSummary"];
+        };
+        /**
+         * MatchSortField
+         * @description Columns a client may order by. An allowlist: the value reaches ORDER BY.
+         * @enum {string}
+         */
+        MatchSortField: "similarity" | "deadline_at" | "published_at" | "created_at";
+        /**
+         * MatchStats
+         * @description Counts for the dashboard and the feed's filter chips.
+         */
+        MatchStats: {
+            /**
+             * Total
+             * @default 0
+             */
+            total: number;
+            /** By Grade */
+            by_grade?: {
+                [key: string]: number;
+            };
+            /** By Eligibility */
+            by_eligibility?: {
+                [key: string]: number;
+            };
+            /** By Recommendation */
+            by_recommendation?: {
+                [key: string]: number;
+            };
+            /** By Urgency */
+            by_urgency?: {
+                [key: string]: number;
+            };
+            /**
+             * Closing Within 7 Days
+             * @default 0
+             */
+            closing_within_7_days: number;
+            /**
+             * New Today
+             * @default 0
+             */
+            new_today: number;
         };
         /** MemberRead */
         MemberRead: {
@@ -974,6 +1475,17 @@ export interface components {
             /** Timezone */
             timezone?: string | null;
         };
+        /** Page[MatchRead] */
+        Page_MatchRead_: {
+            /** Items */
+            items?: components["schemas"]["MatchRead"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** Page[MemberRead] */
         Page_MemberRead_: {
             /** Items */
@@ -996,11 +1508,139 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** PastProjectIn */
+        PastProjectIn: {
+            /** Title */
+            title: string;
+            /** Client */
+            client?: string | null;
+            /** Description */
+            description?: string | null;
+            sector?: components["schemas"]["Sector"] | null;
+            /** Country */
+            country?: string | null;
+            /** Value */
+            value?: number | null;
+            /** Currency */
+            currency?: string | null;
+            /** Started On */
+            started_on?: string | null;
+            /** Completed On */
+            completed_on?: string | null;
+        };
+        /** PastProjectRead */
+        PastProjectRead: {
+            /** Title */
+            title: string;
+            /** Client */
+            client?: string | null;
+            /** Description */
+            description?: string | null;
+            sector?: components["schemas"]["Sector"] | null;
+            /** Country */
+            country?: string | null;
+            /** Value */
+            value?: number | null;
+            /** Currency */
+            currency?: string | null;
+            /** Started On */
+            started_on?: string | null;
+            /** Completed On */
+            completed_on?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
         /**
          * ProcurementCategory
          * @enum {string}
          */
         ProcurementCategory: "goods" | "works" | "services" | "consulting" | "unknown";
+        /** ProfileRead */
+        ProfileRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /** Overview */
+            overview?: string | null;
+            /** Sectors */
+            sectors?: string[];
+            /** Geographies */
+            geographies?: string[];
+            /** Keywords */
+            keywords?: string[];
+            /** Annual Turnover */
+            annual_turnover?: number | null;
+            /** Turnover Currency */
+            turnover_currency?: string | null;
+            /** Turnover Year */
+            turnover_year?: number | null;
+            /** Years In Business */
+            years_in_business?: number | null;
+            /** Employee Count */
+            employee_count?: number | null;
+            /**
+             * Accepts Jv
+             * @default true
+             */
+            accepts_jv: boolean;
+            /**
+             * Completeness
+             * @default 0
+             */
+            completeness: number;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Services */
+            services?: components["schemas"]["ServiceRead"][];
+            /** Past Projects */
+            past_projects?: components["schemas"]["PastProjectRead"][];
+            /** Certifications */
+            certifications?: components["schemas"]["CertificationRead"][];
+        };
+        /**
+         * ProfileUpdate
+         * @description Every field optional; anything left unset is not touched.
+         */
+        ProfileUpdate: {
+            /** Overview */
+            overview?: string | null;
+            /** Sectors */
+            sectors?: components["schemas"]["Sector"][] | null;
+            /** Geographies */
+            geographies?: string[] | null;
+            /** Keywords */
+            keywords?: string[] | null;
+            /** Annual Turnover */
+            annual_turnover?: number | null;
+            /** Turnover Currency */
+            turnover_currency?: string | null;
+            /** Turnover Year */
+            turnover_year?: number | null;
+            /** Years In Business */
+            years_in_business?: number | null;
+            /** Employee Count */
+            employee_count?: number | null;
+            /** Accepts Jv */
+            accepts_jv?: boolean | null;
+        };
         /** ReadinessResponse */
         ReadinessResponse: {
             /**
@@ -1013,6 +1653,11 @@ export interface components {
             /** Redis */
             redis: boolean;
         };
+        /**
+         * Recommendation
+         * @enum {string}
+         */
+        Recommendation: "bid" | "hold" | "skip";
         /** RegisterRequest */
         RegisterRequest: {
             /**
@@ -1037,12 +1682,61 @@ export interface components {
              */
             verification_email_sent: boolean;
         };
+        /** RematchResponse */
+        RematchResponse: {
+            /** Enqueued */
+            enqueued: boolean;
+            /** Job Id */
+            job_id?: string | null;
+            /**
+             * Reason
+             * @default profile_changed
+             */
+            reason: string;
+        };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
             /** Token */
             token: string;
             /** Password */
             password: string;
+        };
+        /**
+         * Sector
+         * @description Coarse sectors, deliberately few so the model picks consistently.
+         * @enum {string}
+         */
+        Sector: "it" | "construction" | "healthcare" | "education" | "energy" | "water" | "transport" | "agriculture" | "telecom" | "finance" | "environment" | "logistics" | "security" | "other";
+        /** ServiceIn */
+        ServiceIn: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            sector?: components["schemas"]["Sector"] | null;
+            /**
+             * Position
+             * @default 0
+             */
+            position: number;
+        };
+        /** ServiceRead */
+        ServiceRead: {
+            /** Name */
+            name: string;
+            /** Description */
+            description?: string | null;
+            sector?: components["schemas"]["Sector"] | null;
+            /**
+             * Position
+             * @default 0
+             */
+            position: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
         };
         /**
          * SessionResponse
@@ -1187,6 +1881,19 @@ export interface components {
              * Format: uuid
              */
             org_id: string;
+        };
+        /**
+         * TaxonomiesRead
+         * @description Option lists the profile forms need, served from the backend so the
+         *     frontend cannot drift from what the matcher actually understands.
+         */
+        TaxonomiesRead: {
+            /** Sectors */
+            sectors: {
+                [key: string]: string;
+            }[];
+            /** Common Certifications */
+            common_certifications: string[];
         };
         /**
          * TenderCreate
@@ -1389,6 +2096,12 @@ export interface components {
             /** Days To Deadline */
             days_to_deadline?: number | null;
         };
+        /**
+         * Urgency
+         * @description Derived from the deadline in the organization's own timezone.
+         * @enum {string}
+         */
+        Urgency: "expired" | "critical" | "high" | "normal" | "low" | "unknown";
         /** UserRead */
         UserRead: {
             /**
@@ -2293,6 +3006,380 @@ export interface operations {
             };
         };
     };
+    read_profile_api_v1_profile_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRead"];
+                };
+            };
+        };
+    };
+    update_profile_api_v1_profile_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_completeness_api_v1_profile_completeness_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompletenessRead"];
+                };
+            };
+        };
+    };
+    trigger_rematch_api_v1_profile_rematch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RematchResponse"];
+                };
+            };
+        };
+    };
+    read_taxonomies_api_v1_taxonomies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomiesRead"];
+                };
+            };
+        };
+    };
+    add_service_api_v1_profile_services_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_service_api_v1_profile_services__service_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Service identifier */
+                service_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_service_api_v1_profile_services__service_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Service identifier */
+                service_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_project_api_v1_profile_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PastProjectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PastProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_project_api_v1_profile_projects__project_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Past project identifier */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PastProjectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PastProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_api_v1_profile_projects__project_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Past project identifier */
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_certification_api_v1_profile_certifications_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CertificationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_certification_api_v1_profile_certifications__certification_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Certification identifier */
+                certification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tenders_api_v1_tenders_get: {
         parameters: {
             query?: {
@@ -2433,6 +3520,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceRead"][];
+                };
+            };
+        };
+    };
+    list_matches_api_v1_matches_get: {
+        parameters: {
+            query?: {
+                grade?: components["schemas"]["MatchGrade"][] | null;
+                eligibility?: components["schemas"]["EligibilityStatus"][] | null;
+                recommendation?: components["schemas"]["Recommendation"][] | null;
+                urgency?: components["schemas"]["Urgency"][] | null;
+                /** @description Search the notice title and buyer */
+                q?: string | null;
+                deadline_within_days?: number | null;
+                /** @description Exclude closed and expired */
+                open_only?: boolean;
+                /** @description Only matches first seen after this moment */
+                since?: string | null;
+                sort?: components["schemas"]["MatchSortField"];
+                descending?: boolean;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_MatchRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    match_stats_api_v1_matches_stats_get: {
+        parameters: {
+            query?: {
+                grade?: components["schemas"]["MatchGrade"][] | null;
+                eligibility?: components["schemas"]["EligibilityStatus"][] | null;
+                recommendation?: components["schemas"]["Recommendation"][] | null;
+                urgency?: components["schemas"]["Urgency"][] | null;
+                /** @description Search the notice title and buyer */
+                q?: string | null;
+                deadline_within_days?: number | null;
+                /** @description Exclude closed and expired */
+                open_only?: boolean;
+                /** @description Only matches first seen after this moment */
+                since?: string | null;
+                sort?: components["schemas"]["MatchSortField"];
+                descending?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchStats"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    today_shortlist_api_v1_matches_today_get: {
+        parameters: {
+            query?: {
+                grade?: components["schemas"]["MatchGrade"][] | null;
+                eligibility?: components["schemas"]["EligibilityStatus"][] | null;
+                recommendation?: components["schemas"]["Recommendation"][] | null;
+                urgency?: components["schemas"]["Urgency"][] | null;
+                /** @description Search the notice title and buyer */
+                q?: string | null;
+                deadline_within_days?: number | null;
+                /** @description Exclude closed and expired */
+                open_only?: boolean;
+                /** @description Only matches first seen after this moment */
+                since?: string | null;
+                sort?: components["schemas"]["MatchSortField"];
+                descending?: boolean;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_MatchRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_match_api_v1_matches__tender_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tender identifier */
+                tender_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pipeline_api_v1_pipeline_get: {
+        parameters: {
+            query?: {
+                grade?: components["schemas"]["MatchGrade"][] | null;
+                eligibility?: components["schemas"]["EligibilityStatus"][] | null;
+                recommendation?: components["schemas"]["Recommendation"][] | null;
+                urgency?: components["schemas"]["Urgency"][] | null;
+                /** @description Search the notice title and buyer */
+                q?: string | null;
+                deadline_within_days?: number | null;
+                /** @description Exclude closed and expired */
+                open_only?: boolean;
+                /** @description Only matches first seen after this moment */
+                since?: string | null;
+                sort?: components["schemas"]["MatchSortField"];
+                descending?: boolean;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_MatchRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

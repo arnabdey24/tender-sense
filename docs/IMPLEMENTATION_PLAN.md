@@ -193,7 +193,7 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | # | Status | Scope | Demoable |
 |---|---|---|---|
 | M0 Scaffold (2–3 d) | **done** | uv project, settings, structlog, alembic + extensions, health, compose (db, redis, api, worker, caddy, mailpit), frontend init (shadcn, router, query, client, layouts, guards, MSW), CI, Makefile | `docker compose up` → health green, SPA shell loads |
-| M1 Identity (4–5 d) | **done** | users, register/login/verify/reset, refresh rotation, Google OIDC, orgs, memberships, invites, outbox + auth/invite templates, RBAC; frontend auth pages, account, members/invites, invite accept | Register → verify via Mailpit → create org → invite → Google sign-in |
+| M1 Identity (4–5 d) | **done** | users + profile endpoint, register/login/verify/reset, refresh rotation, Google OIDC, orgs, memberships, invites, outbox + auth/invite templates, RBAC; frontend auth pages, account + profile form, organization settings, members/invites, invite accept | Register → verify via Mailpit → create org → invite → Google sign-in |
 | M2 Tender pool (3 d) | **done** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API, superuser source CRUD + manual/bulk tender entry; frontend tenders list + detail (shared pool) | Browse/search 40 seeded tenders |
 | M3 AI core + matching (5–6 d) | **planned** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
 | M4 Rules + explanations + decisions + eval (4–5 d) | **planned** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
@@ -289,6 +289,21 @@ Two defects found while driving the UI:
 |---|---|
 | The account page could not tell a Google-only account from one with a password, because the API never exposed it | `has_password` added to the user payload and wired through |
 | The password strength meter rendered a `div` inside the description's `p`, which is invalid HTML and logged a hydration error | Block content now renders as a sibling of the description, not inside it |
+
+**M1 follow-up — four gaps found by driving the browser again.** The earlier
+pass verified each screen in isolation; walking the whole funnel end to end
+(register → Mailpit → verify → create org → settings → account) surfaced work
+that had never been wired up:
+
+| Gap | Fix |
+|---|---|
+| The onboarding country picker offered country **names**, but the API validates `country` as an ISO 3166-1 alpha-2 code. Anyone who picked from the dropdown got "country must be a 2-letter ISO 3166-1 alpha-2 code" and could not create an organization at all — the primary M1 flow was blocked | `COUNTRIES` is now `{code, name}` and a new `CountryCombobox` shows names while yielding codes (typing "BD" finds Bangladesh too). A regression test asserts the submitted body carries `BD`, not `Bangladesh` |
+| No organization settings screen existed, so `PATCH /orgs/current` was unreachable and an organization's name, country, timezone, website and description could never be changed after creation — even though the settings index advertised "organization" | New `/app/settings/organization`, admin-only for editing and read-only for members. Renaming re-issues the token, because the shell reads the organization name off the session rather than the query cache |
+| The `users` module was a stub: `PATCH /users/me` from the API surface did not exist, and the account page showed the name read-only | `app/modules/users/router.py` ships the endpoint; the account page grows a profile form. Email is deliberately not editable there — moving an account to a new address has to re-run verification |
+| `APP_URL` defaults to the Vite dev server, so under a compose-only stack every emailed link (verify, reset, invite) pointed at a port nothing was listening on | `.env.example` now spells out which value each workflow needs |
+
+An account created through Google has no password, and the account page already
+handled that; the profile form is independent of it, so both paths still work.
 
 **M2 Tender pool — backend done.** The shared pool schema ships in migration
 `0003_tender_pool`: sources with their scraping configuration and health,

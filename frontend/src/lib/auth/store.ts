@@ -16,6 +16,8 @@ export type AuthState = {
   memberships: Membership[]
   activeOrgId: string | null
   setSession: (payload: SessionPayload) => void
+  /** Adopt a fresh profile without minting a new token (PATCH /users/me). */
+  setUser: (user: AuthUser) => void
   setAccessToken: (token: string) => void
   setActiveOrg: (orgId: string | null) => void
   markAnon: () => void
@@ -41,6 +43,8 @@ export const useAuthStore = create<AuthState>()((set) => ({
       memberships: payload.memberships ?? [],
       activeOrgId: payload.active_org_id ?? null,
     }),
+
+  setUser: (user) => set({ user }),
 
   setAccessToken: (token) => set({ accessToken: token }),
 

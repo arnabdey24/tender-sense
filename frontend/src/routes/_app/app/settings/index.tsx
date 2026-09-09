@@ -1,5 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ChevronRightIcon, UserRoundIcon, UsersIcon } from "lucide-react"
+import {
+  Building2Icon,
+  ChevronRightIcon,
+  UserRoundIcon,
+  UsersIcon,
+} from "lucide-react"
 
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
@@ -9,6 +14,12 @@ export const Route = createFileRoute("/_app/app/settings/")({
 })
 
 const SECTIONS = [
+  {
+    to: "/app/settings/organization",
+    icon: Building2Icon,
+    title: "Organization",
+    description: "Company name, country, timezone and website.",
+  },
   {
     to: "/app/settings/members",
     icon: UsersIcon,

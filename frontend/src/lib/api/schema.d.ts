@@ -333,6 +333,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/users/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update your profile
+         * @description Change your display name or avatar.
+         *
+         *     The email address is not editable here: moving an account to a new address
+         *     has to re-run verification.
+         */
+        patch: operations["update_me_api_v1_users_me_patch"];
+        trace?: never;
+    };
     "/api/v1/orgs": {
         parameters: {
             query?: never;
@@ -1400,6 +1423,20 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * UserUpdate
+         * @description Every field optional; fields left unset are not touched.
+         *
+         *     Deliberately excludes ``email``: changing an address has to re-run
+         *     verification, otherwise an account could be moved to an unproven address
+         *     and inherit its organization's notifications.
+         */
+        UserUpdate: {
+            /** Full Name */
+            full_name?: string | null;
+            /** Avatar Url */
+            avatar_url?: string | null;
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -1858,6 +1895,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    update_me_api_v1_users_me_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

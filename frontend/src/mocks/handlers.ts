@@ -27,6 +27,9 @@ export const handlers = [
 
   http.post("*/api/v1/auth/login", () => HttpResponse.json(session())),
   http.get("*/api/v1/auth/me", () => HttpResponse.json(session())),
+  http.patch("*/api/v1/users/me", async ({ request }) =>
+    HttpResponse.json({ ...user, ...((await request.json()) as object) })
+  ),
   http.post("*/api/v1/auth/logout", () =>
     HttpResponse.json({ message: "Signed out." })
   ),

@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { KeyRoundIcon, LogOutIcon } from "lucide-react"
+import { KeyRoundIcon, LogOutIcon, SaveIcon } from "lucide-react"
 import * as React from "react"
 import { z } from "zod"
 
@@ -26,7 +26,7 @@ import { applyFieldErrors, unwrap } from "@/lib/api/call"
 import { api } from "@/lib/api/client"
 import { isApiError, type ApiError } from "@/lib/api/errors"
 import { signOut } from "@/lib/auth/session"
-import { useAuthStore } from "@/lib/auth/store"
+import { useAuthStore, type AuthUser } from "@/lib/auth/store"
 import { RhfField } from "@/lib/forms/RhfField"
 import { useZodForm } from "@/lib/forms/useZodForm"
 
@@ -123,6 +123,91 @@ export function ChangePasswordForm({
   )
 }
 
+const profileSchema = z.object({
+  full_name: z
+    .string()
+    .trim()
+    .min(1, "Your name is required")
+    .max(200, "Keep it under 200 characters"),
+  avatar_url: z
+    .string()
+    .trim()
+    .max(1000)
+    .optional()
+    .refine(
+      (v) => !v || /^https?:\/\/\S+\.\S+/.test(v),
+      "Include the full URL, e.g. https://example.com/me.png"
+    ),
+})
+
+export function ProfileForm({ user }: { user: AuthUser }) {
+  const [error, setError] = React.useState<ApiError | null>(null)
+  const setUser = useAuthStore((s) => s.setUser)
+
+  const form = useZodForm({
+    schema: profileSchema,
+    defaultValues: {
+      full_name: user.full_name,
+      avatar_url: user.avatar_url ?? "",
+    },
+  })
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    setError(null)
+    try {
+      const updated = await unwrap(
+        api.PATCH("/api/v1/users/me", {
+          body: {
+            full_name: values.full_name,
+            avatar_url: values.avatar_url || null,
+          },
+        })
+      )
+      // The token still carries the old name, but nothing reads it from there
+      // — the shell renders `user` from the store, so this is enough.
+      setUser(updated)
+      form.reset(values)
+      toast.add({ type: "success", title: "Profile updated" })
+    } catch (err) {
+      if (!isApiError(err)) throw err
+      if (!applyFieldErrors(form, err, ["full_name", "avatar_url"])) {
+        setError(err)
+      }
+    }
+  })
+
+  return (
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
+      <ApiErrorAlert error={error} />
+      <FieldGroup>
+        <RhfField form={form} name="full_name" label="Full name">
+          <Input autoComplete="name" />
+        </RhfField>
+        <RhfField
+          form={form}
+          name="avatar_url"
+          label="Avatar URL"
+          description="Optional. Leave blank to use your initials."
+        >
+          <Input type="url" placeholder="https://example.com/me.png" />
+        </RhfField>
+      </FieldGroup>
+      <Button
+        type="submit"
+        className="self-start"
+        disabled={form.formState.isSubmitting || !form.formState.isDirty}
+      >
+        {form.formState.isSubmitting ? (
+          <Spinner data-icon="inline-start" />
+        ) : (
+          <SaveIcon data-icon="inline-start" />
+        )}
+        Save profile
+      </Button>
+    </form>
+  )
+}
+
 function initials(name?: string, email?: string) {
   const source = name?.trim() || email || "?"
   return source
@@ -153,7 +238,7 @@ function AccountPage() {
             Details from your TenderSense account.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
             <Avatar className="size-12">
               {user?.avatar_url ? (
@@ -179,6 +264,9 @@ function AccountPage() {
               </div>
             </div>
           </div>
+
+          {/* Keyed so the defaults follow the store after a save or a reload. */}
+          {user ? <ProfileForm key={user.full_name} user={user} /> : null}
         </CardContent>
       </Card>
 

@@ -39,9 +39,11 @@ The product owner wants it built as a **multi-company SaaS**: a company register
 
 ## Research findings that shape the design (verified 2026-09-09)
 
-**Gemini** (`google-genai` 2.22.x, pin `<3.0`):
-- Embeddings: `gemini-embedding-2` (fallback id `gemini-embedding-2-preview`), `output_dimensionality=768`, truncated vectors auto-normalized. It does **not** accept `task_type`; use prompt prefixes: documents `"title: {title} | text: {body}"`, queries `"task: search result | query: {text}"`. Legacy `gemini-embedding-001` (task_type based) as configurable fallback.
-- Generation: `gemini-3.1-flash-lite` (marketed for structured JSON extraction) as default; `gemini-2.5-flash-lite` as cheapest alternative. Structured output via `GenerateContentConfig(response_mime_type="application/json", response_schema=PydanticModel)` → `response.parsed`. Model ids are config, recorded per row.
+**Gemini** (`google-genai` 2.22.x, pin `<3.0`) — **verified against the live API 2026-09-10**, see `tests/live/test_gemini_live.py`:
+- Embeddings: `gemini-embedding-2`, `gemini-embedding-2-preview` and `gemini-embedding-001` all resolve and all return 768 unit-length dimensions at `output_dimensionality=768`. `gemini-embedding-2` does **not** accept `task_type`; the document/query asymmetry is carried in prompt prefixes instead: documents `"title: {title} | text: {body}"`, queries `"task: search result | query: {text}"`. Legacy `gemini-embedding-001` (task_type based) stays as a configurable fallback.
+- **`gemini-embedding-2` does not batch.** Given a list of contents it returns **one** embedding and no error, silently discarding the rest — a batched call would pair the wrong vector with the wrong chunk and make every match score quietly wrong. `gemini-embedding-001` batches correctly. The client therefore fans out one request per text for any model outside `_BATCHING_MODELS`, and a live test pins the upstream behaviour so we notice if Google fixes it.
+- **The Developer API rejects `additionalProperties`** ("only supported in Gemini Enterprise Agent Platform mode"). A response schema may not contain an open-ended `dict[str, …]`, which is why per-field confidence and evidence travel as a `list[FieldEvidence]` and are rebuilt into maps after parsing.
+- Generation: `gemini-3.1-flash-lite` (default) and `gemini-2.5-flash-lite` both extract correctly from a real notice — turnover with currency, certifications, sectors, and per-field confidence with supporting quotes. Structured output via `GenerateContentConfig(response_mime_type="application/json", response_schema=PydanticModel)` → `response.parsed`. Model ids are config, recorded per row.
 - Free-tier limits are only visible in AI Studio; assume ~15 RPM for Flash-Lite. Use `aiolimiter` + `tenacity`.
 
 **World Bank** — no auth, verified JSON:
@@ -370,7 +372,7 @@ build, typecheck, eslint and the 32 Vitest tests are green; the committed
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.
-- **Live** (`@pytest.mark.live`, manual): Gemini dims/normalization, World Bank endpoint shape, e-GP servlet + detail selectors.
+- **Live** (`@pytest.mark.live`, manual, `GEMINI_API_KEY=... uv run pytest -m live`): Gemini model-id resolution, dims/normalization, batch fan-out, schema acceptance, extraction accuracy and hallucination restraint; World Bank endpoint shape; e-GP servlet + detail selectors.
 - **Evaluation**: `scripts/eval_matching.py` → precision@5 / recall@10 / nDCG@10 for keyword baseline vs semantic vs hybrid on `data/eval/labels.csv`; `scripts/bench_process_tender.py` proves < 60 s for one tender × N orgs.
 - **Frontend**: Vitest units (RhfField, GradeBadge, DeadlineCountdown, RuleRow editor switching, filters parse, client 401→refresh→replay, DecisionPanel optimistic rollback); Playwright e2e: register → onboard → shortlist; login → detail → bid → pipeline; invite accept; reset password; rules preset → preview → save.
 - **CI**: ruff, mypy, pytest (unit + integration), tsc, vitest, openapi types freshness check, docker builds.

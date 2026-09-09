@@ -15,7 +15,7 @@ import pytest
 from app.ai import build_client, get_ai_client, set_ai_client
 from app.ai.base import AIClient, AIError, AIUsageTally, Usage, document_text, query_text
 from app.ai.fake_client import FakeAIClient, deterministic_embedding
-from app.ai.schemas import MatchExplanation, Sector, TenderAttributes
+from app.ai.schemas import FieldEvidence, MatchExplanation, Sector, TenderAttributes
 
 
 def cosine(a: list[float], b: list[float]) -> float:
@@ -137,19 +137,39 @@ class TestAttributes:
 
     def test_low_confidence_is_not_reliable(self) -> None:
         """Below the floor an attribute must become "verify", never a rejection."""
-        attributes = TenderAttributes(confidence={"jv_allowed": 0.4})
+        attributes = TenderAttributes(
+            field_evidence=[FieldEvidence(field="jv_allowed", confidence=0.4)]
+        )
 
         assert not attributes.is_reliable("jv_allowed")
 
     def test_confident_fields_are_reliable(self) -> None:
-        attributes = TenderAttributes(confidence={"jv_allowed": 0.9})
+        attributes = TenderAttributes(
+            field_evidence=[FieldEvidence(field="jv_allowed", confidence=0.9)]
+        )
 
         assert attributes.is_reliable("jv_allowed")
 
-    def test_a_junk_confidence_value_does_not_blow_up(self) -> None:
-        attributes = TenderAttributes.model_construct(confidence={"x": "high"})
+    def test_the_evidence_list_rebuilds_the_maps_the_pipeline_wants(self) -> None:
+        """Stored as a list only because Gemini rejects open-ended dicts."""
+        attributes = TenderAttributes(
+            field_evidence=[
+                FieldEvidence(field="jv_allowed", confidence=0.9, quote="JV permitted"),
+                FieldEvidence(field="bid_security", confidence=0.3),
+            ]
+        )
 
-        assert attributes.confidence_for("x") == 0.0
+        assert attributes.confidence_map() == {"jv_allowed": 0.9, "bid_security": 0.3}
+        # A field with no quote contributes no evidence, rather than an empty one.
+        assert attributes.evidence_map() == {"jv_allowed": "JV permitted"}
+
+    def test_the_response_schema_has_no_open_ended_maps(self) -> None:
+        """The Gemini Developer API rejects `additionalProperties` outright."""
+        import json
+
+        schema = json.dumps(TenderAttributes.model_json_schema())
+
+        assert "additionalProperties" not in schema
 
 
 class TestUsageTally:

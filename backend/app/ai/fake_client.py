@@ -24,6 +24,7 @@ from pydantic import BaseModel
 
 from app.ai.base import AIError, EmbeddingResult, GenerationResult, Usage
 from app.ai.schemas import (
+    FieldEvidence,
     MatchExplanation,
     Money,
     Sector,
@@ -152,10 +153,14 @@ def fake_attributes(text: str) -> TenderAttributes:
         "jv_allowed": 0.5,
         "local_registration_required": 0.45,
     }
-    attributes.confidence = stated
-    attributes.evidence = {
-        field: text.strip()[:120] for field, score in stated.items() if score >= 0.5
-    }
+    attributes.field_evidence = [
+        FieldEvidence(
+            field=field,
+            confidence=score,
+            quote=text.strip()[:120] if score >= 0.5 else None,
+        )
+        for field, score in stated.items()
+    ]
     return attributes
 
 

@@ -49,6 +49,19 @@ class Money(BaseModel):
     currency: str | None = Field(default=None, description="ISO 4217, e.g. BDT, USD")
 
 
+class FieldEvidence(BaseModel):
+    """Why one extracted attribute should be believed.
+
+    Confidence and quote travel with the attribute so the rule engine can
+    refuse to act on a requirement the model was unsure about, and so a user
+    can check any claim against the notice itself.
+    """
+
+    field: str = Field(description="Name of the attribute this refers to.")
+    confidence: float = Field(description="0 = guessed, 1 = stated outright.")
+    quote: str | None = Field(default=None, description="Short quote copied from the notice.")
+
+
 class TenderAttributes(BaseModel):
     """What the model reads out of one notice.
 
@@ -100,21 +113,33 @@ class TenderAttributes(BaseModel):
         default=None, description="Whether local registration or incorporation is mandatory."
     )
 
-    confidence: dict[str, float] = Field(
-        default_factory=dict,
-        description="0..1 per field name above. Omit a field to mean 'not stated'.",
+    #: A list rather than the more natural `dict[str, float]` map, because
+    #: pydantic renders an open-ended dict as `additionalProperties`, and the
+    #: Gemini Developer API rejects that outright ("only supported in Gemini
+    #: Enterprise Agent Platform mode"). The map is rebuilt after parsing.
+    field_evidence: list[FieldEvidence] = Field(
+        default_factory=list,
+        description=(
+            "One entry per field you reported above, naming the field, how "
+            "confident you are, and the quote that supports it. Omit fields "
+            "the notice does not state."
+        ),
     )
-    evidence: dict[str, str] = Field(
-        default_factory=dict,
-        description="Short quote from the notice supporting each field, keyed the same way.",
-    )
+
+    def confidence_map(self) -> dict[str, float]:
+        """`{field: confidence}`, the shape the rest of the pipeline wants."""
+        return {entry.field: entry.confidence for entry in self.field_evidence}
+
+    def evidence_map(self) -> dict[str, str]:
+        """`{field: quote}` for every field that came with supporting text."""
+        return {entry.field: entry.quote for entry in self.field_evidence if entry.quote}
 
     def confidence_for(self, field: str) -> float:
         """Confidence for one attribute, defaulting to 'unknown'."""
-        try:
-            return float(self.confidence.get(field, 0.0))
-        except (TypeError, ValueError):
-            return 0.0
+        for entry in self.field_evidence:
+            if entry.field == field:
+                return entry.confidence
+        return 0.0
 
     def is_reliable(self, field: str) -> bool:
         """Whether the rule engine may act on this attribute."""

@@ -12,10 +12,15 @@ Three things here are not obvious and are deliberate:
 * **One limiter, one semaphore, process-wide.** The free tier is measured in
   requests per minute, and a worker running several tenders concurrently would
   otherwise burn the quota in seconds.
+* **Batching is opt-in per model.** `gemini-embedding-2` accepts a list of
+  contents and returns a single embedding for it, discarding the rest without
+  an error — which would silently pair the wrong vector with the wrong chunk.
+  Only models proven to batch get a multi-content request.
 """
 
 from __future__ import annotations
 
+import asyncio
 import math
 import time
 from typing import Any
@@ -47,6 +52,11 @@ logger = get_logger(__name__)
 
 #: Model ids that still take the legacy `task_type` parameter.
 _TASK_TYPE_MODELS = frozenset({"gemini-embedding-001"})
+
+#: Model ids verified to return one embedding per input when given a list.
+#: Everything else is called one text at a time — see `_embed`. Confirmed by
+#: `tests/live/test_gemini_live.py::TestEmbeddings::test_a_batch_returns_one_vector_per_text`.
+_BATCHING_MODELS = frozenset({"gemini-embedding-001"})
 
 RETRYABLE = (AIError,)
 
@@ -100,22 +110,58 @@ class GeminiClient:
     async def embed_queries(self, texts: list[str]) -> EmbeddingResult:
         return await self._embed([query_text(text) for text in texts], task_type="RETRIEVAL_QUERY")
 
+    async def _embed(self, texts: list[str], *, task_type: str) -> EmbeddingResult:
+        """Embed a batch, one request per text unless the model truly batches.
+
+        `gemini-embedding-2` accepts a list of contents and returns a **single**
+        embedding for it, silently discarding the rest. Nothing errors, so a
+        batched call would hand chunk B's vector to chunk A and every match
+        score downstream would be quietly wrong. Only models known to batch
+        correctly get a multi-content request; everything else fans out.
+        """
+        if not texts:
+            raise AIError("Nothing to embed.")
+
+        started = time.perf_counter()
+
+        if self.embedding_model in _BATCHING_MODELS:
+            vectors, tokens = await self._embed_call(texts, task_type=task_type)
+        else:
+            results = await asyncio.gather(
+                *(self._embed_call([text], task_type=task_type) for text in texts)
+            )
+            vectors = [vector for chunk, _ in results for vector in chunk]
+            tokens = sum(count for _, count in results)
+
+        if len(vectors) != len(texts):
+            raise AIError(f"Asked for {len(texts)} embeddings, got {len(vectors)}.")
+
+        return EmbeddingResult(
+            vectors=vectors,
+            model=self.embedding_model,
+            dims=self.dims,
+            usage=Usage(
+                model=self.embedding_model,
+                tokens_in=tokens,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+            ),
+        )
+
     @retry(
         retry=retry_if_exception_type(RETRYABLE),
         stop=stop_after_attempt(4),
         wait=wait_exponential(multiplier=1, min=2, max=30),
         reraise=True,
     )
-    async def _embed(self, texts: list[str], *, task_type: str) -> EmbeddingResult:
-        if not texts:
-            raise AIError("Nothing to embed.")
-
+    async def _embed_call(
+        self, texts: list[str], *, task_type: str
+    ) -> tuple[list[list[float]], int]:
+        """One request. Retried on its own, so a flaky text cannot fail a batch."""
         config: dict[str, Any] = {"output_dimensionality": self.dims}
         # Only the legacy model understands task_type; the current one 400s on it.
         if self.embedding_model in _TASK_TYPE_MODELS:
             config["task_type"] = task_type
 
-        started = time.perf_counter()
         async with self._semaphore, self._limiter:
             try:
                 response = await self._client.aio.models.embed_content(
@@ -127,26 +173,13 @@ class GeminiClient:
                 raise AIError(f"Embedding call failed: {exc}") from exc
 
         embeddings = response.embeddings or []
-        if len(embeddings) != len(texts):
-            raise AIError(f"Asked for {len(texts)} embeddings, got {len(embeddings)}.")
-
         vectors: list[list[float]] = []
         for embedding in embeddings:
             values = embedding.values
             if not values:
                 raise AIError("Embedding came back empty.")
             vectors.append(_normalise(list(values)))
-
-        return EmbeddingResult(
-            vectors=vectors,
-            model=self.embedding_model,
-            dims=self.dims,
-            usage=Usage(
-                model=self.embedding_model,
-                tokens_in=_token_count(response),
-                latency_ms=int((time.perf_counter() - started) * 1000),
-            ),
-        )
+        return vectors, _token_count(response)
 
     # -- generation --------------------------------------------------------
 

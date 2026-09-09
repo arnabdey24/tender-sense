@@ -403,6 +403,26 @@ Three defects found while building this, each now covered by a test:
 | Alembic again did not drop the enum types it created, so downgrade-then-upgrade failed — the same defect as `0002_identity` | The migration drops all six explicitly |
 | The dev compose override mounted the working tree into `api` but not into `migrate`, so `make migration` wrote a revision that `make migrate` then could not find | `migrate` gets the same mounts |
 
+**Scoring, grading and urgency.** All pure functions over values that are
+already stored, which is what makes re-grading cheap: a threshold change re-runs
+the module over existing similarities without a single AI call.
+
+Aggregation is deliberately not "best facet wins". A company's strongest facet
+alone rewards one lucky sentence — a boilerplate line about "digital
+transformation" would make every IT tender an S — so the score blends the best
+facet with the mean of the top three, and a tender has to resemble several
+things the company actually does before it grades highly. A test asserts that
+padding a profile with unrelated services lowers the score rather than raising
+it.
+
+Urgency is computed in the organization's own timezone, not UTC. The same
+instant genuinely bands differently: a deadline at 13 Sep 20:00 UTC is four days
+out in Dhaka but three in London, so one is `high` and the other `critical`.
+Judging it in UTC would tell a Dhaka bidder they had longer than they do. The
+recommendation matrix is asserted cell by cell — a wrong cell is a wrong
+business decision shown to a customer with nothing failing — and an expired
+deadline overrides every cell.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

@@ -63,6 +63,28 @@ class TestDeterminism:
 
         assert cosine(profile, related) > cosine(profile, unrelated)
 
+    def test_shared_function_words_do_not_fake_a_match(self) -> None:
+        """Caught by a real facet-search test: "supply *of* switches" scored
+        against "printing *of* books" on the strength of "of" alone."""
+        probe = deterministic_embedding("supply and installation of network switches", 768)
+        related = deterministic_embedding("enterprise network switches routers cabling", 768)
+        unrelated = deterministic_embedding("offset printing of school textbooks and binding", 768)
+
+        assert cosine(probe, related) > cosine(probe, unrelated)
+
+    def test_a_string_of_only_function_words_still_embeds(self) -> None:
+        vector = deterministic_embedding("of and the", 768)
+
+        assert math.isclose(math.sqrt(sum(v * v for v in vector)), 1.0, rel_tol=1e-9)
+
+    def test_the_prompt_prefix_does_not_dominate_the_vector(self) -> None:
+        """Every document text starts "title: … | text: …"; if those words
+        counted, every pair of documents would look alike."""
+        a = deterministic_embedding(document_text("Switches", "network hardware"), 768)
+        b = deterministic_embedding(document_text("Textbooks", "school book printing"), 768)
+
+        assert cosine(a, b) < 0.5
+
     def test_dimension_count_is_honoured(self) -> None:
         assert len(deterministic_embedding("x", 256)) == 256
 

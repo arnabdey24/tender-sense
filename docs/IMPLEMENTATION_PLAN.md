@@ -369,6 +369,40 @@ build, typecheck, eslint and the 32 Vitest tests are green; the committed
 `schema.d.ts` is regenerated from the live OpenAPI document.
 
 
+**M3 in progress — AI core and matching schema.** The AI layer ships behind one
+`AIClient` protocol with two implementations. The deterministic fake derives
+every vector and attribute from a SHA-256 of the input, so the entire pipeline
+runs with no API key, no network and no rate limit; its vectors are a
+bag-of-tokens projection, which makes related text genuinely score above
+unrelated text — the property every matching assertion rests on.
+
+Verified against the real Gemini API (`tests/live/`, 16 tests, excluded from
+normal runs). Two findings changed the design:
+
+| Finding | Consequence |
+|---|---|
+| `gemini-embedding-2` does not batch: given a list of contents it returns **one** embedding and no error, discarding the rest | A batched call would have paired the wrong vector with the wrong chunk and made every score quietly wrong. The client fans out one request per text for any model outside `_BATCHING_MODELS`; only `gemini-embedding-001` is verified to batch, and a live test pins the upstream behaviour |
+| The Developer API rejects `additionalProperties`, so a response schema may not contain an open-ended dict | Per-field confidence and evidence travel as a `list[FieldEvidence]` and are rebuilt into maps after parsing |
+
+Migration `0004_profiles_matching` adds company profiles with their services,
+past projects and certifications, per-facet profile embeddings, per-tenant
+matches with history, and `matching_config`. Verified to apply, downgrade and
+re-apply cleanly against Postgres.
+
+The profile is embedded per *facet* — overview, each service, each past project,
+sector/geography — rather than as one blob, so a firm doing both civil works and
+IT is not penalised on either by having its two halves averaged into a vector
+that means neither. Facets are re-embedded only when their own text hash
+changes.
+
+Three defects found while building this, each now covered by a test:
+
+| Defect | Fix |
+|---|---|
+| The fake embedding scored "supply **of** switches" against "printing **of** books" on the strength of shared function words, which would have skewed every matching test | Stopwords are dropped before hashing, including the prompt-prefix words the embedding helpers add |
+| Alembic again did not drop the enum types it created, so downgrade-then-upgrade failed — the same defect as `0002_identity` | The migration drops all six explicitly |
+| The dev compose override mounted the working tree into `api` but not into `migrate`, so `make migration` wrote a revision that `make migrate` then could not find | `migrate` gets the same mounts |
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

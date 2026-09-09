@@ -1,0 +1,143 @@
+{
+  "name": "Meghna Systems Limited",
+  "country": "BD",
+  "website": "https://meghnasystems.example",
+  "description": "A Dhaka-based systems integrator delivering management information systems, e-government platforms and enterprise network infrastructure for public sector and development partner programmes.",
+  "sectors": [
+    "information_technology",
+    "public_administration",
+    "health",
+    "education"
+  ],
+  "geographies": [
+    "BD",
+    "NP",
+    "LK"
+  ],
+  "annual_turnover": {
+    "amount": 620000000,
+    "currency": "BDT",
+    "year": 2025
+  },
+  "services": [
+    {
+      "name": "Management information systems",
+      "description": "Design, development and rollout of MIS platforms with dashboards, reporting and data quality tooling."
+    },
+    {
+      "name": "E-government platforms",
+      "description": "Citizen-facing portals and mobile applications with single sign-on and payment gateway integration."
+    },
+    {
+      "name": "Enterprise network and data centre infrastructure",
+      "description": "Supply, installation and support of switching, routing, servers, storage and virtualisation platforms."
+    },
+    {
+      "name": "Digital governance advisory",
+      "description": "Assessments, roadmaps, capacity building and change management for public sector digital transformation."
+    },
+    {
+      "name": "Information security services",
+      "description": "Security assessments, ISO 27001 readiness and security operations support."
+    }
+  ],
+  "certifications": [
+    {
+      "code": "ISO_9001",
+      "name": "ISO 9001:2015",
+      "issuer": "BSI",
+      "valid_until": "2028-03-31"
+    },
+    {
+      "code": "ISO_27001",
+      "name": "ISO/IEC 27001:2022",
+      "issuer": "BSI",
+      "valid_until": "2027-11-30"
+    },
+    {
+      "code": "CMMI_DEV_3",
+      "name": "CMMI-DEV Level 3",
+      "issuer": "ISACA",
+      "valid_until": "2027-06-30"
+    }
+  ],
+  "past_projects": [
+    {
+      "title": "National health management information system",
+      "client": "Directorate General of Health Services",
+      "country": "BD",
+      "sector": "health",
+      "year_completed": 2024,
+      "value_amount": 180000000,
+      "currency": "BDT",
+      "role": "prime",
+      "description": "Built and rolled out a national health MIS covering 64 districts, including data migration, dashboards and training."
+    },
+    {
+      "title": "Education sector e-service portal",
+      "client": "Ministry of Education",
+      "country": "BD",
+      "sector": "education",
+      "year_completed": 2023,
+      "value_amount": 95000000,
+      "currency": "BDT",
+      "role": "prime",
+      "description": "Citizen portal for scholarship applications with single sign-on and online payment."
+    },
+    {
+      "title": "District network modernisation",
+      "client": "Rural Electrification Board",
+      "country": "BD",
+      "sector": "information_technology",
+      "year_completed": 2025,
+      "value_amount": 240000000,
+      "currency": "BDT",
+      "role": "prime",
+      "description": "Supplied and installed network infrastructure across 30 sites with a three-year support agreement."
+    },
+    {
+      "title": "Revenue systems assessment",
+      "client": "National Board of Revenue",
+      "country": "BD",
+      "sector": "public_administration",
+      "year_completed": 2022,
+      "value_amount": 42000000,
+      "currency": "BDT",
+      "role": "prime",
+      "description": "Assessment and roadmap for revenue system modernisation."
+    },
+    {
+      "title": "Local government data centre",
+      "client": "Local Government Division",
+      "country": "NP",
+      "sector": "information_technology",
+      "year_completed": 2024,
+      "value_amount": 1100000,
+      "currency": "USD",
+      "role": "jv",
+      "description": "Data centre design and build delivered in joint venture."
+    }
+  ],
+  "keyword_exclusions": [
+    "demolition",
+    "dredging",
+    "afforestation"
+  ],
+  "contract_value_range": {
+    "min": {
+      "amount": 50000,
+      "currency": "USD"
+    },
+    "max": {
+      "amount": 8000000,
+      "currency": "USD"
+    }
+  },
+  "procurement_methods": [
+    "OTM",
+    "ICB",
+    "NCB",
+    "QCBS",
+    "RFP"
+  ]
+}

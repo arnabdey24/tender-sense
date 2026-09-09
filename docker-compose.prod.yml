@@ -1,0 +1,32 @@
+# Production overlay: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  api:
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+      REFRESH_COOKIE_SECURE: "true"
+    mem_limit: 1g
+    restart: always
+
+  worker:
+    mem_limit: 1g
+    restart: always
+
+  worker-scrape:
+    restart: always
+
+  db:
+    mem_limit: 2g
+    restart: always
+
+  redis:
+    mem_limit: 512m
+    restart: always
+
+  frontend:
+    restart: always
+
+  caddy:
+    restart: always

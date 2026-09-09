@@ -1,0 +1,19 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+Confirm your email address
+
+Hi {{ user_name }},
+
+Welcome to {{ app_name }}. Confirm this address so we can secure your account
+and start sending you the tenders that match your business.
+
+Open this link to confirm:
+
+  {{ verify_url }}
+
+The link is valid for {{ expires_in_hours }} hour{{ "" if expires_in_hours == 1 else "s" }}. After that you can request a new one
+from the sign-in page.
+
+If you didn't create an account, ignore this email. Nothing will be activated
+without confirmation.
+{% endblock %}

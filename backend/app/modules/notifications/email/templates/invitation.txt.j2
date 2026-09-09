@@ -1,0 +1,27 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+You're invited to join {{ org_name }}
+
+{{ inviter_name }} has invited you to join {{ org_name }} on {{ app_name }} as
+{{ role }}.
+
+{{ app_name }} tracks public tenders and surfaces the ones that fit your
+company, so your team can decide what to bid on without reading every notice.
+
+{% if invitee_has_account %}
+You already have a {{ app_name }} account, so accepting takes one click - sign
+in and {{ org_name }} will appear in your organisation switcher.
+{% else %}
+Accept the invitation to set your password and finish creating your account.
+It takes about a minute.
+{% endif %}
+
+Open this link to accept:
+
+  {{ accept_url }}
+
+This invitation expires on {{ expires_at }}. Ask {{ inviter_name }} for a new
+one if it lapses.
+
+If you weren't expecting this invitation, you can ignore this email.
+{% endblock %}

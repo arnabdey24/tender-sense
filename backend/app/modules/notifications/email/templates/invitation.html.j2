@@ -1,0 +1,17 @@
+{% extends "_base.html.j2" %}
+{% block preheader %}{{ inviter_name }} has invited you to join {{ org_name }} on {{ app_name }} as {{ role }}.{% endblock %}
+{% block content %}
+{% from "_macros.html.j2" import button, fallback %}
+<h1 style="margin: 0 0 18px; font-size: 21px; line-height: 28px; font-weight: 600; color: #16233c;">You're invited to join {{ org_name }}</h1>
+<p style="margin: 0 0 16px;"><strong>{{ inviter_name }}</strong> has invited you to join <strong>{{ org_name }}</strong> on {{ app_name }} as <strong>{{ role }}</strong>.</p>
+<p style="margin: 0 0 16px;">{{ app_name }} tracks public tenders and surfaces the ones that fit your company, so your team can decide what to bid on without reading every notice.</p>
+{% if invitee_has_account %}
+<p style="margin: 0 0 16px;">You already have a {{ app_name }} account, so accepting takes one click &mdash; sign in and {{ org_name }} will appear in your organisation switcher.</p>
+{% else %}
+<p style="margin: 0 0 16px;">Accept the invitation to set your password and finish creating your account. It takes about a minute.</p>
+{% endif %}
+{{ button(accept_url, "Accept invitation") }}
+<p style="margin: 0 0 16px;">This invitation expires on {{ expires_at }}. Ask {{ inviter_name }} for a new one if it lapses.</p>
+{{ fallback(accept_url) }}
+<p style="margin: 0; color: #5b6472;">If you weren't expecting this invitation, you can ignore this email.</p>
+{% endblock %}

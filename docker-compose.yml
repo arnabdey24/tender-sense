@@ -1,0 +1,155 @@
+name: tendersense
+
+x-backend-env: &backend-env
+  ENVIRONMENT: ${ENVIRONMENT:-local}
+  SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+  POSTGRES_HOST: db
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: ${POSTGRES_USER:-tendersense}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tendersense}
+  POSTGRES_DB: ${POSTGRES_DB:-tendersense}
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  APP_URL: ${APP_URL:-http://localhost:5173}
+  BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173}
+  SMTP_HOST: ${SMTP_HOST:-mailpit}
+  SMTP_PORT: ${SMTP_PORT:-1025}
+  EMAIL_FROM: ${EMAIL_FROM:-TenderSense <no-reply@tendersense.local>}
+  AI_PROVIDER: ${AI_PROVIDER:-gemini}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  BLOB_STORAGE_DIR: /var/lib/tendersense/blobs
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tendersense}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tendersense}
+      POSTGRES_DB: ${POSTGRES_DB:-tendersense}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tendersense} -d ${POSTGRES_DB:-tendersense}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment: *backend-env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment: *backend-env
+    volumes:
+      - blob-data:/var/lib/tendersense/blobs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health/live').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment: *backend-env
+    command: ["arq", "app.jobs.worker.WorkerSettings"]
+    volumes:
+      - blob-data:/var/lib/tendersense/blobs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  worker-scrape:
+    build:
+      context: .
+      dockerfile: infra/docker/worker.Dockerfile
+    environment: *backend-env
+    command: ["arq", "app.jobs.worker.ScrapeWorkerSettings"]
+    volumes:
+      - blob-data:/var/lib/tendersense/blobs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    init: true
+    shm_size: 1g
+    mem_limit: 2g
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      # Never empty: an empty site address turns the Caddyfile into a global
+      # options block. Set DOMAIN in .env for automatic TLS.
+      SITE_ADDRESS: ${DOMAIN:-:80}
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  db-data:
+  redis-data:
+  blob-data:
+  caddy-data:
+  caddy-config:

@@ -1,0 +1,10 @@
+{{ app_name }}
+{{ '=' * app_name|length }}
+
+{% block content %}{% endblock %}
+
+--
+{% block footer %}
+This is an automated message from {{ app_name }}. Please do not reply to it.
+{% endblock %}
+(c) {{ current_year }} {{ app_name }} - {{ app_url }}

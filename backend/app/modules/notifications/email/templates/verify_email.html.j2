@@ -1,0 +1,12 @@
+{% extends "_base.html.j2" %}
+{% block preheader %}Confirm your address to activate your {{ app_name }} account.{% endblock %}
+{% block content %}
+{% from "_macros.html.j2" import button, fallback %}
+<h1 style="margin: 0 0 18px; font-size: 21px; line-height: 28px; font-weight: 600; color: #16233c;">Confirm your email address</h1>
+<p style="margin: 0 0 16px;">Hi {{ user_name }},</p>
+<p style="margin: 0 0 16px;">Welcome to {{ app_name }}. Confirm this address so we can secure your account and start sending you the tenders that match your business.</p>
+{{ button(verify_url, "Confirm email address") }}
+<p style="margin: 0 0 16px;">This link is valid for {{ expires_in_hours }} hour{{ "" if expires_in_hours == 1 else "s" }}. After that you can request a new one from the sign-in page.</p>
+{{ fallback(verify_url) }}
+<p style="margin: 0; color: #5b6472;">If you didn't create an account, ignore this email. Nothing will be activated without confirmation.</p>
+{% endblock %}

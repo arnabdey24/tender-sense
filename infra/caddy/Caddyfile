@@ -1,0 +1,29 @@
+# Edge proxy for the whole stack.
+#
+# SITE_ADDRESS defaults to :80 (plain HTTP, for local runs). Set DOMAIN in .env
+# to a hostname and Caddy obtains a certificate for it automatically.
+#
+# The placeholder must never expand to an empty string: a line starting with
+# `{` is parsed as Caddy's global options block, which fails with
+# "unrecognized global option: encode". docker-compose therefore passes
+# SITE_ADDRESS=${DOMAIN:-:80}.
+{$SITE_ADDRESS} {
+	encode gzip zstd
+
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle /openapi.json {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

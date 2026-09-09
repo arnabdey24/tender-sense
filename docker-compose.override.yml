@@ -1,0 +1,52 @@
+# Local development: exposed ports, hot reload, Mailpit.
+services:
+  db:
+    ports:
+      - "${POSTGRES_PORT_HOST:-5432}:5432"
+
+  redis:
+    ports:
+      - "${REDIS_PORT_HOST:-6379}:6379"
+
+  api:
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      DEBUG: "true"
+      LOG_JSON: "false"
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/scripts:/app/scripts
+      - ./backend/data:/app/data
+    ports:
+      - "${API_PORT_HOST:-8000}:8000"
+
+  worker:
+    environment:
+      LOG_JSON: "false"
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/data:/app/data
+
+  worker-scrape:
+    environment:
+      LOG_JSON: "false"
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/data:/app/data
+
+  mailpit:
+    image: axllent/mailpit:latest
+    environment:
+      MP_MAX_MESSAGES: "500"
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "${MAILPIT_UI_PORT:-8025}:8025"
+      # Published so tests and scripts running on the host can send mail.
+      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+    restart: unless-stopped

@@ -623,6 +623,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sources
+         * @description Every ingestion source with its full scraping configuration.
+         */
+        get: operations["list_sources_api_v1_admin_sources_get"];
+        put?: never;
+        /**
+         * Create Source
+         * @description Register a portal. ``adapter_key`` must match a known adapter.
+         */
+        post: operations["create_source_api_v1_admin_sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Source */
+        get: operations["get_source_api_v1_admin_sources__source_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Source
+         * @description Remove a source and, by cascade, its tenders and raw documents.
+         */
+        delete: operations["delete_source_api_v1_admin_sources__source_id__delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Update Source
+         * @description Patch a source. Selector and endpoint changes are data, not a deploy.
+         */
+        patch: operations["update_source_api_v1_admin_sources__source_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/tenders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Tender
+         * @description Add one notice by hand, through the same upsert path the scrapers use.
+         */
+        post: operations["create_tender_api_v1_admin_tenders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tenders/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Tenders
+         * @description Bulk import notices from a JSON array or a CSV document in the request body.
+         *
+         *     A malformed row is reported and skipped rather than failing the batch.
+         */
+        post: operations["import_tenders_api_v1_admin_tenders_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -649,6 +740,23 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ImportResponse */
+        ImportResponse: {
+            /** Total */
+            total: number;
+            /** Created */
+            created: number;
+            /** Updated */
+            updated: number;
+            /** Unchanged */
+            unchanged: number;
+            /** Failed */
+            failed: number;
+            /** Errors */
+            errors?: {
+                [key: string]: unknown;
+            }[];
         };
         /** InvitationCreate */
         InvitationCreate: {
@@ -938,6 +1046,70 @@ export interface components {
             /** Active Org Id */
             active_org_id?: string | null;
         };
+        /** SourceAdminRead */
+        SourceAdminRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Adapter Key */
+            adapter_key: string;
+            /** Base Url */
+            base_url: string;
+            /** Country */
+            country?: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Schedule Cron */
+            schedule_cron?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Cursor */
+            cursor?: {
+                [key: string]: unknown;
+            };
+            health: components["schemas"]["SourceHealth"];
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Success At */
+            last_success_at?: string | null;
+            /** Consecutive Failures */
+            consecutive_failures: number;
+        };
+        /** SourceCreate */
+        SourceCreate: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Adapter Key */
+            adapter_key: string;
+            /**
+             * Base Url
+             * @default
+             */
+            base_url: string;
+            /** Country */
+            country?: string | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Schedule Cron */
+            schedule_cron?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+        };
         /**
          * SourceHealth
          * @enum {string}
@@ -966,6 +1138,25 @@ export interface components {
             /** Consecutive Failures */
             consecutive_failures: number;
         };
+        /** SourceUpdate */
+        SourceUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Adapter Key */
+            adapter_key?: string | null;
+            /** Base Url */
+            base_url?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Schedule Cron */
+            schedule_cron?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /** SwitchOrgRequest */
         SwitchOrgRequest: {
             /**
@@ -973,6 +1164,63 @@ export interface components {
              * Format: uuid
              */
             org_id: string;
+        };
+        /**
+         * TenderCreate
+         * @description A hand-entered notice. ``source_code`` picks the pool it lands in.
+         */
+        TenderCreate: {
+            /** External Id */
+            external_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Title */
+            title: string;
+            /** Summary */
+            summary?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Procuring Entity */
+            procuring_entity?: string | null;
+            /** Country */
+            country?: string | null;
+            /** Procurement Method */
+            procurement_method?: string | null;
+            /** @default unknown */
+            procurement_category: components["schemas"]["ProcurementCategory"];
+            /** Published At */
+            published_at?: string | null;
+            /** Deadline At */
+            deadline_at?: string | null;
+            /** Currency */
+            currency?: string | null;
+            /** Estimated Value */
+            estimated_value?: number | null;
+            /** @default open */
+            status: components["schemas"]["TenderStatus"];
+            /** Language */
+            language?: string | null;
+            /** Portal Metadata */
+            portal_metadata?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Source Code
+             * @default manual
+             */
+            source_code: string;
+        };
+        /** TenderCreateResponse */
+        TenderCreateResponse: {
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            /** Outcome */
+            outcome: string;
+            /** Version */
+            version: number;
         };
         /** TenderDetail */
         TenderDetail: {
@@ -2115,6 +2363,222 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceRead"][];
+                };
+            };
+        };
+    };
+    list_sources_api_v1_admin_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdminRead"][];
+                };
+            };
+        };
+    };
+    create_source_api_v1_admin_sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdminRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_source_api_v1_admin_sources__source_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Source identifier */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdminRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_source_api_v1_admin_sources__source_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Source identifier */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_source_api_v1_admin_sources__source_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Source identifier */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdminRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_tender_api_v1_admin_tenders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TenderCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenderCreateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_tenders_api_v1_admin_tenders_import_post: {
+        parameters: {
+            query?: {
+                /** @description Source code for rows that omit their own */
+                source_code?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

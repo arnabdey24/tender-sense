@@ -18,5 +18,14 @@ export const qk = {
   invitations: {
     preview: (token: string) => ["invitations", "preview", token] as const,
   },
+  tenders: {
+    all: () => ["tenders"] as const,
+    list: (params: Record<string, unknown>) =>
+      ["tenders", "list", params] as const,
+    facets: (params: Record<string, unknown>) =>
+      ["tenders", "facets", params] as const,
+    detail: (id: string) => ["tenders", "detail", id] as const,
+    sources: () => ["tenders", "sources"] as const,
+  },
   health: () => ["health"] as const,
 } as const

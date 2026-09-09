@@ -194,7 +194,7 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 |---|---|---|---|
 | M0 Scaffold (2–3 d) | **done** | uv project, settings, structlog, alembic + extensions, health, compose (db, redis, api, worker, caddy, mailpit), frontend init (shadcn, router, query, client, layouts, guards, MSW), CI, Makefile | `docker compose up` → health green, SPA shell loads |
 | M1 Identity (4–5 d) | **done** | users, register/login/verify/reset, refresh rotation, Google OIDC, orgs, memberships, invites, outbox + auth/invite templates, RBAC; frontend auth pages, account, members/invites, invite accept | Register → verify via Mailpit → create org → invite → Google sign-in |
-| M2 Tender pool (3 d) | **in progress** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API; frontend tenders list (shared pool) | Browse/search 40 seeded tenders |
+| M2 Tender pool (3 d) | **done** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API, superuser source CRUD + manual/bulk tender entry; frontend tenders list + detail (shared pool) | Browse/search 40 seeded tenders |
 | M3 AI core + matching (5–6 d) | **planned** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
 | M4 Rules + explanations + decisions + eval (4–5 d) | **planned** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
 | M5 Ingestion (5 d) | **planned** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
@@ -333,8 +333,23 @@ allowlist, but the raw model error escaped as a 500 rather than a 422 naming the
 bad value. Sort fields are now an enum, and any model built from user input
 outside a request body maps to a validation response.
 
-Still open for M2: the admin endpoints for sources and manual tender entry, and
-the frontend tender list.
+**M2 Tender pool — done.** The superuser admin surface closes the milestone:
+`GET/POST/PATCH/DELETE /admin/sources` register and reconfigure portals (adapter
+key validated against the registry plus the planned ingestion keys), `POST
+/admin/tenders` adds one notice by hand, and `POST /admin/tenders/import` takes a
+JSON array or CSV body — all through the same `upsert_tender` path the scrapers
+use, so a hand-entered notice is indistinguishable downstream. Deleting a source
+cascades to its tenders and raw documents. Every route requires `is_superuser`;
+non-staff get a 403 `staff_required`. Covered by twelve integration tests
+against Postgres and a unit test for adapter validation.
+
+The frontend tender pool ships too: `/app/tenders` is a filterable, paginated
+table (free-text search, category / status / source / sort selects with facet
+counts, open-only toggle) with every filter mirrored into URL search params, and
+`/app/tenders/$tenderId` renders the full notice — verdict-strip placeholder,
+overview facts, summary, description and any extracted requirements. Frontend
+build, typecheck, eslint and the 32 Vitest tests are green; the committed
+`schema.d.ts` is regenerated from the live OpenAPI document.
 
 
 ## Verification

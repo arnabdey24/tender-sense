@@ -22,7 +22,12 @@ from app.db.session import session_scope
 from app.jobs.queue import get_queue
 from app.modules.assistant import service
 from app.modules.assistant.context import load_context
-from app.modules.assistant.provider import declaration, instruction
+from app.modules.assistant.provider import (
+    declaration,
+    instruction,
+    navigate_declaration,
+    resolve_navigation,
+)
 from app.modules.assistant.router import router
 from app.modules.assistant.schemas import AnalyzeInput, Event
 from app.modules.assistant.tools import analyze
@@ -123,10 +128,24 @@ async def voice_socket(socket: WebSocket) -> None:
             raise ValueError("Unsupported language")
         config = types.LiveConnectConfig(
             response_modalities=["AUDIO"],
+            # Without this the Live API picks its own default voice. No
+            # language_code: the conversation is English, Bangla or a mix of
+            # both, and pinning one makes the other side of that worse.
+            speech_config=types.SpeechConfig(
+                voice_config=types.VoiceConfig(
+                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                        voice_name=settings.assistant_voice_name
+                    )
+                )
+            ),
             system_instruction=instruction(data, language)
             + "\nPrior conversation:\n"
             + json.dumps(history, ensure_ascii=False),
-            tools=[types.Tool(function_declarations=[declaration()])],
+            tools=[
+                types.Tool(
+                    function_declarations=[declaration(), navigate_declaration()]
+                )
+            ],
             input_audio_transcription=types.AudioTranscriptionConfig(),
             output_audio_transcription=types.AudioTranscriptionConfig(),
             context_window_compression=types.ContextWindowCompressionConfig(
@@ -258,6 +277,19 @@ async def voice_socket(socket: WebSocket) -> None:
                                     answers = []
                                     for call in response.tool_call.function_calls or []:
                                         try:
+                                            if call.name == "open_in_app":
+                                                output = resolve_navigation(
+                                                    data, call.args or {}
+                                                )
+                                                await emit("navigate", output)
+                                                answers.append(
+                                                    types.FunctionResponse(
+                                                        name=call.name,
+                                                        id=call.id,
+                                                        response={"opened": output},
+                                                    )
+                                                )
+                                                continue
                                             if call.name != "analyze_tender":
                                                 raise ValueError("Unsupported tool")
                                             artifact = analyze(

@@ -94,6 +94,9 @@ class Settings(BaseSettings):
     assistant_voice_enabled: bool = False
     assistant_model: str = "gemini-3.1-flash-lite"
     assistant_voice_model: str = "gemini-3.1-flash-live-preview"
+    #: Prebuilt Live voice. Aoede is warm and unhurried; Kore is firmer,
+    #: Leda younger, Zephyr brighter, Puck the male-sounding default.
+    assistant_voice_name: str = "Aoede"
     assistant_turn_timeout_seconds: int = 90
     assistant_voice_max_seconds: int = 600
     assistant_daily_turn_limit: int = 100

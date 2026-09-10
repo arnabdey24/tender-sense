@@ -96,6 +96,9 @@ class TurnInput(BaseModel):
     request_id: UUID
     text: str = Field(min_length=1, max_length=8000)
     language: Language = "auto"
+    #: Where the user is standing when they ask. Lets "explain this" resolve, and
+    #: stops the assistant navigating somebody to the page they are already on.
+    page: str | None = Field(default=None, max_length=120)
     artifact: AnalyzeInput | None = None
     active_artifact: ArtifactKind | None = None
 

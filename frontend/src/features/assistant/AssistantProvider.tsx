@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, useRouterState } from "@tanstack/react-router"
 import {
   ArrowUpIcon,
   ArrowUpRightIcon,
@@ -110,6 +110,51 @@ import { VoiceControls, VoiceOrb } from "./VoiceControls"
 import type { VoiceSession, VoiceState } from "./voice"
 
 const ArtifactView = lazy(() => import("./ArtifactView"))
+
+/**
+ * The microphone disclosure is shown before the first live session and then
+ * remembered, so starting voice afterwards is the one tap it should be. It is
+ * a disclosure, not a consent record — the browser still asks for the
+ * microphone itself every time it needs to.
+ */
+const VOICE_NOTICE_SEEN = "tendersense.assistant.voiceNoticeSeen"
+
+function voiceNoticeSeen() {
+  try {
+    return localStorage.getItem(VOICE_NOTICE_SEEN) === "1"
+  } catch {
+    // Private mode or blocked storage: show the notice, which is the safe way to be wrong.
+    return false
+  }
+}
+
+function rememberVoiceNotice() {
+  try {
+    localStorage.setItem(VOICE_NOTICE_SEEN, "1")
+  } catch {
+    /* Nothing to remember it with; the notice simply shows again. */
+  }
+}
+
+/**
+ * A plain-language name for where the user is standing, so "explain this"
+ * resolves and the assistant does not offer to open the page already on screen.
+ */
+function describePage(pathname: string) {
+  if (/^\/app\/tenders\/[^/]+$/.test(pathname)) return "a tender's detail page"
+  const named: Record<string, string> = {
+    "/app/dashboard": "the dashboard",
+    "/app/today": "today's shortlist",
+    "/app/matches": "the matches list",
+    "/app/tenders": "the tender pool",
+    "/app/pipeline": "the pipeline",
+    "/app/notifications": "notifications",
+    "/account": "their account",
+  }
+  if (named[pathname]) return named[pathname]
+  if (pathname.startsWith("/app/settings")) return "settings"
+  return undefined
+}
 
 /** Pages `open_in_app` may open, mirroring the server's allow-list exactly. */
 const PAGE_ROUTES = {
@@ -305,6 +350,7 @@ function AssistantSession({
     retry: false,
   })
   const navigate = useNavigate()
+  const pathname = useRouterState({ select: (state) => state.location.pathname })
   const mobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<"compact" | "expanded" | "workspace">(
@@ -489,6 +535,7 @@ function AssistantSession({
             request_id: turnId,
             text,
             language,
+            page: describePage(pathname),
             artifact: analysis,
             active_artifact: artifact?.kind,
           }),
@@ -529,6 +576,7 @@ function AssistantSession({
   }
   async function startVoice() {
     const selectionEpoch = epoch.current
+    rememberVoiceNotice()
     setVoiceNotice(false)
     setError(null)
     if (capabilities.data?.mode === "demo") {
@@ -942,7 +990,11 @@ function AssistantSession({
                     (!capabilities.data?.voice_enabled &&
                       capabilities.data?.mode !== "demo")
                   }
-                  onClick={() => setVoiceNotice((value) => !value)}
+                  onClick={() =>
+                    voiceNoticeSeen()
+                      ? void startVoice()
+                      : setVoiceNotice((value) => !value)
+                  }
                 >
                   <AudioLinesIcon />
                 </InputGroupButton>

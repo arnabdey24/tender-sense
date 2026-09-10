@@ -97,6 +97,10 @@ class Settings(BaseSettings):
     #: Prebuilt Live voice. Aoede is warm and unhurried; Kore is firmer,
     #: Leda younger, Zephyr brighter, Puck the male-sounding default.
     assistant_voice_name: str = "Aoede"
+    #: Languages the speech recogniser may transcribe into. Left unset it
+    #: auto-detects across everything it knows, and Bangla speech comes back
+    #: transcribed as Hindi in Devanagari often enough to be a bug.
+    assistant_voice_languages: Annotated[list[str], NoDecode] = ["bn-BD", "en-US"]
     assistant_turn_timeout_seconds: int = 90
     assistant_voice_max_seconds: int = 600
     assistant_daily_turn_limit: int = 100
@@ -147,6 +151,14 @@ class Settings(BaseSettings):
         if secret.startswith("change-me"):
             raise ValueError("SECRET_KEY still holds its placeholder value")
         return self
+
+    @field_validator("assistant_voice_languages", mode="before")
+    @classmethod
+    def _split_languages(cls, v: object) -> object:
+        """Accept a comma-separated string from the environment."""
+        if isinstance(v, str):
+            return [code.strip() for code in v.split(",") if code.strip()]
+        return v
 
     @field_validator("backend_cors_origins", mode="before")
     @classmethod

@@ -126,6 +126,12 @@ async def voice_socket(socket: WebSocket) -> None:
         language = hello.get("language", "auto")
         if language not in {"auto", "en", "bn"}:
             raise ValueError("Unsupported language")
+        # Picking a language narrows the recogniser to it; "auto" still only ever
+        # offers the product's two, never the whole set it would guess across.
+        allowed = list(settings.assistant_voice_languages)
+        if language != "auto":
+            prefix = "bn" if language == "bn" else "en"
+            allowed = [c for c in allowed if c.startswith(prefix)] or allowed
         config = types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             # Without this the Live API picks its own default voice. No
@@ -146,7 +152,11 @@ async def voice_socket(socket: WebSocket) -> None:
                     function_declarations=[declaration(), navigate_declaration()]
                 )
             ],
-            input_audio_transcription=types.AudioTranscriptionConfig(),
+            # Unconstrained, Bangla speech comes back transcribed as Hindi in
+            # Devanagari. This is the product's two languages and nothing else.
+            input_audio_transcription=types.AudioTranscriptionConfig(
+                language_codes=allowed
+            ),
             output_audio_transcription=types.AudioTranscriptionConfig(),
             context_window_compression=types.ContextWindowCompressionConfig(
                 sliding_window=types.SlidingWindow()

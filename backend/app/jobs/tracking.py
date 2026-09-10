@@ -19,6 +19,7 @@ from typing import Any
 from uuid import UUID
 
 from app.core.logging import get_logger
+from app.core.observability import job_duration
 from app.core.time import utcnow
 from app.db.session import session_scope
 from app.jobs.runs import JobRun, RunStatus
@@ -57,6 +58,7 @@ async def _close_run(
     if len(payload) > MAX_RESULT_KEYS:
         payload = {"truncated": True, "keys": len(payload)}
 
+    job_duration.labels(job=name, status=status.value).observe(duration_ms / 1000)
     logger.info(
         "job_finished",
         job=name,

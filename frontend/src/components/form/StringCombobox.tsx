@@ -17,6 +17,8 @@ export type StringComboboxProps = {
   emptyText?: string
   "aria-invalid"?: boolean
   "aria-describedby"?: string
+  /** Required when no visible <label> points at the input. */
+  "aria-label"?: string
   name?: string
 }
 
@@ -48,6 +50,7 @@ export function StringCombobox({
         onBlur={onBlur}
         aria-invalid={aria["aria-invalid"]}
         aria-describedby={aria["aria-describedby"]}
+        aria-label={aria["aria-label"]}
       />
       <ComboboxContent>
         <ComboboxEmpty>{emptyText}</ComboboxEmpty>

@@ -56,9 +56,19 @@ jobs:
       - name: Ruff format check
         run: uv run ruff format --check .
       - name: Mypy
-        run: uv run mypy app
+        run: uv run mypy app scripts
       - name: Migrations apply cleanly
         run: uv run alembic upgrade head
+      # A downgrade that leaves an enum type behind makes the next upgrade fail
+      # with DuplicateObjectError — on a production database, mid-incident.
+      - name: Migrations reverse cleanly
+        run: |
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+      # Without this the tender-pool API tests skip themselves, which reads as
+      # green and covers nothing. AI_PROVIDER=fake keeps it offline.
+      - name: Seed the demo dataset
+        run: uv run python -m scripts.seed_demo
       - name: Tests
         run: uv run pytest -m "not live" --cov=app --cov-report=term-missing
 
@@ -75,10 +85,58 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      - name: Lint
+        run: npm run lint
       - name: Typecheck and build
         run: npm run build
       - name: Unit tests
         run: npm test
+
+  # The committed typed client is generated from the API's own document. If it
+  # drifts, the frontend compiles against a contract the backend no longer
+  # serves — which type-checks perfectly and fails at runtime.
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Dump the OpenAPI document
+        working-directory: backend
+        env:
+          AI_PROVIDER: fake
+        run: |
+          uv sync --frozen
+          uv run python -c "import json; from app.main import create_app; print(json.dumps(create_app().openapi()))" > ../openapi.json
+      - name: Regenerate the typed client
+        working-directory: frontend
+        run: |
+          npm ci
+          npx openapi-typescript ../openapi.json -o src/lib/api/schema.d.ts
+      - name: The committed client matches the live document
+        run: git diff --exit-code -- frontend/src/lib/api/schema.d.ts
+
+  compose:
+    runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: ci-secret-key-not-used-in-production-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - name: Development stack is valid
+        run: docker compose config --quiet
+      - name: Production stack is valid
+        run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
+      - name: Caddy configuration is valid
+        run: |
+          docker run --rm -v "$PWD/infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e SITE_ADDRESS=":80" caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
 
   docker:
     runs-on: ubuntu-latest
@@ -90,6 +148,13 @@ jobs:
         with:
           context: .
           file: infra/docker/api.Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

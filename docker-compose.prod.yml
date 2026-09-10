@@ -1,32 +1,75 @@
 # Production overlay: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Everything here is either a hardening measure or a restart policy. The one
+# thing it deliberately does *not* do is publish a database or Redis port: on a
+# single VM those are reachable from the internet the moment they are mapped,
+# and Postgres with a weak password is the shortest path to losing the pool.
 services:
   api:
     command:
-      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--proxy-headers", "--forwarded-allow-ips", "*"]
     environment:
       ENVIRONMENT: production
       DEBUG: "false"
+      # Refresh cookies must never travel in the clear once TLS is on.
       REFRESH_COOKIE_SECURE: "true"
+      LOG_JSON: "true"
+    # No published port: Caddy reaches it on the compose network.
+    ports: !reset []
     mem_limit: 1g
+    security_opt:
+      - no-new-privileges:true
     restart: always
 
   worker:
+    environment:
+      ENVIRONMENT: production
+      LOG_JSON: "true"
     mem_limit: 1g
+    security_opt:
+      - no-new-privileges:true
     restart: always
 
   worker-scrape:
+    environment:
+      ENVIRONMENT: production
+      LOG_JSON: "true"
+    security_opt:
+      - no-new-privileges:true
     restart: always
 
+  migrate:
+    environment:
+      ENVIRONMENT: production
+
   db:
+    # Unpublished: see the note above.
+    ports: !reset []
     mem_limit: 2g
+    security_opt:
+      - no-new-privileges:true
     restart: always
 
   redis:
+    ports: !reset []
     mem_limit: 512m
+    security_opt:
+      - no-new-privileges:true
     restart: always
 
   frontend:
+    security_opt:
+      - no-new-privileges:true
     restart: always
 
   caddy:
+    # 80 stays open because ACME's HTTP challenge needs it to issue and renew.
+    ports:
+      - "80:80"
+      - "443:443"
     restart: always
+
+  # Mailpit is a development inbox. Leaving it running in production would
+  # publish a web UI showing every message the system has ever sent.
+  mailpit:
+    profiles: ["donotstart"]

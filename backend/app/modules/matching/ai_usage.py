@@ -20,6 +20,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.ai.base import Usage
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.observability import ai_tokens_spent
 from app.core.time import utcnow
 from app.db.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
@@ -80,6 +81,7 @@ async def record(
 ) -> None:
     """Log one call. Never raises: losing a usage row must not fail the work."""
     try:
+        ai_tokens_spent.labels(purpose=purpose).inc(usage.tokens_in + usage.tokens_out)
         session.add(
             AiUsage(
                 org_id=org_id,

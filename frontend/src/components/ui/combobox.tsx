@@ -73,6 +73,9 @@ function ComboboxInput({
             variant="ghost"
             render={<ComboboxTrigger />}
             data-slot="input-group-button"
+            // Icon-only, so without this a screen reader announces "button"
+            // and nothing else. The input beside it carries the real label.
+            aria-label="Show suggestions"
             className="group-has-data-[slot=combobox-clear]/input-group:hidden data-pressed:bg-transparent"
             disabled={disabled}
           />

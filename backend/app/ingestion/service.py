@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.core.observability import tenders_ingested
 from app.core.time import utcnow
 from app.ingestion.adapters.base import RawDocument, TenderIn
 from app.ingestion.blobstore import BlobStore, get_blob_store, tender_document_key
@@ -133,6 +134,7 @@ async def upsert_tender(
         tender.last_seen_at = now
         if tender.content_hash == content_hash:
             await session.flush()
+            tenders_ingested.labels(source=source.code, outcome="unchanged").inc()
             logger.debug("tender_unchanged", tender_id=str(tender.id))
             return UpsertResult(tender.id, UpsertOutcome.UNCHANGED, tender.version)
 
@@ -152,6 +154,7 @@ async def upsert_tender(
             blob_store=blob_store,
         )
 
+    tenders_ingested.labels(source=source.code, outcome=outcome.value).inc()
     logger.info(
         "tender_upserted",
         tender_id=str(tender.id),

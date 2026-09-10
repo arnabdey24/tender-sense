@@ -19,6 +19,7 @@ from typing import Any
 from arq import cron
 
 from app.core.logging import configure_logging, get_logger
+from app.core.observability import init_sentry
 
 # Importing the aggregator configures the whole SQLAlchemy registry. Without it
 # a task that touches only one module's models cannot resolve foreign keys into
@@ -36,7 +37,9 @@ from app.jobs.tasks.maintenance import (
     close_expired_tenders,
     mark_source_health,
     ping,
+    purge_old_notifications,
     purge_old_runs,
+    purge_orphan_blobs,
     refresh_fx_rates,
 )
 from app.jobs.tasks.matching import process_tender, rematch_org
@@ -76,6 +79,8 @@ DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
     age_match_urgency,
     mark_source_health,
     purge_old_runs,
+    purge_old_notifications,
+    purge_orphan_blobs,
     refresh_fx_rates,
     notify_instant,
     notify_tender_updated,
@@ -88,6 +93,7 @@ DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
 
 async def startup(ctx: dict[str, Any]) -> None:
     configure_logging()
+    init_sentry(f"worker:{ctx.get('queue', 'default')}")
     logger.info("worker_started", queue=ctx.get("queue"))
 
 
@@ -109,6 +115,10 @@ class WorkerSettings:
         cron(close_expired_tenders, hour={2}, minute=10, run_at_startup=False),
         cron(refresh_fx_rates, hour={2}, minute=15, run_at_startup=False),
         cron(purge_old_runs, hour={2}, minute=20, run_at_startup=False),
+        cron(purge_old_notifications, hour={2}, minute=22, run_at_startup=False),
+        # Weekly rather than nightly: it walks the whole blob volume, and the
+        # leak it fixes accumulates slowly.
+        cron(purge_orphan_blobs, weekday={6}, hour={3}, minute=0, run_at_startup=False),
         cron(mark_source_health, hour={2}, minute=25, run_at_startup=False),
         # Urgency moves with the clock rather than with any input, so it is
         # re-derived hourly instead of waiting for a re-match that never comes.

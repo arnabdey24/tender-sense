@@ -1,7 +1,7 @@
 # Edge proxy for the whole stack.
 #
 # SITE_ADDRESS defaults to :80 (plain HTTP, for local runs). Set DOMAIN in .env
-# to a hostname and Caddy obtains a certificate for it automatically.
+# to a hostname and Caddy obtains and renews a certificate for it automatically.
 #
 # The placeholder must never expand to an empty string: a line starting with
 # `{` is parsed as Caddy's global options block, which fails with
@@ -10,12 +10,36 @@
 {$SITE_ADDRESS} {
 	encode gzip zstd
 
+	# Headers the SPA needs and the API sets for itself. They live here too
+	# because the app is served by this proxy as static files — nothing else
+	# is in a position to add them to an index.html response.
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		Cross-Origin-Opener-Policy same-origin
+		# The SPA loads only its own bundle and talks only to its own origin.
+		# `unsafe-inline` for styles is what Tailwind's runtime style injection
+		# needs; scripts get no such exemption, which is the half that matters.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+		# Served over TLS only, so it cannot pin a plain-HTTP dev host.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
 	handle /api/* {
 		reverse_proxy api:8000
 	}
 
 	handle /openapi.json {
 		reverse_proxy api:8000
+	}
+
+	# Prometheus scrapes this. It is not authenticated, so it stays on the
+	# compose network rather than being proxied to the internet.
+	handle /metrics {
+		respond "Not found" 404
 	}
 
 	handle {

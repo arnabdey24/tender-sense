@@ -14,6 +14,7 @@ from fastapi import APIRouter, Body, Path, Query
 
 from app.core.deps import CurrentOrg, DbSession, RequireOrgAdmin
 from app.core.exceptions import NotFoundError
+from app.core.rate_limit import limit_org_work
 from app.modules.profiles.service import get_or_create_profile, schedule_rematch
 from app.modules.rules import preview as preview_module
 from app.modules.rules import service
@@ -234,7 +235,12 @@ async def preview_draft(
 
     Per-rule counts are the useful part: "42 became ineligible" is alarming but
     useless, while "the certification rule rejected 42" names the line to relax.
+
+    Rate limited per organization: this scans up to two thousand tenders and
+    evaluates every rule against each of them, which a builder that previewed
+    on every keystroke would do continuously.
     """
+    await limit_org_work(ctx.org_id, operation="rule-preview", limit=60, window_seconds=300)
     profile = await get_or_create_profile(db, ctx.org_id)
     return await preview_module.preview(
         db, definition=data.definition, profile=profile, limit=limit

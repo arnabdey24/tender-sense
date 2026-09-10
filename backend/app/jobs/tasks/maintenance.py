@@ -10,6 +10,7 @@ makes every cross-currency rule undecidable.
 from __future__ import annotations
 
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Any, cast
 
 import httpx
@@ -20,13 +21,21 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.time import utcnow
 from app.db.session import session_scope
+from app.ingestion.blobstore import get_blob_store
 from app.jobs.runs import JobRun, ScraperRun
 from app.jobs.tracking import tracked_job
 from app.modules.matching.models import TenderMatch
 from app.modules.matching.scoring import urgency_for
+from app.modules.notifications.models import Notification, NotificationLedger
 from app.modules.orgs.models import Organization
 from app.modules.rules.models import FxRate
-from app.modules.tenders.models import SourceHealth, Tender, TenderSource, TenderStatus
+from app.modules.tenders.models import (
+    SourceHealth,
+    Tender,
+    TenderDocument,
+    TenderSource,
+    TenderStatus,
+)
 
 logger = get_logger(__name__)
 
@@ -216,3 +225,79 @@ async def refresh_fx_rates(ctx: dict[str, Any]) -> dict[str, Any]:
 
     logger.info("fx_refreshed", base=base, currencies=stored)
     return {"base": base, "currencies": stored, "as_of": as_of.isoformat()}
+
+
+@tracked_job
+async def purge_old_notifications(ctx: dict[str, Any]) -> dict[str, Any]:
+    """Sweep the in-app centre and the send ledger.
+
+    The ledger is kept far longer than the notifications, because deleting a
+    ledger row is what makes a message sendable again. Purging it early would
+    re-send a year-old deadline reminder to someone who has long since bid.
+    """
+    now = utcnow()
+    notification_cutoff = now - timedelta(days=settings.notification_retention_days)
+    ledger_cutoff = now - timedelta(days=settings.ledger_retention_days)
+
+    async with session_scope() as session:
+        notifications = cast(
+            CursorResult[Any],
+            await session.execute(
+                delete(Notification).where(Notification.created_at < notification_cutoff)
+            ),
+        ).rowcount
+        ledger = cast(
+            CursorResult[Any],
+            await session.execute(
+                delete(NotificationLedger).where(NotificationLedger.created_at < ledger_cutoff)
+            ),
+        ).rowcount
+
+    result = {"notifications": notifications or 0, "ledger": ledger or 0}
+    logger.info("notifications_purged", **result)
+    return result
+
+
+@tracked_job
+async def purge_orphan_blobs(ctx: dict[str, Any], dry_run: bool = False) -> dict[str, Any]:
+    """Delete stored payloads that no document row points at any more.
+
+    A payload is written to disk before its row is committed, and deleting a
+    source cascades the rows away without touching the files — so on a
+    long-running single VM this is the one thing standing between the blob
+    volume and a slow, invisible disk leak.
+
+    The set of known keys is read *first*. Reading it afterwards would race a
+    scrape that stored a payload mid-sweep and delete a file whose row was
+    committed a moment later.
+    """
+    store = get_blob_store()
+
+    async with session_scope() as session:
+        known = set((await session.scalars(select(TenderDocument.storage_key))).all())
+
+    removed = 0
+    bytes_freed = 0
+    scanned = 0
+    for key in store.iter_keys():
+        scanned += 1
+        if key in known:
+            continue
+        path = Path(settings.blob_storage_dir) / key
+        size = path.stat().st_size if path.exists() else 0
+        if dry_run:
+            removed += 1
+            bytes_freed += size
+            continue
+        if await store.delete(key):
+            removed += 1
+            bytes_freed += size
+
+    result = {
+        "scanned": scanned,
+        "removed": removed,
+        "bytes_freed": bytes_freed,
+        "dry_run": dry_run,
+    }
+    logger.info("orphan_blobs_purged", **result)
+    return result

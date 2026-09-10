@@ -22,6 +22,7 @@ import { Route as AuthVerifyEmailRouteImport } from './routes/_auth/verify-email
 import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
 import { Route as NotificationsUnsubscribeRouteImport } from './routes/notifications/unsubscribe'
 import { Route as NotificationsVerifyRouteImport } from './routes/notifications/verify'
+import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
 import { Route as AppAppIndexRouteImport } from './routes/_app/app/index'
 import { Route as AppAppDashboardRouteImport } from './routes/_app/app/dashboard'
 import { Route as AppAppMatchesRouteImport } from './routes/_app/app/matches'
@@ -103,6 +104,11 @@ const NotificationsVerifyRoute = NotificationsVerifyRouteImport.update({
   id: '/notifications/verify',
   path: '/notifications/verify',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppAdminIndexRoute = AppAdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppAppIndexRoute = AppAppIndexRouteImport.update({
   id: '/app/',
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/app/pipeline': typeof AppAppPipelineRoute
   '/app/today': typeof AppAppTodayRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/admin/': typeof AppAdminIndexRoute
   '/app/': typeof AppAppIndexRoute
   '/onboarding/': typeof AppOnboardingIndexRoute
   '/app/settings/members': typeof AppAppSettingsMembersRoute
@@ -240,6 +247,7 @@ export interface FileRoutesByTo {
   '/app/pipeline': typeof AppAppPipelineRoute
   '/app/today': typeof AppAppTodayRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/admin': typeof AppAdminIndexRoute
   '/app': typeof AppAppIndexRoute
   '/onboarding': typeof AppOnboardingIndexRoute
   '/app/settings/members': typeof AppAppSettingsMembersRoute
@@ -273,6 +281,7 @@ export interface FileRoutesById {
   '/_app/app/pipeline': typeof AppAppPipelineRoute
   '/_app/app/today': typeof AppAppTodayRoute
   '/auth/google/callback': typeof AuthGoogleCallbackRoute
+  '/_app/admin/': typeof AppAdminIndexRoute
   '/_app/app/': typeof AppAppIndexRoute
   '/_app/onboarding/': typeof AppOnboardingIndexRoute
   '/_app/app/settings/members': typeof AppAppSettingsMembersRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/today'
     | '/auth/google/callback'
+    | '/admin/'
     | '/app/'
     | '/onboarding/'
     | '/app/settings/members'
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/app/pipeline'
     | '/app/today'
     | '/auth/google/callback'
+    | '/admin'
     | '/app'
     | '/onboarding'
     | '/app/settings/members'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/_app/app/pipeline'
     | '/_app/app/today'
     | '/auth/google/callback'
+    | '/_app/admin/'
     | '/_app/app/'
     | '/_app/onboarding/'
     | '/_app/app/settings/members'
@@ -483,6 +495,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/notifications/verify'
       preLoaderRoute: typeof NotificationsVerifyRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/admin/': {
+      id: '/_app/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AppAdminIndexRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/app/': {
       id: '/_app/app/'
@@ -613,6 +632,7 @@ interface AppRouteChildren {
   AppAppNotificationsRoute: typeof AppAppNotificationsRoute
   AppAppPipelineRoute: typeof AppAppPipelineRoute
   AppAppTodayRoute: typeof AppAppTodayRoute
+  AppAdminIndexRoute: typeof AppAdminIndexRoute
   AppAppIndexRoute: typeof AppAppIndexRoute
   AppOnboardingIndexRoute: typeof AppOnboardingIndexRoute
   AppAppSettingsMembersRoute: typeof AppAppSettingsMembersRoute
@@ -633,6 +653,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAppNotificationsRoute: AppAppNotificationsRoute,
   AppAppPipelineRoute: AppAppPipelineRoute,
   AppAppTodayRoute: AppAppTodayRoute,
+  AppAdminIndexRoute: AppAdminIndexRoute,
   AppAppIndexRoute: AppAppIndexRoute,
   AppOnboardingIndexRoute: AppOnboardingIndexRoute,
   AppAppSettingsMembersRoute: AppAppSettingsMembersRoute,

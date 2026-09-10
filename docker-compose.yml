@@ -14,12 +14,22 @@ x-backend-env: &backend-env
   BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173}
   SMTP_HOST: ${SMTP_HOST:-mailpit}
   SMTP_PORT: ${SMTP_PORT:-1025}
+  # A relay that wants credentials gets none unless these are passed through,
+  # and the failure is a rejected connection at send time rather than at boot.
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+  SMTP_SSL: ${SMTP_SSL:-false}
   EMAIL_FROM: ${EMAIL_FROM:-TenderSense <no-reply@tendersense.local>}
+  EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}
   AI_PROVIDER: ${AI_PROVIDER:-gemini}
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  AI_DAILY_TOKEN_BUDGET: ${AI_DAILY_TOKEN_BUDGET:-2000000}
   GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
   BLOB_STORAGE_DIR: /var/lib/tendersense/blobs
+  SENTRY_DSN: ${SENTRY_DSN:-}
+  RELEASE: ${RELEASE:-}
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
 
 services:

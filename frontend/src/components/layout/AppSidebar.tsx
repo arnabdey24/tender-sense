@@ -10,6 +10,7 @@ import {
   LogOutIcon,
   SettingsIcon,
   SparklesIcon,
+  WrenchIcon,
   UserRoundIcon,
   UsersIcon,
 } from "lucide-react"
@@ -49,6 +50,14 @@ const NAV_ITEMS = [
   { title: "Notifications", to: "/app/notifications", icon: BellIcon },
   { title: "Settings", to: "/app/settings", icon: SettingsIcon },
 ] as const
+
+//: Platform staff only. Kept out of NAV_ITEMS so it never renders for a
+//: customer, who would only get a redirect from it anyway.
+const STAFF_NAV = {
+  title: "Operations",
+  to: "/admin",
+  icon: WrenchIcon,
+} as const
 
 function initials(name: string | undefined, email: string | undefined) {
   const source = name?.trim() || email || "?"
@@ -110,6 +119,18 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {user?.is_superuser && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip={STAFF_NAV.title}
+                    isActive={pathname.startsWith(STAFF_NAV.to)}
+                    render={<Link to={STAFF_NAV.to} />}
+                  >
+                    <STAFF_NAV.icon />
+                    <span>{STAFF_NAV.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

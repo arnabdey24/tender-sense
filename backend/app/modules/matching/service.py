@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.explanation import explanation_to_text, templated_explanation
 from app.core.logging import get_logger
+from app.core.observability import matches_scored
 from app.core.time import utcnow
 from app.modules.matching.embedding_store import load_profile_vectors, load_tender_vectors
 from app.modules.matching.models import (
@@ -233,6 +234,7 @@ async def match_tender_for_org(
         )
         await session.flush()
 
+    matches_scored.labels(grade=grade.value).inc()
     logger.info(
         "tender_matched",
         org_id=str(org.id),

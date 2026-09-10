@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.core.observability import emails_delivered, notifications_queued
 from app.core.time import utcnow
 from app.modules.notifications.email.renderer import renderer
 from app.modules.notifications.models import RETRY_BACKOFF_MINUTES, EmailOutbox, EmailStatus
@@ -90,6 +91,7 @@ async def enqueue(
             return None
         email = existing
 
+    notifications_queued.labels(type=template_key).inc()
     logger.info(
         "email_enqueued",
         email_id=str(email.id),
@@ -136,6 +138,7 @@ async def mark_sent(
     message_id: str | None = None,
     now: datetime | None = None,
 ) -> None:
+    emails_delivered.labels(outcome="sent").inc()
     email.status = EmailStatus.SENT
     email.sent_at = now or utcnow()
     email.message_id = message_id
@@ -152,6 +155,7 @@ async def mark_failed(
 ) -> None:
     """Record a delivery failure and either reschedule or give up."""
     moment = now or utcnow()
+    emails_delivered.labels(outcome="failed").inc()
     email.attempts += 1
     email.last_error = error[:MAX_ERROR_LENGTH]
     if email.attempts >= settings.email_max_attempts:

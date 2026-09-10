@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
+from app.core.observability import record_source_health
 from app.core.time import utcnow
 from app.db.session import session_scope
 from app.ingestion.adapters import ADAPTERS, NoticeRef, build_adapter
@@ -79,6 +80,7 @@ async def _record_health(
             if source.consecutive_failures >= FAILURES_BEFORE_DOWN
             else SourceHealth.DEGRADED
         )
+    record_source_health(source.code, source.health.value)
     await session.flush()
 
 

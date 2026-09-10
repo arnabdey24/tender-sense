@@ -283,8 +283,17 @@ class TestProcessTender:
         await process_tender(ctx, str(tender.id))
 
         async with session_scope() as session:
+            match_id = await session.scalar(
+                select(TenderMatch.id).where(
+                    TenderMatch.org_id == org.id, TenderMatch.tender_id == tender.id
+                )
+            )
+            # Scoped to this match: the pool may hold other notices this org
+            # was scored against, and their history is not what is under test.
             entries = await session.scalar(
-                select(func.count(TenderMatchHistory.id)).where(TenderMatchHistory.org_id == org.id)
+                select(func.count(TenderMatchHistory.id)).where(
+                    TenderMatchHistory.match_id == match_id
+                )
             )
         assert entries == 1
 

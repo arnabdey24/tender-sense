@@ -156,6 +156,26 @@ async def in_app(org_id: Any) -> list[Notification]:
         return list(rows.all())
 
 
+async def digest_queued_for(org_id: Any) -> bool:
+    """Whether the dispatcher actually queued *this* organization.
+
+    The count it returns is global, and the database an integration run shares
+    may hold seeded organizations that are also due — so the assertion has to
+    name the tenant rather than count the queue.
+    """
+    from app.jobs.queue import get_queue
+
+    queue = await get_queue()
+    return bool(await queue.exists(f"arq:job:digest:{org_id}"))
+
+
+async def clear_digest_job(org_id: Any) -> None:
+    from app.jobs.queue import get_queue
+
+    queue = await get_queue()
+    await queue.delete(f"arq:job:digest:{org_id}")
+
+
 class TestInstantAlerts:
     async def test_a_strong_eligible_match_is_mailed_and_shown_in_app(self, scene: Fixture) -> None:
         await add_match(scene)
@@ -326,17 +346,20 @@ class TestDigestDispatcher:
         """08:00 in Dhaka is 02:00 UTC. Dispatching on server time would mail a
         Bangladeshi company its "morning" shortlist in the afternoon."""
         await set_preferences(scene.org.id, digest_time=time(8, 0), digest_timezone="Asia/Dhaka")
+        await clear_digest_job(scene.org.id)
 
         # 23:00 UTC is 05:00 the next day in Dhaka — before the send time.
         with time_machine.travel(datetime(2026, 9, 9, 23, 0, tzinfo=UTC), tick=False):
-            early = await digest_dispatcher({})
+            await digest_dispatcher({})
+        early = await digest_queued_for(scene.org.id)
 
         # 03:00 UTC is 09:00 in Dhaka, so the send time has passed.
         with time_machine.travel(datetime(2026, 9, 10, 3, 0, tzinfo=UTC), tick=False):
-            due = await digest_dispatcher({})
+            await digest_dispatcher({})
+        due = await digest_queued_for(scene.org.id)
 
-        assert early["queued"] == 0
-        assert due["queued"] >= 1
+        assert early is False
+        assert due is True
 
     async def test_it_does_not_queue_twice_in_one_local_day(self, scene: Fixture) -> None:
         """The dispatcher wakes four times an hour; the stamp is what stops four
@@ -347,19 +370,21 @@ class TestDigestDispatcher:
             digest_timezone="Asia/Dhaka",
             last_digest_sent_for=datetime(2026, 9, 10, tzinfo=UTC).date(),
         )
+        await clear_digest_job(scene.org.id)
 
         with time_machine.travel(datetime(2026, 9, 10, 3, 0, tzinfo=UTC), tick=False):
-            result = await digest_dispatcher({})
+            await digest_dispatcher({})
 
-        assert result["queued"] == 0
+        assert await digest_queued_for(scene.org.id) is False
 
     async def test_a_disabled_digest_is_never_queued(self, scene: Fixture) -> None:
         await set_preferences(scene.org.id, digest_enabled=False, digest_time=time(0, 1))
+        await clear_digest_job(scene.org.id)
 
         with time_machine.travel(datetime(2026, 9, 10, 12, 0, tzinfo=UTC), tick=False):
-            result = await digest_dispatcher({})
+            await digest_dispatcher({})
 
-        assert result["queued"] == 0
+        assert await digest_queued_for(scene.org.id) is False
 
 
 class TestDeadlineReminders:

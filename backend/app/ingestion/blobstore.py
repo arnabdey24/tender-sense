@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+from collections.abc import Iterator
 from datetime import date
 from pathlib import Path
 from typing import Protocol
@@ -54,6 +55,16 @@ class BlobStore(Protocol):
 
     async def delete(self, key: str) -> bool: ...
 
+    def iter_keys(self) -> Iterator[str]:
+        """Every key currently stored.
+
+        Needed to find orphans: a payload is written before its row is
+        committed, so a rolled-back transaction — or a cascade that deleted the
+        rows but not the files — leaves bytes nothing points at. On a single VM
+        that is a slow disk leak with no other way to see it.
+        """
+        ...
+
 
 class LocalFileBlobStore:
     """Gzipped files under a directory, typically a mounted Docker volume."""
@@ -91,7 +102,21 @@ class LocalFileBlobStore:
         if not path.exists():
             return False
         path.unlink()
+        # Directories are dated and per-notice, so an emptied one is finished
+        # rather than waiting for the next write.
+        for parent in (path.parent, path.parent.parent):
+            try:
+                parent.rmdir()
+            except OSError:
+                break
         return True
+
+    def iter_keys(self) -> Iterator[str]:
+        root = self.root.resolve()
+        if not root.exists():
+            return
+        for path in sorted(root.rglob("*.gz")):
+            yield str(path.relative_to(root))
 
 
 _store: BlobStore | None = None

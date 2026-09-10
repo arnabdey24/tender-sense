@@ -40,6 +40,9 @@ Once the stack is up:
 | Mailpit inbox | http://localhost:8025 |
 | Vite dev server | http://localhost:5173 after `make fe-dev` |
 
+Sign in as a superuser to reach `/admin` — background job runs, the mail queue
+and model spend. Ordinary members see portal health under Settings → Sources.
+
 If any of those ports is already taken on your machine, change `API_PORT_HOST`,
 `HTTP_PORT` or `HTTPS_PORT` in `.env`. When you move the API, point the Vite dev
 proxy at it with `VITE_API_PROXY_TARGET` in `frontend/.env.local`.
@@ -57,6 +60,7 @@ make test                    # unit tests
 make test-all                # adds integration tests (needs Postgres and Redis)
 make migration M="add users" # autogenerate a migration
 make migrate                 # apply migrations
+make bench                   # time the pipeline against the <60s/tender budget
 ```
 
 Integration tests skip themselves when Postgres or Redis is unreachable. To run
@@ -98,6 +102,23 @@ One VM running the compose stack:
 cp .env.example .env      # set SECRET_KEY, DOMAIN, SMTP and Gemini credentials
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 ```
+
+Setting `DOMAIN` is what turns TLS on: Caddy obtains and renews the certificate
+itself. The production overlay publishes only ports 80 and 443 — Postgres and
+Redis stay on the compose network, because a mapped database port on a single
+VM is reachable from the internet the moment it exists.
+
+```bash
+make backup               # database dump + blob archive into ./backups
+```
+
+Back both up: the database holds the accounts and decisions, and the blob volume
+holds raw portal payloads, which for many closed notices is the only copy left
+anywhere — and the only thing that makes a broken parser fixable after the fact.
+
+**[docs/RUNBOOK.md](docs/RUNBOOK.md)** covers the rest: what to check when a
+portal goes quiet, why mail is not arriving, how to restore a backup, which
+metrics are worth alerting on, and what is safe to restart.
 
 Caddy terminates TLS for `DOMAIN` automatically. Outbound email needs SPF and
 DKIM configured for the sending domain.

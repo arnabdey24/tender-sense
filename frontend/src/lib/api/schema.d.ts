@@ -623,7 +623,9 @@ export interface paths {
          * Re-score now
          * @description Queue a re-score without changing anything.
          *
-         *     Repeated calls inside the debounce window collapse into one run.
+         *     Repeated calls inside the debounce window collapse into one run, so the
+         *     limit here is about the queue rather than the work: it stops an impatient
+         *     admin filling it with jobs that will each re-score the whole open pool.
          */
         post: operations["trigger_rematch_api_v1_profile_rematch_post"];
         delete?: never;
@@ -1090,6 +1092,10 @@ export interface paths {
          *
          *     Per-rule counts are the useful part: "42 became ineligible" is alarming but
          *     useless, while "the certification rule rejected 42" names the line to relax.
+         *
+         *     Rate limited per organization: this scans up to two thousand tenders and
+         *     evaluates every rule against each of them, which a builder that previewed
+         *     on every keystroke would do continuously.
          */
         post: operations["preview_draft_api_v1_rule_sets_preview_post"];
         delete?: never;

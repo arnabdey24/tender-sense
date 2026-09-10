@@ -103,6 +103,10 @@ class Settings(BaseSettings):
     # --- retention & housekeeping ---
     job_run_retention_days: int = 30
     """How long ``job_runs`` and ``scraper_runs`` are kept before the nightly purge."""
+    notification_retention_days: int = 90
+    """In-app notifications older than this are swept; the tenders they point at stay."""
+    ledger_retention_days: int = 180
+    """Send records. Must outlive the longest reminder offset by a wide margin."""
     source_stale_hours: int = 36
     """No successful scrape in this long marks a source degraded."""
     fx_rates_url: str = "https://open.er-api.com/v6/latest"
@@ -113,6 +117,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_json: bool = True
     sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.1
+    release: str | None = None
+    """Version string reported to Sentry; set from the image tag at deploy time."""
+    metrics_enabled: bool = True
 
     @model_validator(mode="after")
     def _require_a_strong_secret_in_production(self) -> Settings:

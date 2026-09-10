@@ -9,7 +9,10 @@ import { Separator } from "@/components/ui/separator"
 function ItemGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      role="list"
+      // Deliberately not `role="list"`: ARIA requires a list's children to be
+      // listitems, and an Item renders as whatever it was given — usually a
+      // link. Claiming the role would announce a malformed list and strip the
+      // link semantics that a screen-reader user actually navigates by.
       data-slot="item-group"
       className={cn(
         "group/item-group flex w-full flex-col gap-4 has-data-[size=sm]:gap-2.5 has-data-[size=xs]:gap-2",

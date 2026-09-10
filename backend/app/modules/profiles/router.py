@@ -13,6 +13,7 @@ from fastapi import APIRouter, Path, status
 
 from app.ai.schemas import Sector
 from app.core.deps import CurrentOrg, DbSession, RequireOrgAdmin
+from app.core.rate_limit import limit_org_work
 from app.modules.profiles import service
 from app.modules.profiles.schemas import (
     CertificationIn,
@@ -73,8 +74,11 @@ async def read_completeness(ctx: CurrentOrg, db: DbSession) -> CompletenessRead:
 async def trigger_rematch(ctx: RequireOrgAdmin) -> RematchResponse:
     """Queue a re-score without changing anything.
 
-    Repeated calls inside the debounce window collapse into one run.
+    Repeated calls inside the debounce window collapse into one run, so the
+    limit here is about the queue rather than the work: it stops an impatient
+    admin filling it with jobs that will each re-score the whole open pool.
     """
+    await limit_org_work(ctx.org_id, operation="rematch", limit=10, window_seconds=3600)
     return await _rematch(ctx.org_id, reason="manual")
 
 

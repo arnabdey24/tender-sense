@@ -201,7 +201,7 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | M4 Rules + explanations + decisions + eval (4–5 d) | **done** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
 | M5 Ingestion (5 d) | **done** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
 | M6 Notifications (4 d) | **done** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
-| M7 Hardening (3–4 d) | **in progress** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
+| M7 Hardening (3–4 d) | **done** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
 
 ### Progress log
 
@@ -868,13 +868,94 @@ which addresses are confirmed, and the two unauthenticated pages an emailed link
 lands on. The dashboard says once, where it will be read, when an organization
 has no confirmed address at all: matches are piling up in an app nobody has open.
 
+**M7 done — the parts that only matter after launch.**
+
+**Errors go somewhere.** Sentry is initialised in the API and both workers, and
+events are scrubbed before they leave: this application puts verification,
+reset and invitation tokens in query strings, and one of those in a third-party
+dashboard is a working account takeover. The scrubber is tested, including that
+it does *not* eat the context that makes an event useful.
+
+**Metrics say whether the product works, not whether the server is up.** HTTP
+latency answers the second question and nothing else. Alongside it now:
+notices ingested per source, matches by grade, mail queued and delivered, model
+tokens by purpose, job duration by outcome, and a per-source health gauge. The
+runbook names which of them are worth waking someone for.
+
+**Housekeeping the system rots without.** Retention sweeps for run records, the
+in-app centre and the send ledger — with the ledger kept far longer than the
+notifications, because deleting a ledger row is what makes a message sendable
+again, and an early purge would re-send a year-old reminder. A weekly orphan
+sweep over the blob volume closes the one leak with no other way to see it: a
+payload is written before its row is committed, and deleting a source cascades
+the rows away without touching the files.
+
+**Browser hardening on both sides.** The API sends `nosniff`, `DENY`,
+`frame-ancestors 'none'` and a strict referrer policy on every response; Caddy
+sends the SPA's own CSP, since nothing else is in a position to add headers to
+an `index.html`. HSTS is production-only, because pinning a developer's
+localhost to HTTPS for a year is a lasting way to ruin an afternoon. Every
+response also carries a request id, and honours one the caller supplied, so a
+trace started at the proxy survives into the logs.
+
+**Rate limits now cover work, not just guessing.** A rule preview scans up to
+two thousand tenders and a re-match re-scores the open pool. Neither is an
+attack; a customer holding down a button is enough to make a single VM
+unresponsive for every other tenant on it. The limits are keyed by organization
+rather than by user, because the cost lands on the shared machine.
+
+**The security review is a test file, not a document**, because a review is only
+true on the day it was written. `tests/integration/test_security.py` enumerates
+every route and fails on one that takes no authenticated dependency — so the
+*next* forgotten guard fails in CI rather than in production. Public paths are
+listed with the reason each one is public. It also pins tenant isolation, staff
+gating, token hashing, header presence, and that a settings `repr` in a crash
+traceback cannot print the database password.
+
+**Two real accessibility defects, found by adding the automated pass.** Every
+combobox in the app — the country picker in onboarding, both timezone pickers —
+had an icon-only trigger that a screen reader announced as "button" and nothing
+else. And `ItemGroup` declared `role="list"` while its children rendered as
+links, which announces a malformed list *and* strips the link semantics a
+reader navigates by; the role is gone and the reason is recorded where someone
+would otherwise put it back. A third was mine: `StringCombobox` silently
+dropped `aria-label`, because TypeScript does not excess-property check
+hyphenated JSX attributes — it type-checked and did nothing.
+
+**The pipeline is comfortably inside its budget.** `scripts/bench_process_tender.py`
+puts a realistic notice through extraction, embedding, scoring, rules and
+explanations and prints a verdict against the 60 s/tender target. With
+`AI_PROVIDER=fake` — everything the code controls — the worst of three was
+0.14 s. The real number is whatever Gemini adds, and the script exists to
+measure both.
+
+**CI grew the checks that would have caught the above.** eslint, mypy over the
+scripts too, a full migration downgrade-to-base and re-upgrade (an enum left
+behind makes the *next* upgrade fail, on a production database, mid-incident),
+a contract check that regenerates the typed client from the live OpenAPI
+document and fails on drift, and validation of both compose stacks and the
+Caddyfile.
+
+**Production compose closes the doors.** Postgres and Redis publish no host
+port — on a single VM a mapped database port is reachable from the internet the
+moment it exists. Mailpit is profiled off, since leaving it running would
+publish a web UI showing every message the system has ever sent. `no-new-privileges`
+everywhere, and the API takes proxy headers from Caddy so rate limits bucket by
+real client address rather than by the proxy.
+
+A gap that was silently costing production email: `SMTP_USER` and
+`SMTP_PASSWORD` were never passed into the containers, so any relay requiring
+authentication would have failed at send time with credentials that were set
+correctly in `.env`. Sentry's DSN, the reply-to address and the token budget
+were missing the same way.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.
 - **Live** (`@pytest.mark.live`, manual, `GEMINI_API_KEY=... uv run pytest -m live`): Gemini model-id resolution, dims/normalization, batch fan-out, schema acceptance, extraction accuracy and hallucination restraint; World Bank endpoint shape; e-GP servlet + detail selectors.
 - **Evaluation**: `scripts/eval_matching.py` → precision@5 / recall@10 / nDCG@10 for keyword baseline vs semantic vs hybrid on `data/eval/labels.csv`; `scripts/bench_process_tender.py` proves < 60 s for one tender × N orgs.
 - **Frontend**: Vitest units (RhfField, GradeBadge, DeadlineCountdown, RuleRow editor switching, filters parse, client 401→refresh→replay, DecisionPanel optimistic rollback); Playwright e2e: register → onboard → shortlist; login → detail → bid → pipeline; invite accept; reset password; rules preset → preview → save.
-- **CI**: ruff, mypy, pytest (unit + integration), tsc, vitest, openapi types freshness check, docker builds.
+- **CI**: ruff, mypy (app + scripts), pytest (unit + integration), eslint, tsc, vitest (including an axe pass over the key screens), a migration downgrade/re-upgrade round trip, an OpenAPI contract freshness check, compose and Caddyfile validation, docker builds.
 - **Manual end-to-end**: `make dev && make seed` → register in browser → complete onboarding → see graded shortlist → trigger `POST /admin/sources/{wb}/run` → new World Bank notices appear → instant alert lands in Mailpit.
 
 ## Risks

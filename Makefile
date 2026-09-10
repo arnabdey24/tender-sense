@@ -82,6 +82,14 @@ test: ## Run backend unit tests
 test-all: ## Run all backend tests including integration (needs Docker)
 	$(BACKEND) uv run pytest -m "not live"
 
+.PHONY: bench
+bench: ## Time the pipeline against the <60s/tender budget
+	$(BACKEND) uv run python -m scripts.bench_process_tender --tenders 3
+
+.PHONY: backup
+backup: ## Dump the database and archive the blob volume into ./backups
+	./scripts/backup.sh
+
 .PHONY: coverage
 coverage: ## Run all backend tests with a coverage report
 	$(BACKEND) uv run pytest -m "not live" --cov=app --cov-report=term-missing

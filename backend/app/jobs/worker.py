@@ -26,14 +26,21 @@ from app.core.logging import configure_logging, get_logger
 from app.db import models as _models  # noqa: F401
 from app.db.session import dispose_engine
 
-# Importing the adapters registers them, so a source's `adapter_key` resolves.
-from app.ingestion.adapters import egp_bd as _egp_bd  # noqa: F401
-from app.ingestion.adapters import worldbank as _worldbank  # noqa: F401
+# Importing the package registers every adapter, so `adapter_key` resolves.
+from app.ingestion import adapters as _adapters  # noqa: F401
 from app.jobs.queue import QUEUE_DEFAULT, QUEUE_SCRAPE, redis_settings
 from app.jobs.tasks.email import PUMP_CRON_SECOND, pump_email_outbox
 from app.jobs.tasks.explanations import generate_explanations
-from app.jobs.tasks.maintenance import ping
+from app.jobs.tasks.maintenance import (
+    age_match_urgency,
+    close_expired_tenders,
+    mark_source_health,
+    ping,
+    purge_old_runs,
+    refresh_fx_rates,
+)
 from app.jobs.tasks.matching import process_tender, rematch_org
+from app.jobs.tasks.reprocessing import reparse_source, reprocess_tender
 from app.jobs.tasks.scraping import scrape_due_sources, scrape_source
 
 logger = get_logger(__name__)
@@ -43,7 +50,9 @@ COMMON_FUNCTIONS: list[Any] = [ping]
 
 #: Only the scrape worker runs these. It is capped at one job at a time, so
 #: portals are visited in series and a slow one cannot fan out into a burst.
-SCRAPE_QUEUE_FUNCTIONS: list[Any] = [*COMMON_FUNCTIONS, scrape_source]
+#: Reparsing sits here too: it touches no portal, but it walks the same rows a
+#: live scrape writes, and the two running at once would fight over every notice.
+SCRAPE_QUEUE_FUNCTIONS: list[Any] = [*COMMON_FUNCTIONS, scrape_source, reparse_source]
 
 #: Tasks only the default worker runs. The scrape worker must not drain the
 #: outbox: it is capped at one job at a time and long scrapes would stall mail.
@@ -52,8 +61,14 @@ DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
     pump_email_outbox,
     process_tender,
     rematch_org,
+    reprocess_tender,
     generate_explanations,
     scrape_due_sources,
+    close_expired_tenders,
+    age_match_urgency,
+    mark_source_health,
+    purge_old_runs,
+    refresh_fx_rates,
 ]
 
 
@@ -75,6 +90,15 @@ class WorkerSettings:
         cron(pump_email_outbox, second=set(PUMP_CRON_SECOND), run_at_startup=False),
         # Four passes a day, off-peak in Dhaka, to stay polite to an old portal.
         cron(scrape_due_sources, hour={2, 8, 14, 20}, minute=0, run_at_startup=False),
+        # Housekeeping in the quiet hour, each a few minutes apart so a slow
+        # one does not delay the next.
+        cron(close_expired_tenders, hour={2}, minute=10, run_at_startup=False),
+        cron(refresh_fx_rates, hour={2}, minute=15, run_at_startup=False),
+        cron(purge_old_runs, hour={2}, minute=20, run_at_startup=False),
+        cron(mark_source_health, hour={2}, minute=25, run_at_startup=False),
+        # Urgency moves with the clock rather than with any input, so it is
+        # re-derived hourly instead of waiting for a re-match that never comes.
+        cron(age_match_urgency, minute={5}, run_at_startup=False),
     ]
     queue_name = QUEUE_DEFAULT
     #: Seeds arq's job context so tasks and log lines know which queue they ran on.

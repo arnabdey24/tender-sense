@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -107,3 +107,71 @@ class ReprocessResponse(BaseModel):
     tender_id: UUID
     enqueued: bool
     job_id: str | None = None
+
+
+class ReparseResponse(BaseModel):
+    """A replay of stored payloads through the adapter's parser."""
+
+    source_code: str
+    enqueued: bool
+    job_id: str | None = None
+
+
+class JobRunRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    status: str
+    started_at: datetime
+    finished_at: datetime | None = None
+    duration_ms: int
+    result: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
+
+
+class JobTriggerRequest(BaseModel):
+    job: str = Field(min_length=1, max_length=100)
+
+
+class JobTriggerResponse(BaseModel):
+    job: str
+    job_id: str | None = None
+    enqueued: bool
+
+
+class EmailOutboxRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    to_email: str
+    template_key: str
+    subject: str
+    status: str
+    attempts: int
+    next_attempt_at: datetime
+    last_error: str | None = None
+    sent_at: datetime | None = None
+    created_at: datetime
+
+
+class EmailRetryResponse(BaseModel):
+    email_id: UUID
+    requeued: bool
+
+
+class AiUsageRow(BaseModel):
+    day: date
+    purpose: str
+    model: str
+    calls: int
+    tokens_in: int
+    tokens_out: int
+
+
+class AiUsageSummary(BaseModel):
+    """Spend against the daily cap, so an exhausted budget is visible."""
+
+    daily_token_budget: int
+    spent_today: int
+    rows: list[AiUsageRow] = Field(default_factory=list)

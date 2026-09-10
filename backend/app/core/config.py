@@ -100,6 +100,15 @@ class Settings(BaseSettings):
     scraper_request_delay_seconds: float = 2.0
     scraper_max_pages_per_run: int = 20
 
+    # --- retention & housekeeping ---
+    job_run_retention_days: int = 30
+    """How long ``job_runs`` and ``scraper_runs`` are kept before the nightly purge."""
+    source_stale_hours: int = 36
+    """No successful scrape in this long marks a source degraded."""
+    fx_rates_url: str = "https://open.er-api.com/v6/latest"
+    """Base URL of a free rates endpoint; ``/{base}`` is appended. Blank disables the refresh."""
+    fx_base_currency: str = "USD"
+
     # --- observability ---
     log_level: str = "INFO"
     log_json: bool = True

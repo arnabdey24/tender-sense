@@ -57,11 +57,22 @@ export const useAuthStore = create<AuthState>()((set) => ({
 
 /** Role of the signed-in user inside the currently active organization. */
 export function activeRole(state: AuthState): OrgRole | null {
-  const membership = state.memberships.find((m) => m.org_id === state.activeOrgId)
+  const membership = state.memberships.find(
+    (m) => m.org_id === state.activeOrgId
+  )
   return membership?.role ?? null
 }
 
 /** Convenience hook — `true` when the user administers the active org. */
 export function useIsOrgAdmin(): boolean {
   return useAuthStore((s) => activeRole(s) === "admin")
+}
+
+/**
+ * Platform staff, not organization admins. Gates the operator tools — running
+ * a scrape, probing a portal, replaying stored pages — which act on the shared
+ * pool every tenant reads from.
+ */
+export function useIsSuperuser(): boolean {
+  return useAuthStore((s) => s.user?.is_superuser === true)
 }

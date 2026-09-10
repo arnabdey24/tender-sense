@@ -57,5 +57,12 @@ export const qk = {
       ["decisions", "list", params] as const,
     forTender: (tenderId: string) => ["decisions", "tender", tenderId] as const,
   },
+  admin: {
+    all: () => ["admin"] as const,
+    sources: () => ["admin", "sources"] as const,
+    scraperRuns: (sourceId?: string) =>
+      ["admin", "scraper-runs", sourceId ?? "all"] as const,
+    jobRuns: (name?: string) => ["admin", "job-runs", name ?? "all"] as const,
+  },
   health: () => ["health"] as const,
 } as const

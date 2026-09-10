@@ -18,12 +18,13 @@ from sqlalchemy import delete, select
 
 from app.db import models as _models  # noqa: F401  - configures the ORM registry
 from app.db.session import session_scope
+from app.ingestion.adapters import build_adapter
 from app.ingestion.adapters.base import ADAPTERS, NoticeRef, RawDocument, SourceHealthReport
 from app.ingestion.adapters.worldbank import WorldBankAdapter
 from app.ingestion.blobstore import LocalFileBlobStore
 from app.ingestion.service import upsert_tender
 from app.jobs.runs import RunStatus, ScraperRun
-from app.jobs.tasks.scraping import build_adapter, scrape_due_sources, scrape_source
+from app.jobs.tasks.scraping import scrape_due_sources, scrape_source
 from app.modules.tenders.models import SourceHealth, Tender, TenderDocument, TenderSource
 
 FIXTURE = Path(__file__).parent.parent / "fixtures" / "worldbank" / "listing.json"
@@ -144,8 +145,19 @@ class TestBuildAdapter:
         assert adapter.base_url.startswith("https://")
 
     def test_an_unknown_adapter_key_is_a_clear_error(self) -> None:
-        with pytest.raises(LookupError, match="No adapter registered"):
+        """The message names what *is* known, so a typo is obvious."""
+        with pytest.raises(LookupError, match="Unknown adapter 'not_a_portal'"):
             build_adapter("not_a_portal")
+
+    def test_every_shipped_adapter_is_registered_by_importing_the_package(self) -> None:
+        """The API resolves adapters too, for health probes and validation.
+
+        Registration happens by import side effect, so a process that never
+        imported these modules sees an empty registry and reports every portal
+        unreachable — which is why the package does the importing, not the
+        entrypoint that happened to remember.
+        """
+        assert {"worldbank", "egp_bd", "egp_bd_playwright"} <= set(ADAPTERS)
 
 
 class TestScrapeRun:
@@ -292,7 +304,7 @@ class TestScrapeRun:
 
         result = await scrape_source({}, str(source.id))
 
-        assert "No adapter registered" in result["error"]
+        assert "Unknown adapter 'not_a_portal'" in result["error"]
         runs = await runs_for(source.id)
         assert runs[0].status is RunStatus.FAILED
 

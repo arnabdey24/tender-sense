@@ -105,6 +105,23 @@ async def _run_extraction(
     return extraction
 
 
+async def enqueue_processing(tender_id: str) -> str | None:
+    """Queue extraction, embedding and matching for one notice.
+
+    Deduplicated by tender, so a notice seen twice in one scrape — or replayed
+    while a previous pass is still queued — costs one pipeline run, not two.
+    """
+    from app.jobs.queue import get_queue
+
+    try:
+        queue = await get_queue()
+        job = await queue.enqueue_job("process_tender", tender_id, _job_id=f"process:{tender_id}")
+    except Exception as exc:  # pragma: no cover - Redis down must not lose the row
+        logger.warning("process_enqueue_failed", tender_id=tender_id, error=str(exc))
+        return None
+    return job.job_id if job else None
+
+
 async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
     """Extract, embed and match one notice across every tenant."""
     client = _client(ctx)

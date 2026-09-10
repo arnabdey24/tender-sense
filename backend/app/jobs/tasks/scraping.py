@@ -24,10 +24,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.logging import get_logger
 from app.core.time import utcnow
 from app.db.session import session_scope
-from app.ingestion.adapters.base import ADAPTERS, NoticeRef
+from app.ingestion.adapters import ADAPTERS, NoticeRef, build_adapter
 from app.ingestion.service import UpsertOutcome, upsert_tender
 from app.jobs.queue import get_queue
 from app.jobs.runs import RunStatus, ScraperRun
+from app.jobs.tasks.matching import enqueue_processing
+from app.jobs.tracking import tracked_job
 from app.modules.tenders.models import SourceHealth, TenderSource
 
 logger = get_logger(__name__)
@@ -41,23 +43,6 @@ FAILURES_BEFORE_DOWN = 3
 #: Re-ask for a day either side of the last success. A notice published moments
 #: before the previous run finished would otherwise never be seen.
 OVERLAP = timedelta(days=1)
-
-
-def build_adapter(
-    adapter_key: str, *, base_url: str | None = None, config: dict[str, Any] | None = None
-) -> Any:
-    """Instantiate the adapter a source names, with its stored configuration.
-
-    An empty ``base_url`` is left out entirely rather than passed as ``None``,
-    so the adapter keeps its own default instead of being handed nothing.
-    """
-    adapter_cls = ADAPTERS.get(adapter_key)
-    if adapter_cls is None:
-        raise LookupError(f"No adapter registered for {adapter_key!r}.")
-    kwargs: dict[str, Any] = {"config": dict(config or {})}
-    if base_url:
-        kwargs["base_url"] = base_url
-    return adapter_cls(**kwargs)
 
 
 async def _recent_external_ids(
@@ -97,6 +82,7 @@ async def _record_health(
     await session.flush()
 
 
+@tracked_job
 async def scrape_source(
     ctx: dict[str, Any], source_id: str, limit_pages: int | None = None
 ) -> dict[str, Any]:
@@ -222,7 +208,7 @@ async def scrape_source(
     # Enqueue rather than process inline: the scrape worker runs one job at a
     # time, and holding it open through extraction would stall the next portal.
     for tender_id in new_tender_ids:
-        await _enqueue_processing(tender_id)
+        await enqueue_processing(tender_id)
 
     result["queued"] = len(new_tender_ids)
     result["status"] = status.value
@@ -254,15 +240,7 @@ async def _finish(
     await session.flush()
 
 
-async def _enqueue_processing(tender_id: str) -> None:
-    """Queue extraction, embedding and matching for one notice."""
-    try:
-        queue = await get_queue()
-        await queue.enqueue_job("process_tender", tender_id, _job_id=f"process:{tender_id}")
-    except Exception as exc:  # pragma: no cover - Redis down must not lose the row
-        logger.warning("process_enqueue_failed", tender_id=tender_id, error=str(exc))
-
-
+@tracked_job
 async def scrape_due_sources(ctx: dict[str, Any]) -> dict[str, Any]:
     """Queue a scrape for every enabled source.
 

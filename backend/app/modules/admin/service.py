@@ -6,17 +6,21 @@ scrapers use, so a hand-added notice is indistinguishable downstream.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
-from app.ingestion.adapters.base import ADAPTERS, TenderIn
+from app.core.time import utcnow
+from app.ingestion.adapters import ADAPTERS, build_adapter
+from app.ingestion.adapters.base import TenderIn
 from app.ingestion.importer import import_tenders, parse_payload
 from app.ingestion.service import upsert_tender
-from app.jobs.runs import ScraperRun
+from app.jobs.queue import QUEUE_DEFAULT
+from app.jobs.runs import JobRun, ScraperRun
 from app.modules.admin.schemas import (
     ImportResponse,
     SourceCreate,
@@ -24,18 +28,20 @@ from app.modules.admin.schemas import (
     TenderCreate,
     TenderCreateResponse,
 )
-from app.modules.tenders.models import TenderSource
+from app.modules.matching.ai_usage import AiUsage
+from app.modules.notifications.models import EmailOutbox, EmailStatus
+from app.modules.tenders.models import Tender, TenderSource
 
-# ``manual`` never runs an adapter; the others are registered as their modules
-# land across the ingestion milestone but are valid source configuration now.
 logger = get_logger(__name__)
 
-_PLANNED_ADAPTERS = frozenset({"manual", "worldbank", "egp_bd", "egp_bd_playwright"})
+#: ``manual`` is a real source with no adapter: hand-entered and imported
+#: notices land in it, and nothing ever scrapes it.
+_ADAPTERLESS = frozenset({"manual"})
 
 
 def _check_adapter(adapter_key: str) -> None:
-    if adapter_key not in ADAPTERS and adapter_key not in _PLANNED_ADAPTERS:
-        known = ", ".join(sorted(set(ADAPTERS) | _PLANNED_ADAPTERS))
+    if adapter_key not in ADAPTERS and adapter_key not in _ADAPTERLESS:
+        known = ", ".join(sorted(set(ADAPTERS) | _ADAPTERLESS))
         raise ValidationError(
             f"Unknown adapter {adapter_key!r}. Known: {known}.", code="unknown_adapter"
         )
@@ -140,8 +146,6 @@ async def enqueue_scrape(session: AsyncSession, source_id: UUID) -> str | None:
 
 async def probe_source(session: AsyncSession, source_id: UUID) -> tuple[str, bool, str | None]:
     """Ask the portal whether it is reachable, right now."""
-    from app.jobs.tasks.scraping import build_adapter
-
     source = await get_source(session, source_id)
     try:
         adapter = build_adapter(
@@ -162,3 +166,148 @@ async def recent_scraper_runs(
         stmt = stmt.where(ScraperRun.source_id == source_id)
     rows = await session.scalars(stmt)
     return list(rows.all())
+
+
+# --- reprocessing --------------------------------------------------------
+
+
+async def enqueue_reparse(
+    session: AsyncSession, source_id: UUID, *, limit: int | None = None
+) -> str | None:
+    """Queue a replay of one portal's stored payloads through the parser.
+
+    On the scrape queue despite touching no portal: it is a long, serial job
+    over the same rows a live scrape writes, and running the two at once would
+    have them fighting over every notice.
+    """
+    from app.jobs.queue import QUEUE_SCRAPE, get_queue
+
+    source = await get_source(session, source_id)
+    try:
+        queue = await get_queue()
+        job = await queue.enqueue_job(
+            "reparse_source",
+            str(source.id),
+            limit,
+            _queue_name=QUEUE_SCRAPE,
+            _job_id=f"reparse:{source.id}",
+        )
+    except Exception as exc:  # pragma: no cover - Redis down must not 500
+        logger.warning("reparse_enqueue_failed", source=source.code, error=str(exc))
+        return None
+    return job.job_id if job else None
+
+
+async def enqueue_reprocess(
+    session: AsyncSession, tender_id: UUID, *, reparse: bool = False
+) -> str | None:
+    """Queue one notice back through extraction, embedding and matching."""
+    from app.jobs.queue import get_queue
+
+    tender = await session.get(Tender, tender_id)
+    if tender is None:
+        raise NotFoundError("Tender not found.", code="tender_not_found")
+    try:
+        queue = await get_queue()
+        job = await queue.enqueue_job(
+            "reprocess_tender",
+            str(tender_id),
+            reparse,
+            _job_id=f"reprocess:{tender_id}",
+        )
+    except Exception as exc:  # pragma: no cover - Redis down must not 500
+        logger.warning("reprocess_enqueue_failed", tender_id=str(tender_id), error=str(exc))
+        return None
+    return job.job_id if job else None
+
+
+# --- jobs, mail and spend ------------------------------------------------
+
+#: Jobs an operator may start by hand. An allowlist rather than "any function
+#: name", because this endpoint takes a string from a request and the default
+#: queue runs everything from matching to mail.
+TRIGGERABLE_JOBS: dict[str, str] = {
+    "scrape_due_sources": QUEUE_DEFAULT,
+    "close_expired_tenders": QUEUE_DEFAULT,
+    "age_match_urgency": QUEUE_DEFAULT,
+    "purge_old_runs": QUEUE_DEFAULT,
+    "mark_source_health": QUEUE_DEFAULT,
+    "refresh_fx_rates": QUEUE_DEFAULT,
+    "pump_email_outbox": QUEUE_DEFAULT,
+    "digest_dispatcher": QUEUE_DEFAULT,
+    "deadline_reminder_sweep": QUEUE_DEFAULT,
+    "ping": QUEUE_DEFAULT,
+}
+
+
+async def recent_job_runs(
+    session: AsyncSession, *, name: str | None = None, limit: int = 50
+) -> list[JobRun]:
+    stmt = select(JobRun).order_by(JobRun.started_at.desc()).limit(limit)
+    if name:
+        stmt = stmt.where(JobRun.name == name)
+    return list((await session.scalars(stmt)).all())
+
+
+async def trigger_job(job_name: str) -> str | None:
+    """Run one allowlisted job now."""
+    from app.jobs.queue import get_queue
+
+    queue_name = TRIGGERABLE_JOBS.get(job_name)
+    if queue_name is None:
+        known = ", ".join(sorted(TRIGGERABLE_JOBS))
+        raise ValidationError(
+            f"Unknown job {job_name!r}. Triggerable: {known}.", code="unknown_job"
+        )
+    try:
+        queue = await get_queue()
+        job = await queue.enqueue_job(job_name, _queue_name=queue_name)
+    except Exception as exc:  # pragma: no cover - Redis down must not 500
+        logger.warning("job_trigger_failed", job=job_name, error=str(exc))
+        return None
+    return job.job_id if job else None
+
+
+async def list_failed_emails(session: AsyncSession, limit: int = 50) -> list[EmailOutbox]:
+    stmt = (
+        select(EmailOutbox)
+        .where(EmailOutbox.status.in_((EmailStatus.FAILED, EmailStatus.PENDING)))
+        .order_by(EmailOutbox.created_at.desc())
+        .limit(limit)
+    )
+    return list((await session.scalars(stmt)).all())
+
+
+async def retry_email(session: AsyncSession, email_id: UUID) -> bool:
+    from app.modules.notifications.email.outbox import requeue
+
+    return await requeue(session, email_id)
+
+
+async def ai_usage_summary(session: AsyncSession, days: int = 14) -> list[dict[str, object]]:
+    """Tokens and calls per day and purpose, newest first."""
+    since = utcnow().date() - timedelta(days=days)
+    rows = await session.execute(
+        select(
+            AiUsage.day,
+            AiUsage.purpose,
+            AiUsage.model,
+            func.count().label("calls"),
+            func.coalesce(func.sum(AiUsage.tokens_in), 0).label("tokens_in"),
+            func.coalesce(func.sum(AiUsage.tokens_out), 0).label("tokens_out"),
+        )
+        .where(AiUsage.day >= since)
+        .group_by(AiUsage.day, AiUsage.purpose, AiUsage.model)
+        .order_by(AiUsage.day.desc(), AiUsage.purpose)
+    )
+    return [
+        {
+            "day": row.day,
+            "purpose": row.purpose,
+            "model": row.model,
+            "calls": row.calls,
+            "tokens_in": row.tokens_in,
+            "tokens_out": row.tokens_out,
+        }
+        for row in rows.all()
+    ]

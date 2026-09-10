@@ -210,3 +210,108 @@ class TestManualTenders:
                 await session.delete(tender)
         finally:
             await _cleanup("noone@tsense-test.io", [code])
+
+
+class TestOperations:
+    """The endpoints an operator reaches for when something has gone wrong."""
+
+    async def test_triggering_an_unknown_job_names_the_ones_that_exist(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        """This takes a string from a request and the worker runs everything
+        from matching to mail, so it is an allowlist rather than a lookup."""
+        response = await api.post(
+            "/api/v1/admin/jobs/trigger",
+            json={"job": "rm_minus_rf"},
+            headers=superuser_headers,
+        )
+
+        assert response.status_code == 422
+        body = response.json()["error"]
+        assert body["code"] == "unknown_job"
+        assert "close_expired_tenders" in body["message"]
+
+    async def test_triggering_an_allowlisted_job_queues_it(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        response = await api.post(
+            "/api/v1/admin/jobs/trigger",
+            json={"job": "close_expired_tenders"},
+            headers=superuser_headers,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["job"] == "close_expired_tenders"
+
+    async def test_job_runs_are_readable(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        response = await api.get("/api/v1/admin/jobs/runs?limit=5", headers=superuser_headers)
+
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    async def test_reprocessing_an_unknown_tender_is_a_404(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        response = await api.post(
+            f"/api/v1/admin/tenders/{uuid4()}/reprocess", headers=superuser_headers
+        )
+
+        assert response.status_code == 404
+        assert response.json()["error"]["code"] == "tender_not_found"
+
+    async def test_reparsing_a_source_queues_a_replay(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        code = f"reparse-{uuid4().hex[:8]}"
+        created = await api.post(
+            "/api/v1/admin/sources",
+            json={
+                "code": code,
+                "name": "Replay target",
+                "adapter_key": "worldbank",
+                "base_url": "https://portal.invalid",
+            },
+            headers=superuser_headers,
+        )
+        source_id = created.json()["id"]
+        try:
+            response = await api.post(
+                f"/api/v1/admin/sources/{source_id}/reparse", headers=superuser_headers
+            )
+
+            assert response.status_code == 200
+            assert response.json()["source_code"] == code
+        finally:
+            async with session_scope() as session:
+                await session.execute(delete(TenderSource).where(TenderSource.code == code))
+
+    async def test_ai_spend_is_reported_against_the_cap(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        """An exhausted budget explains missing explanations; nothing else does."""
+        response = await api.get("/api/v1/admin/ai-usage", headers=superuser_headers)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert "daily_token_budget" in body
+        assert body["spent_today"] >= 0
+
+    async def test_undelivered_mail_is_visible(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        response = await api.get("/api/v1/admin/email-outbox", headers=superuser_headers)
+
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
+
+    async def test_retrying_an_unknown_message_reports_that_it_did_nothing(
+        self, api: AsyncClient, superuser_headers: dict[str, str]
+    ) -> None:
+        response = await api.post(
+            f"/api/v1/admin/email-outbox/{uuid4()}/retry", headers=superuser_headers
+        )
+
+        assert response.status_code == 200
+        assert response.json()["requeued"] is False

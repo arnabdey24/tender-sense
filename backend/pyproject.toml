@@ -83,7 +83,7 @@ disallow_untyped_decorators = false
 exclude = ["^alembic/versions/"]
 
 [[tool.mypy.overrides]]
-module = ["selectolax.*", "arq.*", "authlib.*", "pgvector.*", "uuid_utils.*"]
+module = ["selectolax.*", "arq.*", "authlib.*", "pgvector.*", "uuid_utils.*", "playwright.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

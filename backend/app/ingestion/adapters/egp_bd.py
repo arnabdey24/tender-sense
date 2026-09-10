@@ -24,6 +24,7 @@ posts to ``ViewTender.jsp``.
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
@@ -267,8 +268,12 @@ class EgpBdAdapter:
         if self.delay > 0:
             await asyncio.sleep(self.delay)
 
-    def _form(self, page: int, since: datetime | None) -> dict[str, str]:
-        """The servlet's form fields, all of which it expects to be present."""
+    def listing_form(self, page: int, since: datetime | None) -> dict[str, str]:
+        """The servlet's form fields, all of which it expects to be present.
+
+        Public because the Playwright fallback submits the same form from
+        inside a browser page rather than duplicating the field list.
+        """
         window_start = ""
         if since is not None:
             # A day of overlap, because a notice published moments before the
@@ -315,7 +320,7 @@ class EgpBdAdapter:
                 if page > 1:
                     await self._be_polite()
                 response = await client.post(
-                    f"{self.base_url}{LISTING_PATH}", data=self._form(page, since)
+                    f"{self.base_url}{LISTING_PATH}", data=self.listing_form(page, since)
                 )
                 response.raise_for_status()
                 rows, total_pages = parse_listing(response.text)
@@ -340,20 +345,28 @@ class EgpBdAdapter:
             if owned:
                 await client.aclose()
 
+    @staticmethod
+    def listing_document(ref: NoticeRef) -> RawDocument:
+        """The listing row, as JSON rather than a Python repr.
+
+        It is stored so that a parser fix can be replayed over it offline. A
+        ``repr`` cannot be read back by anything but ``eval``, which would make
+        the stored bytes useless for exactly the job they are kept for.
+        """
+        return RawDocument(
+            kind=DocumentKind.LISTING_ROW,
+            content=json.dumps(ref.listing_data, sort_keys=True, default=str).encode(),
+            url=ref.url,
+            content_type="application/json",
+        )
+
     async def fetch_detail(self, ref: NoticeRef) -> list[RawDocument]:
         """Fetch the detail page, keeping the listing row alongside it.
 
         Both are stored: if the detail page later fails to parse, the listing
         row alone still carries enough to keep the notice in the pool.
         """
-        documents = [
-            RawDocument(
-                kind=DocumentKind.LISTING_ROW,
-                content=repr(ref.listing_data).encode(),
-                url=ref.url,
-                content_type="text/plain",
-            )
-        ]
+        documents = [self.listing_document(ref)]
 
         client = self._http()
         owned = self._client is None
@@ -471,7 +484,7 @@ class EgpBdAdapter:
         try:
             response = await client.post(
                 f"{self.base_url}{LISTING_PATH}",
-                data=self._form(1, None) | {"size": "1"},
+                data=self.listing_form(1, None) | {"size": "1"},
             )
             response.raise_for_status()
             rows, _ = parse_listing(response.text)

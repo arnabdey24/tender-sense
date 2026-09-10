@@ -1231,6 +1231,71 @@ export interface paths {
         patch: operations["update_source_api_v1_admin_sources__source_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/sources/{source_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape a source now
+         * @description Queue one portal for scraping.
+         *
+         *     Deduplicated by source, so pressing this twice does not start two passes
+         *     over the same portal.
+         */
+        post: operations["run_source_api_v1_admin_sources__source_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/sources/{source_id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Probe a source now
+         * @description Ask the portal whether it is reachable, rather than reading the health
+         *     recorded by past runs.
+         */
+        post: operations["check_source_api_v1_admin_sources__source_id__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/scraper-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent scrape runs
+         * @description A scraper that quietly stops returning notices looks exactly like a quiet
+         *     portal. These records are the only way to tell the difference.
+         */
+        get: operations["list_scraper_runs_api_v1_admin_scraper_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/tenders": {
         parameters: {
             query?: never;
@@ -1273,10 +1338,181 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/sources/{source_id}/reparse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay stored payloads through the parser
+         * @description Re-parse this portal's notices from bytes already held.
+         *
+         *     This is the repair path for a portal that changed its markup: fix the
+         *     selectors, replay, and every notice ingested by the broken parser is
+         *     corrected without asking the portal for anything.
+         */
+        post: operations["reparse_source_api_v1_admin_sources__source_id__reparse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/tenders/{tender_id}/reprocess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Re-run the pipeline for one notice
+         * @description Send one notice back through extraction, embedding and matching.
+         */
+        post: operations["reprocess_tender_api_v1_admin_tenders__tender_id__reprocess_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent background runs */
+        get: operations["list_job_runs_api_v1_admin_jobs_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/jobs/trigger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run a job now
+         * @description Start one allowlisted job immediately.
+         *
+         *     An allowlist rather than an arbitrary function name: this takes a string
+         *     from a request and the worker runs everything from matching to mail.
+         */
+        post: operations["trigger_job_api_v1_admin_jobs_trigger_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-outbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Mail that has not been delivered */
+        get: operations["list_email_outbox_api_v1_admin_email_outbox_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/email-outbox/{email_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Put a failed message back in the queue
+         * @description Only a message that gave up is re-queued; a pending one is already due.
+         */
+        post: operations["retry_email_api_v1_admin_email_outbox__email_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Model spend
+         * @description What the model cost, and how close today is to the cap.
+         */
+        get: operations["ai_usage_api_v1_admin_ai_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AiUsageRow */
+        AiUsageRow: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Purpose */
+            purpose: string;
+            /** Model */
+            model: string;
+            /** Calls */
+            calls: number;
+            /** Tokens In */
+            tokens_in: number;
+            /** Tokens Out */
+            tokens_out: number;
+        };
+        /**
+         * AiUsageSummary
+         * @description Spend against the daily cap, so an exhausted budget is visible.
+         */
+        AiUsageSummary: {
+            /** Daily Token Budget */
+            daily_token_budget: number;
+            /** Spent Today */
+            spent_today: number;
+            /** Rows */
+            rows?: components["schemas"]["AiUsageRow"][];
+        };
         /**
          * AttributeType
          * @enum {string}
@@ -1452,6 +1688,38 @@ export interface components {
          * @enum {string}
          */
         EligibilityStatus: "eligible" | "needs_verification" | "ineligible";
+        /** EmailOutboxRead */
+        EmailOutboxRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** To Email */
+            to_email: string;
+            /** Template Key */
+            template_key: string;
+            /** Subject */
+            subject: string;
+            /** Status */
+            status: string;
+            /** Attempts */
+            attempts: number;
+            /**
+             * Next Attempt At
+             * Format: date-time
+             */
+            next_attempt_at: string;
+            /** Last Error */
+            last_error?: string | null;
+            /** Sent At */
+            sent_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /**
          * EmailRequest
          * @description Used by resend-verification and forgot-password.
@@ -1462,6 +1730,16 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** EmailRetryResponse */
+        EmailRetryResponse: {
+            /**
+             * Email Id
+             * Format: uuid
+             */
+            email_id: string;
+            /** Requeued */
+            requeued: boolean;
         };
         /**
          * ExplanationKind
@@ -1550,6 +1828,47 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "accepted" | "revoked" | "expired";
+        };
+        /** JobRunRead */
+        JobRunRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            };
+            /** Error */
+            error?: string | null;
+        };
+        /** JobTriggerRequest */
+        JobTriggerRequest: {
+            /** Job */
+            job: string;
+        };
+        /** JobTriggerResponse */
+        JobTriggerResponse: {
+            /** Job */
+            job: string;
+            /** Job Id */
+            job_id?: string | null;
+            /** Enqueued */
+            enqueued: boolean;
         };
         /**
          * LiteralValue
@@ -2137,6 +2456,30 @@ export interface components {
              */
             reason: string;
         };
+        /**
+         * ReparseResponse
+         * @description A replay of stored payloads through the adapter's parser.
+         */
+        ReparseResponse: {
+            /** Source Code */
+            source_code: string;
+            /** Enqueued */
+            enqueued: boolean;
+            /** Job Id */
+            job_id?: string | null;
+        };
+        /** ReprocessResponse */
+        ReprocessResponse: {
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            /** Enqueued */
+            enqueued: boolean;
+            /** Job Id */
+            job_id?: string | null;
+        };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
             /** Token */
@@ -2339,6 +2682,40 @@ export interface components {
             /** Errors */
             errors?: components["schemas"]["RuleValidationError"][];
         };
+        /** ScraperRunRead */
+        ScraperRunRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Source Id
+             * Format: uuid
+             */
+            source_id: string;
+            /** Status */
+            status: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Notices Seen */
+            notices_seen: number;
+            /** Created */
+            created: number;
+            /** Updated */
+            updated: number;
+            /** Unchanged */
+            unchanged: number;
+            /** Failed */
+            failed: number;
+            /** Error */
+            error?: string | null;
+        };
         /**
          * Sector
          * @description Coarse sectors, deliberately few so the model picks consistently.
@@ -2475,6 +2852,18 @@ export interface components {
          * @enum {string}
          */
         SourceHealth: "ok" | "degraded" | "down";
+        /**
+         * SourceHealthCheck
+         * @description A live probe, distinct from the health recorded by past runs.
+         */
+        SourceHealthCheck: {
+            /** Source Code */
+            source_code: string;
+            /** Reachable */
+            reachable: boolean;
+            /** Detail */
+            detail?: string | null;
+        };
         /** SourceRead */
         SourceRead: {
             /**
@@ -2497,6 +2886,15 @@ export interface components {
             last_success_at?: string | null;
             /** Consecutive Failures */
             consecutive_failures: number;
+        };
+        /** SourceRunResponse */
+        SourceRunResponse: {
+            /** Source Code */
+            source_code: string;
+            /** Job Id */
+            job_id?: string | null;
+            /** Enqueued */
+            enqueued: boolean;
         };
         /** SourceUpdate */
         SourceUpdate: {
@@ -4913,6 +5311,102 @@ export interface operations {
             };
         };
     };
+    run_source_api_v1_admin_sources__source_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Source identifier */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_source_api_v1_admin_sources__source_id__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Source identifier */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceHealthCheck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scraper_runs_api_v1_admin_scraper_runs_get: {
+        parameters: {
+            query?: {
+                /** @description Filter to one source */
+                source_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScraperRunRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_tender_api_v1_admin_tenders_post: {
         parameters: {
             query?: never;
@@ -4965,6 +5459,236 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reparse_source_api_v1_admin_sources__source_id__reparse_post: {
+        parameters: {
+            query?: {
+                /** @description Cap on notices */
+                limit?: number | null;
+            };
+            header?: never;
+            path: {
+                /** @description Source identifier */
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReparseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reprocess_tender_api_v1_admin_tenders__tender_id__reprocess_post: {
+        parameters: {
+            query?: {
+                /** @description Re-parse stored payloads before extracting */
+                reparse?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Tender identifier */
+                tender_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReprocessResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_job_runs_api_v1_admin_jobs_runs_get: {
+        parameters: {
+            query?: {
+                /** @description Filter to one job */
+                name?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobRunRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_job_api_v1_admin_jobs_trigger_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JobTriggerRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobTriggerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_email_outbox_api_v1_admin_email_outbox_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailOutboxRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_email_api_v1_admin_email_outbox__email_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Outbox row identifier */
+                email_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailRetryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_usage_api_v1_admin_ai_usage_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiUsageSummary"];
                 };
             };
             /** @description Validation Error */

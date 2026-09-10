@@ -199,8 +199,8 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | M2 Tender pool (3 d) | **done** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API, superuser source CRUD + manual/bulk tender entry; frontend tenders list + detail (shared pool) | Browse/search 40 seeded tenders |
 | M3 AI core + matching (5–6 d) | **done** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
 | M4 Rules + explanations + decisions + eval (4–5 d) | **done** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
-| M5 Ingestion (5 d) | **in progress** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
-| M6 Notifications (4 d) | **planned** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
+| M5 Ingestion (5 d) | **done** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
+| M6 Notifications (4 d) | **in progress** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
 | M7 Hardening (3–4 d) | **planned** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
 
 ### Progress log
@@ -744,6 +744,70 @@ discarded in favour of a value read from the wrong place, and an empty one was
 passed as `None`, which would have overridden the adapter's own default with
 nothing. `build_adapter` now omits the argument entirely when there is no
 configured value.
+
+**M5 done — replay, housekeeping and the browser fallback.**
+
+The milestone's last piece is the one that pays for storing raw payloads in the
+first place. `POST /admin/sources/{id}/reparse` replays a portal's stored bytes
+through the parser and `POST /admin/tenders/{id}/reprocess` sends one notice
+back through the pipeline, so a markup change is repaired by *fix, replay,
+deploy* rather than by re-scraping a slow portal that has already dropped half
+the notices in question.
+
+Replay goes through the same `upsert_tender` a live scrape uses, which is what
+makes it safe to run over a whole source: a notice that parses to the same thing
+is `unchanged` and costs nothing, while a corrected parse bumps the version and
+re-triggers extraction and matching for every tenant. Each notice commits on its
+own, because the point of a replay is that *some* notices parse differently now
+and one that still fails must not roll back the ones that were repaired.
+
+One thing had to change to make replay honest: e-GP stored its listing rows as a
+Python `repr`, which nothing but `eval` can read back. They are JSON now — the
+bytes were being kept for a job they could not actually do.
+
+**A bug the shared registry surfaced.** Adapters register by import side effect,
+and only the worker imported them. So in the API process the registry was empty
+and `POST /admin/sources/{id}/check` reported *every* portal unreachable —
+"No adapter registered for 'worldbank'" — which is the one answer a health probe
+must never give wrongly, since it is indistinguishable from a portal that really
+is down. Registration now happens in `app/ingestion/adapters/__init__.py`, so
+any process that can build an adapter has them all, and a test asserts it.
+
+**Runs are written down.** `job_runs` had a table and nothing writing to it. The
+`@tracked_job` decorator now records every task, and it treats a task that
+*returns* `{"error": ...}` as failed — these tasks degrade rather than raise, so
+counting "returned normally" as success would have recorded exactly the failures
+that matter most as clean runs. It also cannot break what it wraps: if recording
+the run fails, the task still runs and still returns.
+
+**Housekeeping that the system rots without.** Nightly: close notices whose
+deadline has passed (e-GP drops closed notices rather than restating them, so
+ours would stay "open" forever), purge run records past the retention window,
+refresh FX rates, and sweep for sources that stopped being scraped at all —
+which `scrape_source` cannot catch, because it only records health when a run
+actually *fails*. Hourly: re-derive match urgency, the one part of a verdict
+that moves with the clock rather than with any input, and so the one thing the
+fingerprint guard can never notice.
+
+Cross-currency money rules had never worked in practice: nothing populated
+`fx_rates`, so every BDT-against-USD comparison was `unknown`. `refresh_fx_rates`
+fills them, and a failed fetch leaves yesterday's rates in place — a slightly
+stale rate is a small error in one comparison, while no rate at all floods a
+customer's feed with "needs verification".
+
+**The Playwright fallback exists before it is needed**, which is the only time
+it can be written calmly. It does not carry a second copy of the parser — the
+markup is the same markup, and two copies would drift the moment one was fixed —
+so it subclasses nothing and delegates `normalize` to the HTTP adapter. It
+imports Playwright inside the methods that use it, because a module-level import
+would make the whole registry fail to load on the slim image and take the
+working HTTP adapter down with it. Switching is a `adapter_key` edit on the
+source row.
+
+**The sources screen** shows every member which portals feed their matches and
+whether those portals are answering — a degraded source is the honest
+explanation for a thin feed. Staff additionally get probe, scrape-now and
+replay, plus the run history that tells a broken scraper apart from a quiet week.
 
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.

@@ -33,6 +33,7 @@ import { Route as AppAppSettingsMembersRouteImport } from './routes/_app/app/set
 import { Route as AppAppSettingsOrganizationRouteImport } from './routes/_app/app/settings/organization'
 import { Route as AppAppSettingsProfileRouteImport } from './routes/_app/app/settings/profile'
 import { Route as AppAppSettingsRulesRouteImport } from './routes/_app/app/settings/rules'
+import { Route as AppAppSettingsSourcesRouteImport } from './routes/_app/app/settings/sources'
 import { Route as AppAppTendersIndexRouteImport } from './routes/_app/app/tenders/index'
 import { Route as AppAppTendersTenderIdRouteImport } from './routes/_app/app/tenders/$tenderId'
 
@@ -155,6 +156,11 @@ const AppAppSettingsRulesRoute = AppAppSettingsRulesRouteImport.update({
   path: '/app/settings/rules',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAppSettingsSourcesRoute = AppAppSettingsSourcesRouteImport.update({
+  id: '/app/settings/sources',
+  path: '/app/settings/sources',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAppTendersIndexRoute = AppAppTendersIndexRouteImport.update({
   id: '/app/tenders/',
   path: '/app/tenders/',
@@ -188,6 +194,7 @@ export interface FileRoutesByFullPath {
   '/app/settings/organization': typeof AppAppSettingsOrganizationRoute
   '/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/app/settings/rules': typeof AppAppSettingsRulesRoute
+  '/app/settings/sources': typeof AppAppSettingsSourcesRoute
   '/app/tenders/$tenderId': typeof AppAppTendersTenderIdRoute
   '/app/settings/': typeof AppAppSettingsIndexRoute
   '/app/tenders/': typeof AppAppTendersIndexRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/app/settings/organization': typeof AppAppSettingsOrganizationRoute
   '/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/app/settings/rules': typeof AppAppSettingsRulesRoute
+  '/app/settings/sources': typeof AppAppSettingsSourcesRoute
   '/app/tenders/$tenderId': typeof AppAppTendersTenderIdRoute
   '/app/settings': typeof AppAppSettingsIndexRoute
   '/app/tenders': typeof AppAppTendersIndexRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/_app/app/settings/organization': typeof AppAppSettingsOrganizationRoute
   '/_app/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/_app/app/settings/rules': typeof AppAppSettingsRulesRoute
+  '/_app/app/settings/sources': typeof AppAppSettingsSourcesRoute
   '/_app/app/tenders/$tenderId': typeof AppAppTendersTenderIdRoute
   '/_app/app/settings/': typeof AppAppSettingsIndexRoute
   '/_app/app/tenders/': typeof AppAppTendersIndexRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/app/settings/organization'
     | '/app/settings/profile'
     | '/app/settings/rules'
+    | '/app/settings/sources'
     | '/app/tenders/$tenderId'
     | '/app/settings/'
     | '/app/tenders/'
@@ -297,6 +307,7 @@ export interface FileRouteTypes {
     | '/app/settings/organization'
     | '/app/settings/profile'
     | '/app/settings/rules'
+    | '/app/settings/sources'
     | '/app/tenders/$tenderId'
     | '/app/settings'
     | '/app/tenders'
@@ -325,6 +336,7 @@ export interface FileRouteTypes {
     | '/_app/app/settings/organization'
     | '/_app/app/settings/profile'
     | '/_app/app/settings/rules'
+    | '/_app/app/settings/sources'
     | '/_app/app/tenders/$tenderId'
     | '/_app/app/settings/'
     | '/_app/app/tenders/'
@@ -509,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppSettingsRulesRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/app/settings/sources': {
+      id: '/_app/app/settings/sources'
+      path: '/app/settings/sources'
+      fullPath: '/app/settings/sources'
+      preLoaderRoute: typeof AppAppSettingsSourcesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/app/tenders/': {
       id: '/_app/app/tenders/'
       path: '/app/tenders'
@@ -539,6 +558,7 @@ interface AppRouteChildren {
   AppAppSettingsOrganizationRoute: typeof AppAppSettingsOrganizationRoute
   AppAppSettingsProfileRoute: typeof AppAppSettingsProfileRoute
   AppAppSettingsRulesRoute: typeof AppAppSettingsRulesRoute
+  AppAppSettingsSourcesRoute: typeof AppAppSettingsSourcesRoute
   AppAppTendersTenderIdRoute: typeof AppAppTendersTenderIdRoute
   AppAppSettingsIndexRoute: typeof AppAppSettingsIndexRoute
   AppAppTendersIndexRoute: typeof AppAppTendersIndexRoute
@@ -557,6 +577,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAppSettingsOrganizationRoute: AppAppSettingsOrganizationRoute,
   AppAppSettingsProfileRoute: AppAppSettingsProfileRoute,
   AppAppSettingsRulesRoute: AppAppSettingsRulesRoute,
+  AppAppSettingsSourcesRoute: AppAppSettingsSourcesRoute,
   AppAppTendersTenderIdRoute: AppAppTendersTenderIdRoute,
   AppAppSettingsIndexRoute: AppAppSettingsIndexRoute,
   AppAppTendersIndexRoute: AppAppTendersIndexRoute,

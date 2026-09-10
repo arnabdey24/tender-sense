@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   Building2Icon,
   ChevronRightIcon,
+  SatelliteDishIcon,
   ScaleIcon,
   SparklesIcon,
   UserRoundIcon,
@@ -9,7 +10,14 @@ import {
 } from "lucide-react"
 
 import { PageHeader } from "@/components/layout/PageHeader"
-import { Item, ItemContent, ItemDescription, ItemGroup, ItemMedia, ItemTitle } from "@/components/ui/item"
+import {
+  Item,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 
 export const Route = createFileRoute("/_app/app/settings/")({
   component: Page,
@@ -33,6 +41,12 @@ const SECTIONS = [
     icon: ScaleIcon,
     title: "Bidding criteria",
     description: "Rules that decide which tenders you can actually bid on.",
+  },
+  {
+    to: "/app/settings/sources",
+    icon: SatelliteDishIcon,
+    title: "Sources",
+    description: "The procurement portals we watch, and whether they answer.",
   },
   {
     to: "/app/settings/members",

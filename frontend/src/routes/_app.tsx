@@ -5,6 +5,7 @@ import { AppSidebar } from "@/components/layout/AppSidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { waitForAuth } from "@/lib/auth/bootstrap"
 import { useAuthStore } from "@/lib/auth/store"
+import { AssistantProvider } from "@/features/assistant/AssistantProvider"
 
 /** Screens a member-less account may still visit. */
 const ORGLESS_ALLOWED = ["/onboarding", "/account"]
@@ -32,14 +33,16 @@ export const Route = createFileRoute("/_app")({
 
 function AppLayout() {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <AppHeader />
-        <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
-          <Outlet />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <AssistantProvider>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <AppHeader />
+          <div className="flex flex-1 flex-col gap-6 p-4 md:p-6">
+            <Outlet />
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </AssistantProvider>
   )
 }

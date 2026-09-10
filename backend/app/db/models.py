@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from app.db.base import Base
 from app.jobs.runs import JobRun, RunStatus, ScraperRun
+from app.modules.assistant.models import AssistantMessage, Conversation
 from app.modules.auth.models import AuthToken, RefreshSession, TokenPurpose
 from app.modules.decisions.models import Decision, TenderDecision
 from app.modules.matching.ai_usage import AiUsage
@@ -71,9 +72,11 @@ from app.modules.users.models import OAuthAccount, User
 
 __all__ = [
     "AiUsage",
+    "AssistantMessage",
     "AuthToken",
     "Base",
     "CompanyProfile",
+    "Conversation",
     "Decision",
     "DocumentKind",
     "EligibilityStatus",

@@ -201,6 +201,15 @@ async def match_tender_for_org(
 
     match.similarity = score.similarity
     match.score_breakdown = score.breakdown()
+    ranked_scores = sorted((facet.score for facet in score.facets), reverse=True)
+    match.score_breakdown["calculation"] = {
+        "best_score": ranked_scores[0],
+        "top_scores": ranked_scores[: max(1, config.top_facets)],
+        "max_weight": config.max_facet_weight,
+        "mean_weight": config.mean_facet_weight,
+        "top_n": config.top_facets,
+        "thresholds": {"S": config.grade_s, "A": config.grade_a, "B": config.grade_b},
+    }
     match.grade = grade
     match.eligibility_status = eligibility
     match.rule_results = evaluation.as_json()

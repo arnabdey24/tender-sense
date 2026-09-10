@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       proxy: {
-        "/api": { target: apiTarget, changeOrigin: true },
+        "/api": { target: apiTarget, changeOrigin: true, ws: true },
         "/openapi.json": { target: apiTarget, changeOrigin: true },
       },
     },

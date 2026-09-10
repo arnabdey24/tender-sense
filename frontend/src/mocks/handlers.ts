@@ -18,6 +18,8 @@ import {
  * override the cases they care about with `server.use(...)`.
  */
 export const handlers = [
+  http.get("*/api/v1/assistant/capabilities", () => HttpResponse.json({ enabled: true, voice_enabled: false, mode: "demo", voice_max_seconds: 600 })),
+  http.get("*/api/v1/assistant/conversations", () => HttpResponse.json([])),
   http.get("*/api/v1/health/live", () => HttpResponse.json({ status: "ok" })),
 
   // Signed out by default: the silent refresh finds no cookie.

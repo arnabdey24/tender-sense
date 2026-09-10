@@ -17,6 +17,14 @@ export function applySession(
   payload: SessionPayload,
   queryClient?: QueryClient
 ): void {
+  const previous = useAuthStore.getState()
+  if (previous.activeOrgId !== payload.active_org_id || previous.user?.id !== payload.user.id) {
+    queryClient?.removeQueries({ queryKey: qk.matches.all() })
+    queryClient?.removeQueries({ queryKey: qk.profile.all() })
+    queryClient?.removeQueries({ queryKey: qk.rules.all() })
+    queryClient?.removeQueries({ queryKey: qk.decisions.all() })
+    queryClient?.removeQueries({ queryKey: ["assistant"] })
+  }
   useAuthStore.getState().setSession(payload)
   invalidateSessionScopedQueries(queryClient)
 }

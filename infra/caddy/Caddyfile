@@ -18,7 +18,7 @@
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY
 		Referrer-Policy strict-origin-when-cross-origin
-		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		Permissions-Policy "geolocation=(), microphone=(self), camera=()"
 		Cross-Origin-Opener-Policy same-origin
 		# Served over TLS only, so it cannot pin a plain-HTTP dev host.
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

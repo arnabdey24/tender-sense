@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { ArrowLeftIcon, ExternalLinkIcon } from "lucide-react"
+import {
+  ArrowLeftIcon,
+  ExternalLinkIcon,
+  MessageCircleIcon,
+} from "lucide-react"
+import { useAssistant } from "@/features/assistant/context"
 
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { DeadlineBadge } from "@/features/tenders/DeadlineBadge"
@@ -102,6 +102,7 @@ function EligibilityCard({ tenderId }: { tenderId: string }) {
 }
 
 function TenderDetailPage() {
+  const assistant = useAssistant()
   const { tenderId } = Route.useParams()
   const tender = useTender(tenderId)
 
@@ -136,9 +137,7 @@ function TenderDetailPage() {
 
   const t = tender.data
   const extraction = t.extraction as
-    | { attributes?: Record<string, unknown> }
-    | null
-    | undefined
+    { attributes?: Record<string, unknown> } | null | undefined
 
   return (
     <>
@@ -149,15 +148,23 @@ function TenderDetailPage() {
       />
 
       <div className="flex flex-wrap items-center gap-2">
+        {assistant && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => assistant.openTender(tenderId)}
+          >
+            <MessageCircleIcon data-icon="inline-start" />
+            Discuss this tender
+          </Button>
+        )}
         <Badge variant="outline">{t.source_code}</Badge>
         <Badge variant="secondary">{statusLabel(t.status)}</Badge>
         <DeadlineBadge days={t.days_to_deadline} deadlineAt={t.deadline_at} />
         <Button
           variant="ghost"
           size="sm"
-          render={
-            <a href={t.canonical_url} target="_blank" rel="noreferrer" />
-          }
+          render={<a href={t.canonical_url} target="_blank" rel="noreferrer" />}
           nativeButton={false}
         >
           View on portal
@@ -177,7 +184,10 @@ function TenderDetailPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <Fact label="Category" value={categoryLabel(t.procurement_category)} />
+            <Fact
+              label="Category"
+              value={categoryLabel(t.procurement_category)}
+            />
             <Fact label="Method" value={t.procurement_method ?? "—"} />
             <Fact label="Country" value={t.country ?? "—"} />
             <Fact

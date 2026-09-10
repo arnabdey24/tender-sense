@@ -89,6 +89,17 @@ class Settings(BaseSettings):
     ai_requests_per_minute: int = 12
     ai_daily_token_budget: int = 2_000_000
 
+    # --- tender assistant ---
+    assistant_enabled: bool = True
+    assistant_voice_enabled: bool = False
+    assistant_model: str = "gemini-3.1-flash-lite"
+    assistant_voice_model: str = "gemini-3.1-flash-live-preview"
+    assistant_turn_timeout_seconds: int = 90
+    assistant_voice_max_seconds: int = 600
+    assistant_daily_turn_limit: int = 100
+    assistant_daily_voice_seconds: int = 3600
+    assistant_retention_days: int = 90
+
     # --- matching defaults (overridable per-deployment via matching_config table) ---
     grade_s_threshold: float = 0.78
     grade_a_threshold: float = 0.70

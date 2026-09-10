@@ -3,6 +3,9 @@
  * here so invalidation stays consistent. Extend per feature as endpoints land.
  */
 export const qk = {
+  assistant: {
+    capabilities: (orgId: string | null, userId: string | undefined) => ["assistant", orgId, userId, "capabilities"] as const,
+  },
   auth: {
     all: () => ["auth"] as const,
     me: () => ["auth", "me"] as const,

@@ -28,6 +28,7 @@ import {
   Trash2Icon,
   XIcon,
 } from "lucide-react"
+import { LogoTile } from "@/components/brand/Logo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -975,16 +976,19 @@ function AssistantSession({
               )}
             >
               <div className="flex shrink-0 items-center gap-3 border-b px-4 py-3">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <SparklesIcon className="size-4" />
-                </div>
+                {/*
+                  The mark, not a generic sparkle: on a full-screen phone sheet
+                  this row is the only chrome the panel has, so it has to say
+                  whose assistant this is.
+                */}
+                <LogoTile size={32} />
                 <div className="min-w-0 flex-1">
                   {/*
                     "TenderSense assistant" needs two lines beside five action
                     buttons at 420px, and truncates to "TenderSense as…" on a
-                    phone. The mark sits immediately to the left, so the product
-                    name is already on screen; the description below carries it
-                    for screen readers.
+                    phone. The mark to the left carries the product name, so the
+                    visible title stays short and the description below spells it
+                    out for screen readers.
                   */}
                   <DialogTitle className="truncate text-sm font-medium">
                     Assistant
@@ -1021,26 +1025,40 @@ function AssistantSession({
                 >
                   <PlusIcon />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={
-                    mode === "compact" ? "Expand chat" : "Compact chat"
-                  }
-                  onClick={() =>
-                    setMode(mode === "compact" ? "expanded" : "compact")
-                  }
-                >
-                  {mode === "compact" ? <Maximize2Icon /> : <Minimize2Icon />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Minimize assistant"
-                  onClick={() => setOpen(false)}
-                >
-                  <MinusIcon />
-                </Button>
+                {/*
+                  Expand and minimize describe nothing on a phone: the sheet is
+                  already the whole screen, and closing it is what the X does.
+                  Five icon-only controls in a 390px row is also more than the
+                  header can carry legibly.
+                */}
+                {!mobile && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={
+                        mode === "compact" ? "Expand chat" : "Compact chat"
+                      }
+                      onClick={() =>
+                        setMode(mode === "compact" ? "expanded" : "compact")
+                      }
+                    >
+                      {mode === "compact" ? (
+                        <Maximize2Icon />
+                      ) : (
+                        <Minimize2Icon />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label="Minimize assistant"
+                      onClick={() => setOpen(false)}
+                    >
+                      <MinusIcon />
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="ghost"
                   size="icon-sm"

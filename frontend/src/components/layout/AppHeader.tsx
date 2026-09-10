@@ -210,8 +210,8 @@ export function AppHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
     // content column's, so the header's chrome starts on the page's gutter
     // instead of 4px inside it.
     <header className="material-chrome sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-6">
-      <SidebarTrigger className="-ms-2" />
-      <Separator orientation="vertical" className="mr-2 h-4" />
+      <SidebarTrigger className="-ms-2 md:hidden" />
+      <Separator orientation="vertical" className="mr-2 h-4 md:hidden" />
       <div className="min-w-0 flex-1">{breadcrumb ?? <AutoBreadcrumb />}</div>
       <div className="flex items-center gap-1">
         <OrgSwitcher />

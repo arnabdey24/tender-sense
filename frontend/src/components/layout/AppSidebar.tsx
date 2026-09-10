@@ -38,6 +38,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { signOut } from "@/lib/auth/session"
 import { useAuthStore } from "@/lib/auth/store"
@@ -86,27 +87,39 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/app/dashboard" />}>
-              {/* The parent forces every descendant svg to size-4, which is
+        {/*
+          The collapse control lives here, not in the page header, so the
+          breadcrumb can start on the content column's gutter instead of being
+          pushed 45px right by a button sitting in the reading line. Collapsing
+          hides it; the rail and Cmd/Ctrl+B bring the sidebar back.
+        */}
+        <div className="flex items-center gap-1">
+          <SidebarMenu className="min-w-0 flex-1">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                size="lg"
+                render={<Link to="/app/dashboard" />}
+              >
+                {/* The parent forces every descendant svg to size-4, which is
                   right for nav icons and too small for the mark — hence the
                   explicit sizes, one per collapse state. */}
-              <LogoMark
-                size={26}
-                className="size-6.5! text-primary group-data-[collapsible=icon]:size-5!"
-              />
-              <div className="flex min-w-0 flex-col gap-0.5 leading-none">
-                <span className="font-semibold tracking-[-0.012em]">
-                  Tender<span className="text-primary">Sense</span>
-                </span>
-                <span className="truncate text-xs text-muted-foreground">
-                  {activeOrg?.org_name ?? "No organization"}
-                </span>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+                <LogoMark
+                  size={26}
+                  className="size-6.5! text-primary group-data-[collapsible=icon]:size-5!"
+                />
+                <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+                  <span className="font-semibold tracking-[-0.012em]">
+                    Tender<span className="text-primary">Sense</span>
+                  </span>
+                  <span className="truncate text-xs text-muted-foreground">
+                    {activeOrg?.org_name ?? "No organization"}
+                  </span>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+          <SidebarTrigger className="shrink-0 group-data-[collapsible=icon]:hidden" />
+        </div>
       </SidebarHeader>
 
       <SidebarContent>

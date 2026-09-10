@@ -90,7 +90,12 @@ async def refund(org_id: UUID, kind: str, amount: int) -> None:
         return
     redis = await get_queue()
     key = f"assistant:budget:{org_id}:{utcnow().date()}:{kind}"
-    await redis.decrby(key, amount)
+    remaining = await redis.decrby(key, amount)
+    # A refund can outlive the counter it belongs to — the key expires daily, and
+    # an operator can reset it mid-session. Landing below zero would hand the
+    # organization free allowance tomorrow, so the floor is zero.
+    if remaining < 0:
+        await redis.set(key, 0, keepttl=True)
 
 
 async def acquire(conversation_id: UUID, seconds: int) -> str:

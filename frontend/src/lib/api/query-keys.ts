@@ -27,5 +27,23 @@ export const qk = {
     detail: (id: string) => ["tenders", "detail", id] as const,
     sources: () => ["tenders", "sources"] as const,
   },
+  matches: {
+    all: () => ["matches"] as const,
+    list: (params: Record<string, unknown>) =>
+      ["matches", "list", params] as const,
+    stats: (params: Record<string, unknown>) =>
+      ["matches", "stats", params] as const,
+    today: (params: Record<string, unknown>) =>
+      ["matches", "today", params] as const,
+    pipeline: (params: Record<string, unknown>) =>
+      ["matches", "pipeline", params] as const,
+    detail: (tenderId: string) => ["matches", "detail", tenderId] as const,
+  },
+  profile: {
+    all: () => ["profile"] as const,
+    current: () => ["profile", "current"] as const,
+    completeness: () => ["profile", "completeness"] as const,
+    taxonomies: () => ["profile", "taxonomies"] as const,
+  },
   health: () => ["health"] as const,
 } as const

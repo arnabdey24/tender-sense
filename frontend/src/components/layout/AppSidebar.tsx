@@ -9,6 +9,7 @@ import {
   LayoutDashboardIcon,
   LogOutIcon,
   SettingsIcon,
+  SparklesIcon,
   UserRoundIcon,
   UsersIcon,
 } from "lucide-react"
@@ -42,6 +43,7 @@ import { useAuthStore } from "@/lib/auth/store"
 const NAV_ITEMS = [
   { title: "Dashboard", to: "/app/dashboard", icon: LayoutDashboardIcon },
   { title: "Today", to: "/app/today", icon: CalendarCheckIcon },
+  { title: "Matches", to: "/app/matches", icon: SparklesIcon },
   { title: "Tenders", to: "/app/tenders", icon: FileTextIcon },
   { title: "Pipeline", to: "/app/pipeline", icon: KanbanIcon },
   { title: "Notifications", to: "/app/notifications", icon: BellIcon },

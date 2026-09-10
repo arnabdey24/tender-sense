@@ -143,7 +143,9 @@ class TestProcessTender:
 
         result = await process_tender(ctx, str(tender.id))
 
-        assert result["matched"] == 1
+        # Counts are across every tenant with a profile, so assert a floor and
+        # check this organization's own verdict below.
+        assert result["matched"] >= 1
         assert result["failed"] == 0
         async with session_scope() as session:
             extraction = await session.scalar(
@@ -207,9 +209,10 @@ class TestProcessTender:
         first = await process_tender(ctx, str(tender.id))
         second = await process_tender(ctx, str(tender.id))
 
-        assert first["matched"] == 1
-        assert second["skipped"] == 1
+        assert first["matched"] >= 1
+        # The second pass must recompute nothing: everything it saw was skipped.
         assert second["matched"] == 0
+        assert second["skipped"] == first["matched"] + first["skipped"]
 
     async def test_it_records_history_once_not_on_every_run(
         self,
@@ -241,7 +244,7 @@ class TestProcessTender:
 
         result = await process_tender(ctx, str(tender.id))
 
-        assert result["matched"] == 0
+        assert result["failed"] == 0
         assert await match_for(org.id, tender.id) is None
 
     async def test_a_missing_tender_returns_cleanly(self, ctx: dict[str, object]) -> None:
@@ -267,7 +270,7 @@ class TestProcessTender:
         result = await process_tender(broken, str(tender.id))
 
         assert result["extraction"] == "failed"
-        assert result["matched"] == 1
+        assert result["matched"] >= 1
         match = await match_for(org.id, tender.id)
         assert match is not None
 

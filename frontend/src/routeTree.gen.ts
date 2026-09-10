@@ -22,6 +22,7 @@ import { Route as AuthVerifyEmailRouteImport } from './routes/_auth/verify-email
 import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
 import { Route as AppAppIndexRouteImport } from './routes/_app/app/index'
 import { Route as AppAppDashboardRouteImport } from './routes/_app/app/dashboard'
+import { Route as AppAppMatchesRouteImport } from './routes/_app/app/matches'
 import { Route as AppAppNotificationsRouteImport } from './routes/_app/app/notifications'
 import { Route as AppAppPipelineRouteImport } from './routes/_app/app/pipeline'
 import { Route as AppAppTodayRouteImport } from './routes/_app/app/today'
@@ -30,6 +31,7 @@ import { Route as AuthGoogleCallbackRouteImport } from './routes/auth/google/cal
 import { Route as AppAppSettingsIndexRouteImport } from './routes/_app/app/settings/index'
 import { Route as AppAppSettingsMembersRouteImport } from './routes/_app/app/settings/members'
 import { Route as AppAppSettingsOrganizationRouteImport } from './routes/_app/app/settings/organization'
+import { Route as AppAppSettingsProfileRouteImport } from './routes/_app/app/settings/profile'
 import { Route as AppAppTendersIndexRouteImport } from './routes/_app/app/tenders/index'
 import { Route as AppAppTendersTenderIdRouteImport } from './routes/_app/app/tenders/$tenderId'
 
@@ -96,6 +98,11 @@ const AppAppDashboardRoute = AppAppDashboardRouteImport.update({
   path: '/app/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAppMatchesRoute = AppAppMatchesRouteImport.update({
+  id: '/app/matches',
+  path: '/app/matches',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAppNotificationsRoute = AppAppNotificationsRouteImport.update({
   id: '/app/notifications',
   path: '/app/notifications',
@@ -137,6 +144,11 @@ const AppAppSettingsOrganizationRoute =
     path: '/app/settings/organization',
     getParentRoute: () => AppRoute,
   } as any)
+const AppAppSettingsProfileRoute = AppAppSettingsProfileRouteImport.update({
+  id: '/app/settings/profile',
+  path: '/app/settings/profile',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAppTendersIndexRoute = AppAppTendersIndexRouteImport.update({
   id: '/app/tenders/',
   path: '/app/tenders/',
@@ -159,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/verify-email': typeof AuthVerifyEmailRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/app/dashboard': typeof AppAppDashboardRoute
+  '/app/matches': typeof AppAppMatchesRoute
   '/app/notifications': typeof AppAppNotificationsRoute
   '/app/pipeline': typeof AppAppPipelineRoute
   '/app/today': typeof AppAppTodayRoute
@@ -167,6 +180,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/': typeof AppOnboardingIndexRoute
   '/app/settings/members': typeof AppAppSettingsMembersRoute
   '/app/settings/organization': typeof AppAppSettingsOrganizationRoute
+  '/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/app/tenders/$tenderId': typeof AppAppTendersTenderIdRoute
   '/app/settings/': typeof AppAppSettingsIndexRoute
   '/app/tenders/': typeof AppAppTendersIndexRoute
@@ -182,6 +196,7 @@ export interface FileRoutesByTo {
   '/verify-email': typeof AuthVerifyEmailRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/app/dashboard': typeof AppAppDashboardRoute
+  '/app/matches': typeof AppAppMatchesRoute
   '/app/notifications': typeof AppAppNotificationsRoute
   '/app/pipeline': typeof AppAppPipelineRoute
   '/app/today': typeof AppAppTodayRoute
@@ -190,6 +205,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AppOnboardingIndexRoute
   '/app/settings/members': typeof AppAppSettingsMembersRoute
   '/app/settings/organization': typeof AppAppSettingsOrganizationRoute
+  '/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/app/tenders/$tenderId': typeof AppAppTendersTenderIdRoute
   '/app/settings': typeof AppAppSettingsIndexRoute
   '/app/tenders': typeof AppAppTendersIndexRoute
@@ -208,6 +224,7 @@ export interface FileRoutesById {
   '/_auth/verify-email': typeof AuthVerifyEmailRoute
   '/invite/accept': typeof InviteAcceptRoute
   '/_app/app/dashboard': typeof AppAppDashboardRoute
+  '/_app/app/matches': typeof AppAppMatchesRoute
   '/_app/app/notifications': typeof AppAppNotificationsRoute
   '/_app/app/pipeline': typeof AppAppPipelineRoute
   '/_app/app/today': typeof AppAppTodayRoute
@@ -216,6 +233,7 @@ export interface FileRoutesById {
   '/_app/onboarding/': typeof AppOnboardingIndexRoute
   '/_app/app/settings/members': typeof AppAppSettingsMembersRoute
   '/_app/app/settings/organization': typeof AppAppSettingsOrganizationRoute
+  '/_app/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/_app/app/tenders/$tenderId': typeof AppAppTendersTenderIdRoute
   '/_app/app/settings/': typeof AppAppSettingsIndexRoute
   '/_app/app/tenders/': typeof AppAppTendersIndexRoute
@@ -233,6 +251,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/invite/accept'
     | '/app/dashboard'
+    | '/app/matches'
     | '/app/notifications'
     | '/app/pipeline'
     | '/app/today'
@@ -241,6 +260,7 @@ export interface FileRouteTypes {
     | '/onboarding/'
     | '/app/settings/members'
     | '/app/settings/organization'
+    | '/app/settings/profile'
     | '/app/tenders/$tenderId'
     | '/app/settings/'
     | '/app/tenders/'
@@ -256,6 +276,7 @@ export interface FileRouteTypes {
     | '/verify-email'
     | '/invite/accept'
     | '/app/dashboard'
+    | '/app/matches'
     | '/app/notifications'
     | '/app/pipeline'
     | '/app/today'
@@ -264,6 +285,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/app/settings/members'
     | '/app/settings/organization'
+    | '/app/settings/profile'
     | '/app/tenders/$tenderId'
     | '/app/settings'
     | '/app/tenders'
@@ -281,6 +303,7 @@ export interface FileRouteTypes {
     | '/_auth/verify-email'
     | '/invite/accept'
     | '/_app/app/dashboard'
+    | '/_app/app/matches'
     | '/_app/app/notifications'
     | '/_app/app/pipeline'
     | '/_app/app/today'
@@ -289,6 +312,7 @@ export interface FileRouteTypes {
     | '/_app/onboarding/'
     | '/_app/app/settings/members'
     | '/_app/app/settings/organization'
+    | '/_app/app/settings/profile'
     | '/_app/app/tenders/$tenderId'
     | '/_app/app/settings/'
     | '/_app/app/tenders/'
@@ -396,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/app/matches': {
+      id: '/_app/app/matches'
+      path: '/app/matches'
+      fullPath: '/app/matches'
+      preLoaderRoute: typeof AppAppMatchesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/app/notifications': {
       id: '/_app/app/notifications'
       path: '/app/notifications'
@@ -452,6 +483,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppSettingsOrganizationRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/app/settings/profile': {
+      id: '/_app/app/settings/profile'
+      path: '/app/settings/profile'
+      fullPath: '/app/settings/profile'
+      preLoaderRoute: typeof AppAppSettingsProfileRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/app/tenders/': {
       id: '/_app/app/tenders/'
       path: '/app/tenders'
@@ -472,6 +510,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
   AppAppDashboardRoute: typeof AppAppDashboardRoute
+  AppAppMatchesRoute: typeof AppAppMatchesRoute
   AppAppNotificationsRoute: typeof AppAppNotificationsRoute
   AppAppPipelineRoute: typeof AppAppPipelineRoute
   AppAppTodayRoute: typeof AppAppTodayRoute
@@ -479,6 +518,7 @@ interface AppRouteChildren {
   AppOnboardingIndexRoute: typeof AppOnboardingIndexRoute
   AppAppSettingsMembersRoute: typeof AppAppSettingsMembersRoute
   AppAppSettingsOrganizationRoute: typeof AppAppSettingsOrganizationRoute
+  AppAppSettingsProfileRoute: typeof AppAppSettingsProfileRoute
   AppAppTendersTenderIdRoute: typeof AppAppTendersTenderIdRoute
   AppAppSettingsIndexRoute: typeof AppAppSettingsIndexRoute
   AppAppTendersIndexRoute: typeof AppAppTendersIndexRoute
@@ -487,6 +527,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
   AppAppDashboardRoute: AppAppDashboardRoute,
+  AppAppMatchesRoute: AppAppMatchesRoute,
   AppAppNotificationsRoute: AppAppNotificationsRoute,
   AppAppPipelineRoute: AppAppPipelineRoute,
   AppAppTodayRoute: AppAppTodayRoute,
@@ -494,6 +535,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOnboardingIndexRoute: AppOnboardingIndexRoute,
   AppAppSettingsMembersRoute: AppAppSettingsMembersRoute,
   AppAppSettingsOrganizationRoute: AppAppSettingsOrganizationRoute,
+  AppAppSettingsProfileRoute: AppAppSettingsProfileRoute,
   AppAppTendersTenderIdRoute: AppAppTendersTenderIdRoute,
   AppAppSettingsIndexRoute: AppAppSettingsIndexRoute,
   AppAppTendersIndexRoute: AppAppTendersIndexRoute,

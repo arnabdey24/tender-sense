@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   Building2Icon,
   ChevronRightIcon,
+  SparklesIcon,
   UserRoundIcon,
   UsersIcon,
 } from "lucide-react"
@@ -19,6 +20,12 @@ const SECTIONS = [
     icon: Building2Icon,
     title: "Organization",
     description: "Company name, country, timezone and website.",
+  },
+  {
+    to: "/app/settings/profile",
+    icon: SparklesIcon,
+    title: "Capability profile",
+    description: "What you do — this is what tenders are matched against.",
   },
   {
     to: "/app/settings/members",

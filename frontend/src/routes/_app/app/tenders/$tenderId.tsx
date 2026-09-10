@@ -13,6 +13,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { DeadlineBadge } from "@/features/tenders/DeadlineBadge"
+import { useMatch } from "@/features/matches/api"
+import { explanationOf } from "@/features/matches/explanation"
+import { VerdictStrip } from "@/features/matches/verdict"
 import { useTender } from "@/features/tenders/api"
 import {
   categoryLabel,
@@ -31,6 +34,51 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="text-sm font-medium">{value}</dd>
     </div>
+  )
+}
+
+/** Why this tender was graded the way it was. Absent until it is scored. */
+function VerdictCard({ tenderId }: { tenderId: string }) {
+  const match = useMatch(tenderId)
+  if (match.isPending || !match.data) return null
+
+  const explanation = explanationOf(match.data)
+  const sections: [string, string[]][] = [
+    ["Why it matches", explanation.why_matched ?? []],
+    ["Gaps", explanation.gaps ?? []],
+    ["Worth checking", explanation.risks ?? []],
+  ]
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Your verdict</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <VerdictStrip match={match.data} showScore />
+
+        {explanation.summary ? (
+          <p className="text-sm">{explanation.summary}</p>
+        ) : null}
+
+        {sections.map(([heading, items]) =>
+          items.length ? (
+            <div key={heading} className="flex flex-col gap-1">
+              <h3 className="text-xs text-muted-foreground">{heading}</h3>
+              <ul className="list-disc pl-5 text-sm">
+                {items.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null
+        )}
+
+        {explanation.next_step ? (
+          <p className="text-sm font-medium">Next: {explanation.next_step}</p>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -97,6 +145,8 @@ function TenderDetailPage() {
           <ExternalLinkIcon data-icon="inline-end" />
         </Button>
       </div>
+
+      <VerdictCard tenderId={tenderId} />
 
       <Card>
         <CardHeader>

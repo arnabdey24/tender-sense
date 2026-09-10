@@ -204,7 +204,7 @@ class TestNormalize:
         assert normalize(row, with_detail=False).status is TenderStatus.UNKNOWN
 
     def test_the_summary_does_not_fall_back_to_the_notice_type(self) -> None:
-        """"Tender - Single Lot" is a category, not a summary.
+        """ "Tender - Single Lot" is a category, not a summary.
 
         It used to be used as one whenever the portal omitted "Invitation
         for", which put the notice type under a heading that promises prose

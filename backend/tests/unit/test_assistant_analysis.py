@@ -1,7 +1,6 @@
 """Numbers and unknowns must survive translation into a conversational view."""
 
 from typing import Any
-
 from uuid import uuid4
 
 import pytest
@@ -14,21 +13,44 @@ from app.modules.assistant.tools import analyze
 @pytest.fixture
 def context() -> dict[str, Any]:
     return {
-        "version": "test-v1", "tender": {"title": "Network switches"},
+        "version": "test-v1",
+        "tender": {"title": "Network switches"},
         "profile": {"annual_turnover": 12345.67, "turnover_currency": "BDT"},
         "sources": [],
-        "match": {"similarity": .796, "recommendation": "hold", "score_breakdown": {
-            "top_facets": [{"label": "Networks", "score": .82}],
-            "calculation": {"top_scores": [.82, .76, .70], "best_score": .82, "max_weight": .6, "mean_weight": .4, "top_n": 3, "thresholds": {"S": .78, "A": .7, "B": .62}},
-        }, "rule_results": [{"rule_id": "turnover", "label": "Turnover", "status": "unknown", "reason": "Requirement not stated", "tender_value": None, "expected": "BDT 100000", "source": "extraction"}]},
+        "match": {
+            "similarity": 0.796,
+            "recommendation": "hold",
+            "score_breakdown": {
+                "top_facets": [{"label": "Networks", "score": 0.82}],
+                "calculation": {
+                    "top_scores": [0.82, 0.76, 0.70],
+                    "best_score": 0.82,
+                    "max_weight": 0.6,
+                    "mean_weight": 0.4,
+                    "top_n": 3,
+                    "thresholds": {"S": 0.78, "A": 0.7, "B": 0.62},
+                },
+            },
+            "rule_results": [
+                {
+                    "rule_id": "turnover",
+                    "label": "Turnover",
+                    "status": "unknown",
+                    "reason": "Requirement not stated",
+                    "tender_value": None,
+                    "expected": "BDT 100000",
+                    "source": "extraction",
+                }
+            ],
+        },
     }
 
 
 def test_exact_calculation_uses_stored_operands(context: dict[str, Any]) -> None:
     result = analyze(context, AnalyzeInput(kind="calculation"))
     assert "0.79600000" in result.formulas[-1]
-    assert result.rows[1].value == pytest.approx(.76)
-    assert result.rows[-1].value == .796
+    assert result.rows[1].value == pytest.approx(0.76)
+    assert result.rows[-1].value == 0.796
     assert "not a win probability" in result.assumptions[-1]
 
 

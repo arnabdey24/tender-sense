@@ -319,18 +319,12 @@ def _notice_body(prompt: str) -> str:
             return tail.strip()
 
     lines = [line.strip() for line in prompt.splitlines() if line.strip()]
-    kept = [
-        line
-        for line in lines
-        if not line.startswith("Extract the structured attributes")
-    ]
+    kept = [line for line in lines if not line.startswith("Extract the structured attributes")]
     # Nothing but labelled fields left: prefer the title's value over its label.
     for line in kept:
         if line.startswith("Title:"):
             return line[len("Title:") :].strip()
-    return "\n".join(
-        line for line in kept if not line.startswith(_PROMPT_LABELS)
-    ).strip()
+    return "\n".join(line for line in kept if not line.startswith(_PROMPT_LABELS)).strip()
 
 
 def fake_explanation(prompt: str) -> MatchExplanation:

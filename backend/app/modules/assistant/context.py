@@ -89,9 +89,7 @@ async def load_workspace_context(db: AsyncSession, org_id: UUID) -> dict[str, An
     }
 
 
-async def load_context(
-    db: AsyncSession, org_id: UUID, tender_id: UUID | None
-) -> dict[str, Any]:
+async def load_context(db: AsyncSession, org_id: UUID, tender_id: UUID | None) -> dict[str, Any]:
     if tender_id is None:
         return await load_workspace_context(db, org_id)
     tender = await get_tender_detail(db, tender_id)

@@ -24,16 +24,30 @@ export function VoiceOrb({
   state = "idle",
   level = 0,
   small = false,
+  intro = false,
+  live = false,
 }: {
   state?: VoiceState
   level?: number
   small?: boolean
+  /**
+   * Play the one-shot wake as the orb appears. Finite by design: it reports
+   * that the assistant has arrived, then rests.
+   */
+  intro?: boolean
+  /**
+   * A voice session is connected. Idle then means "the line is open" rather
+   * than "nothing is happening", so the orb keeps breathing to say so.
+   */
+  live?: boolean
 }) {
   return (
     <div
       className="assistant-orb"
       data-state={state}
       data-small={small}
+      data-intro={intro || undefined}
+      data-live={live || undefined}
       aria-hidden="true"
       style={{ "--voice-level": level } as CSSProperties}
     >
@@ -65,7 +79,7 @@ export function VoiceControls({
 }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border bg-muted/40 p-3">
-      <VoiceOrb small state={state} level={level} />
+      <VoiceOrb small live state={state} level={level} />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium" role="status">
           {labels[state]}

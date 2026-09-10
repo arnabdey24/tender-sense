@@ -569,6 +569,54 @@
   animation: assistant-voice-rotate 4s linear infinite;
 }
 
+/*
+ * The panel used to open on a static orb, which read as a picture of the
+ * assistant rather than the assistant. This is a single authored moment: the
+ * orb gathers itself as the panel arrives and then rests. No fill mode, so
+ * once it ends the base rule resumes and amplitude still drives the scale.
+ */
+.assistant-orb[data-intro] .assistant-orb-core {
+  animation: assistant-orb-wake 1500ms var(--motion-ease-out);
+}
+
+.assistant-orb[data-intro] .assistant-orb-ring {
+  animation: assistant-orb-ring-in 1500ms var(--motion-ease-out);
+}
+
+.assistant-orb[data-intro] .assistant-orb-ring-second {
+  animation-delay: 160ms;
+}
+
+/*
+ * The orb answers a pointer. It is the assistant's face, and a face that does
+ * not react to being approached reads as a picture of one.
+ */
+.assistant-orb:hover .assistant-orb-core {
+  transform: scale(calc(0.98 + var(--voice-level) * 0.18));
+  filter: saturate(1.12);
+}
+
+.assistant-orb:hover .assistant-orb-ring {
+  transform: scale(calc(1 + var(--voice-level) * 0.35));
+}
+
+.assistant-orb .assistant-orb-ring {
+  transition:
+    transform 220ms var(--motion-ease-out),
+    border-color 220ms var(--motion-ease-out);
+}
+
+/*
+ * While a voice session is connected, idle is not "nothing is happening" —
+ * the line is open and the assistant is waiting on you. Ambient motion here
+ * is reporting that state, which is the only thing motion is allowed to do.
+ * Slower than the listening morph so the two never read as the same thing.
+ */
+.assistant-orb[data-live][data-state="idle"] .assistant-orb-core,
+.assistant-orb[data-live][data-state="permission"] .assistant-orb-core {
+  animation: assistant-voice-morph 4.5s ease-in-out infinite alternate;
+}
+
 .assistant-orb[data-state="muted"] {
   filter: grayscale(1);
   opacity: 0.6;
@@ -584,6 +632,41 @@
   }
   to {
     border-radius: 60% 40% 44% 56%;
+  }
+}
+
+@keyframes assistant-orb-wake {
+  from {
+    transform: scale(0.7) rotate(-8deg);
+    opacity: 0;
+    border-radius: 50%;
+  }
+  35% {
+    transform: scale(1.06) rotate(2deg);
+    opacity: 1;
+    border-radius: 52% 48% 56% 44%;
+  }
+  /* A second, smaller swell rather than a stretched single one: the orb
+     settles into its resting shape instead of easing to a stop. */
+  65% {
+    transform: scale(0.94) rotate(-1deg);
+    border-radius: 40% 60% 44% 56%;
+  }
+  to {
+    transform: scale(0.9) rotate(0deg);
+    opacity: 1;
+    border-radius: 44% 56% 60% 40%;
+  }
+}
+
+@keyframes assistant-orb-ring-in {
+  from {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 1;
   }
 }
 
@@ -616,5 +699,11 @@
   .assistant-panel {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* The launcher's lift is a transform, so it needs saying separately. */
+  .assistant-launcher button {
+    transition: none !important;
+    transform: none !important;
   }
 }

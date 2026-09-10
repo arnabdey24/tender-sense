@@ -139,10 +139,15 @@ export function AppSidebar() {
         {/*
           The collapse control lives here, not in the page header, so the
           breadcrumb can start on the content column's gutter instead of being
-          pushed 45px right by a button sitting in the reading line. Collapsing
-          hides it; the rail and Cmd/Ctrl+B bring the sidebar back.
+          pushed 45px right by a button sitting in the reading line.
+
+          It used to hide itself once collapsed, on the reasoning that the rail
+          and Cmd/Ctrl+B bring the sidebar back. Both are real, and neither is
+          visible: the rail is a four-pixel strip nobody finds by looking, so
+          collapsing the sidebar left no way back that a person could see. The
+          header stacks into the 48px rail instead and keeps the control.
         */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-0.5">
           <SidebarMenu className="min-w-0 flex-1">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -156,7 +161,7 @@ export function AppSidebar() {
                   size={26}
                   className="size-6.5! text-primary group-data-[collapsible=icon]:size-5!"
                 />
-                <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+                <div className="flex min-w-0 flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
                   <span className="font-semibold tracking-[-0.012em]">
                     Tender<span className="text-primary">Sense</span>
                   </span>
@@ -167,7 +172,7 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <SidebarTrigger className="shrink-0 group-data-[collapsible=icon]:hidden" />
+          <SidebarTrigger className="shrink-0" />
         </div>
       </SidebarHeader>
 

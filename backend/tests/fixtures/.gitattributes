@@ -1,0 +1,4 @@
+# Golden fixtures are byte-exact captures of what a portal actually sent.
+# Git's line-ending normalisation would rewrite them, so a parser tested here
+# would no longer be tested against the real bytes.
+* -text

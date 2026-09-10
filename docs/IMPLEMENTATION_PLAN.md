@@ -197,7 +197,7 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | M0 Scaffold (2–3 d) | **done** | uv project, settings, structlog, alembic + extensions, health, compose (db, redis, api, worker, caddy, mailpit), frontend init (shadcn, router, query, client, layouts, guards, MSW), CI, Makefile | `docker compose up` → health green, SPA shell loads |
 | M1 Identity (4–5 d) | **done** | users + profile endpoint, register/login/verify/reset, refresh rotation, Google OIDC, orgs, memberships, invites, outbox + auth/invite templates, RBAC; frontend auth pages, account + profile form, organization settings, members/invites, invite accept | Register → verify via Mailpit → create org → invite → Google sign-in |
 | M2 Tender pool (3 d) | **done** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API, superuser source CRUD + manual/bulk tender entry; frontend tenders list + detail (shared pool) | Browse/search 40 seeded tenders |
-| M3 AI core + matching (5–6 d) | **in progress** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
+| M3 AI core + matching (5–6 d) | **done** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
 | M4 Rules + explanations + decisions + eval (4–5 d) | **planned** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
 | M5 Ingestion (5 d) | **planned** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
 | M6 Notifications (4 d) | **planned** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
@@ -495,6 +495,31 @@ The fake client also gained separate `fail_generation` and `fail_embedding`
 switches. They fail independently in reality — an extraction outage must not
 stop a notice being embedded and matched — and the old single `fail` flag broke
 both, which is why the degraded-path test had been passing for the wrong reason.
+
+**M3 demonstrated against live Gemini.** The sample Dhaka systems integrator was
+seeded and all 40 notices processed through the real API. The feed is
+semantically right: the top four are an e-government service portal (S, 82%), a
+national MIS (S, 81%), digital-governance capacity building (S, 79%) and
+enterprise network infrastructure (A, 77%) — exactly the work that company does,
+found without a single keyword rule. The verdict card names the specific facets
+that drove each score, including the past project that matched.
+
+Distribution over the 34 open notices: 3 S, 9 A, 22 B. Every match currently
+reads "Needs checking / Hold" because the rule engine lands in M4 — which is
+honest rather than a placeholder: nothing has checked eligibility, so nothing
+claims to have.
+
+Two further defects found and fixed while verifying:
+
+| Defect | Fix |
+|---|---|
+| A match written incorrectly stays wrong forever. The fingerprint guard sees unchanged inputs and skips it, so a verdict produced by a bug, an outage or a half-finished deploy can never be recomputed | `rematch_org` takes `force`, which bypasses the guard. Nothing else repairs those rows |
+| The tender breadcrumb title-cased the UUID in the URL, rendering "01a08644 403e 7ef2 8706 Babeb782048a" | Record ids resolve to "Detail"; the page heading already names the record. Covered by a test |
+
+Also worth recording: running two seed processes concurrently collided on
+`tender_extractions (tender_id, version)`, because the version is read then
+written without a lock. ARQ's `_job_id` dedupe prevents this in production, but
+the constraint is what makes the race visible rather than silently duplicating.
 
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.

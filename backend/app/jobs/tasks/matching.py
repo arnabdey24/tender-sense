@@ -174,12 +174,18 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
 
 
 async def rematch_org(
-    ctx: dict[str, Any], org_id: str, reason: str = "profile_changed"
+    ctx: dict[str, Any], org_id: str, reason: str = "profile_changed", force: bool = False
 ) -> dict[str, Any]:
     """Re-score one tenant against the open pool.
 
     Only open tenders: re-scoring a notice that already closed cannot change
     what anyone does about it, and the pool grows without bound.
+
+    ``force`` ignores the fingerprint guard. Normally a match whose inputs are
+    unchanged is left alone, which is what keeps a daily scrape cheap — but it
+    also makes a *wrong* match sticky, because a verdict written by a bug or a
+    half-finished deploy has the same fingerprint as a correct one. This is the
+    lever that repairs those; nothing else will.
     """
     client = _client(ctx)
     result: dict[str, Any] = {
@@ -241,6 +247,7 @@ async def rematch_org(
                     embedding_model=client.embedding_model,
                     thresholds=thresholds,
                     reason=reason,
+                    force=force,
                 )
             if outcome.not_scorable:
                 result["not_scorable"] += 1

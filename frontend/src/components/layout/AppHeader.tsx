@@ -16,6 +16,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { humanizeSegment } from "@/components/layout/breadcrumb-labels"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -38,24 +39,6 @@ import { isApiError } from "@/lib/api/errors"
 import { switchOrg } from "@/lib/auth/session"
 import { useAuthStore } from "@/lib/auth/store"
 
-const LABELS: Record<string, string> = {
-  app: "Home",
-  dashboard: "Dashboard",
-  today: "Today",
-  tenders: "Tenders",
-  pipeline: "Pipeline",
-  notifications: "Notifications",
-  settings: "Settings",
-  onboarding: "Onboarding",
-}
-
-function humanize(segment: string) {
-  return (
-    LABELS[segment] ??
-    segment.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-  )
-}
-
 function AutoBreadcrumb() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const segments = pathname.split("/").filter(Boolean)
@@ -71,10 +54,10 @@ function AutoBreadcrumb() {
               {index > 0 ? <BreadcrumbSeparator /> : null}
               <BreadcrumbItem>
                 {isLast ? (
-                  <BreadcrumbPage>{humanize(segment)}</BreadcrumbPage>
+                  <BreadcrumbPage>{humanizeSegment(segment)}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink render={<Link to={href} />}>
-                    {humanize(segment)}
+                    {humanizeSegment(segment)}
                   </BreadcrumbLink>
                 )}
               </BreadcrumbItem>

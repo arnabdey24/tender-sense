@@ -10,6 +10,7 @@ from __future__ import annotations
 from app.db.base import Base
 from app.modules.auth.models import AuthToken, RefreshSession, TokenPurpose
 from app.modules.decisions.models import Decision, TenderDecision
+from app.modules.matching.ai_usage import AiUsage
 from app.modules.matching.models import (
     EligibilityStatus,
     ExplanationKind,
@@ -59,6 +60,7 @@ from app.modules.tenders.models import (
 from app.modules.users.models import OAuthAccount, User
 
 __all__ = [
+    "AiUsage",
     "AuthToken",
     "Base",
     "CompanyProfile",

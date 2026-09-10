@@ -198,7 +198,7 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | M1 Identity (4–5 d) | **done** | users + profile endpoint, register/login/verify/reset, refresh rotation, Google OIDC, orgs, memberships, invites, outbox + auth/invite templates, RBAC; frontend auth pages, account + profile form, organization settings, members/invites, invite accept | Register → verify via Mailpit → create org → invite → Google sign-in |
 | M2 Tender pool (3 d) | **done** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API, superuser source CRUD + manual/bulk tender entry; frontend tenders list + detail (shared pool) | Browse/search 40 seeded tenders |
 | M3 AI core + matching (5–6 d) | **done** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
-| M4 Rules + explanations + decisions + eval (4–5 d) | **in progress** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
+| M4 Rules + explanations + decisions + eval (4–5 d) | **done** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
 | M5 Ingestion (5 d) | **planned** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
 | M6 Notifications (4 d) | **planned** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
 | M7 Hardening (3–4 d) | **planned** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
@@ -625,6 +625,39 @@ cover both paths.
 
 That is exactly what the preview is for: the rule was written correctly, and the
 feature still showed the customer that it would flag everything.
+
+**M4 done — explanations, budget and evaluation.** Model-written explanations
+are given the *conclusions* (grade, verdict, which facets matched, which rules
+failed) and asked to phrase them, never handed the raw notice and asked to
+judge. Prose that disagreed with the badge beside it would cost trust in both.
+
+Explanations run after matching, not inside it: a match must exist and be
+readable even when the model is unavailable, and every match keeps its templated
+explanation regardless, so an outage or an exhausted budget degrades the prose
+rather than the product. Only S/A — or an eligible B — is worth the tokens, and
+an unchanged verdict is never re-written.
+
+Spend is recorded per call in `ai_usage` and capped by a daily budget. A budget
+of zero means unlimited, because an operator who has not set one should not
+silently get no explanations.
+
+**Semantic matching measurably beats keyword search**, on the labelled set:
+
+| strategy | P@5 | R@10 | nDCG@10 |
+|---|---|---|---|
+| keyword | 1.00 | 0.70 | 0.813 |
+| semantic | 1.00 | **1.00** | **1.000** |
+
+The baseline is a fair one — the company's own profile terms against the notice
+text — because beating a straw man would prove nothing. But this is forty
+synthetic notices that we wrote and we labelled: it demonstrates the pipeline
+works end to end, not that it generalises. `scripts/calibrate_thresholds.py`
+fits S ≥ 0.73 against these labels versus the default 0.78, and says plainly in
+its own output that the numbers should be refit once real bid/skip decisions
+accumulate.
+
+Calibration is cheap by design: grading is arithmetic over similarities already
+stored, so a re-fit costs a `thresholds_version` bump and no AI calls at all.
 
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.

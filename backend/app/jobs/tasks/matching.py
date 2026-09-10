@@ -169,7 +169,14 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
             result["failed"] += 1
             logger.warning("match_failed", org_id=str(org.id), tender_id=tender_id, error=str(exc))
 
-    logger.info("tender_processed", **result)
+    # Explanations run last and only upgrade prose, so a failure here cannot
+    # cost anyone their match.
+    if result["matched"]:
+        from app.jobs.tasks.explanations import generate_explanations
+
+        result["explanations"] = await generate_explanations(ctx, tender_id)
+
+    logger.info("tender_processed", **{k: v for k, v in result.items() if k != "explanations"})
     return result
 
 

@@ -173,6 +173,36 @@ const PAGE_ROUTES = {
   "settings/sources": "/app/settings/sources",
   account: "/account",
 } as const
+
+/**
+ * Search params each list route understands. The server validates the values;
+ * this decides which of them a given page actually accepts, so asking for a
+ * grade on the tender pool drops the grade rather than putting an unknown key
+ * in the URL.
+ */
+const PAGE_FILTERS: Record<string, readonly string[]> = {
+  tenders: ["q", "category", "status", "source", "open_only", "sort"],
+  matches: ["grade", "eligibility", "recommendation", "sort"],
+}
+
+/** Sorts differ per route; an unrecognised one is dropped, not passed through. */
+const SORTS: Record<string, readonly string[]> = {
+  tenders: ["published_at", "deadline_at", "title", "estimated_value"],
+  matches: ["similarity", "deadline_at", "published_at", "created_at"],
+}
+
+function filtersFor(page: string, raw: Record<string, unknown>) {
+  const allowed = PAGE_FILTERS[page]
+  if (!allowed) return {}
+  const out: Record<string, unknown> = {}
+  for (const key of allowed) {
+    const value = raw[key]
+    if (value === undefined || value === null || value === "") continue
+    if (key === "sort" && !SORTS[page]?.includes(String(value))) continue
+    out[key] = value
+  }
+  return out
+}
 type Starter = {
   label: string
   text: string
@@ -446,7 +476,11 @@ function AssistantSession({
       void navigate({ to: "/app/tenders/$tenderId", params: { tenderId } })
       return
     }
-    void navigate({ to: route })
+    const search = filtersFor(
+      page,
+      (data.filters as Record<string, unknown>) ?? {}
+    )
+    void navigate({ to: route, search: search as never })
   }
   async function restore(id: string, selectionEpoch: number) {
     const result = await getConversation(id)

@@ -69,12 +69,51 @@ AppPage = Literal[
 ]
 
 
+class NavigateFilters(BaseModel):
+    """Filters the assistant may apply to a list it opens.
+
+    Every field is a closed set matching the route's own search schema, so a
+    model can express "open works tenders that are still open" but cannot invent
+    a filter the page does not have or smuggle arbitrary text into the URL. The
+    free-text search is the one open field and it is length-bounded.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    #: Tender pool.
+    q: str | None = Field(default=None, max_length=120)
+    category: Literal["goods", "works", "services", "consulting"] | None = None
+    status: Literal["open", "closed", "cancelled", "awarded"] | None = None
+    source: str | None = Field(default=None, max_length=40)
+    open_only: bool | None = None
+
+    #: Matches.
+    grade: Literal["S", "A", "B", "C"] | None = None
+    eligibility: Literal["eligible", "needs_verification", "ineligible"] | None = None
+    recommendation: Literal["bid", "hold", "skip"] | None = None
+
+    #: Both, though each page accepts a different subset; the client drops any
+    #: value its own route does not understand.
+    sort: (
+        Literal[
+            "published_at",
+            "deadline_at",
+            "title",
+            "estimated_value",
+            "similarity",
+            "created_at",
+        ]
+        | None
+    ) = None
+
+
 class NavigateInput(BaseModel):
     """Ask the client to move the workspace. Never changes business data."""
 
     model_config = ConfigDict(extra="forbid")
     page: AppPage | None = None
     tender_id: UUID | None = None
+    filters: NavigateFilters | None = None
     reason: str = Field(default="", max_length=200)
 
 

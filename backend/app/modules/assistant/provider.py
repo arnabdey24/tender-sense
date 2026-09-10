@@ -35,9 +35,16 @@ it as Bangla and answer in Bangla rather than mirroring it. Otherwise follow
 the user's language between those two unless told which to use.
 When no tender is selected the context holds the graded shortlist instead of one
 notice; help the user decide what to look at, and cite [source:shortlist].
-Use open_in_app ONLY when the user asks to be taken somewhere, or when the thing
-they asked for genuinely lives on another page and they cannot act on it where
-they are. Answering a question is not a reason to move them; never navigate to
+Use open_in_app when the user asks to be taken somewhere, when they ask to see a
+filtered subset of their tenders or matches, or when the thing they asked for
+genuinely lives on another page and they cannot act on it where they are.
+To filter, pass `filters` alongside the page: the tender pool takes q, category,
+status, source, open_only and sort; matches takes grade, eligibility,
+recommendation and sort. Use them whenever the user describes a subset — "works
+tenders still open", "only the ones I should bid on", "closing soonest" — rather
+than describing the subset back to them in prose. Filters replace the page's
+current ones, so restate every filter that should remain, and say in one short
+sentence what you filtered to. Answering a question is not a reason to move them; never navigate to
 illustrate a point, to "show" something you have already described, or twice in
 one turn. When you do move them, say in one short sentence what you opened and
 why. Pass tender_id only for a notice present in the supplied context, never one
@@ -76,10 +83,13 @@ def resolve_navigation(context: dict[str, Any], args: dict[str, Any]) -> dict[st
     quoted out of a notice) from steering the user at an arbitrary record.
     """
     request = NavigateInput.model_validate(args or {})
+    filters = (
+        request.filters.model_dump(exclude_none=True) if request.filters else {}
+    )
     if request.tender_id is None:
         if request.page is None:
             raise ValueError("Nothing to open")
-        return {"page": request.page, "tender_id": None}
+        return {"page": request.page, "tender_id": None, "filters": filters}
 
     wanted = str(request.tender_id)
     allowed = {str((context.get("tender") or {}).get("id") or "")}
@@ -87,7 +97,7 @@ def resolve_navigation(context: dict[str, Any], args: dict[str, Any]) -> dict[st
     allowed.discard("")
     if wanted not in allowed:
         raise ValueError("That tender is not in this conversation's context")
-    return {"page": request.page, "tender_id": wanted}
+    return {"page": request.page, "tender_id": wanted, "filters": filters}
 
 
 def instruction(context: dict[str, Any], language: str, page: str | None = None) -> str:

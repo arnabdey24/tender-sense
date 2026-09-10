@@ -1,0 +1,11 @@
+{% extends "_base.html.j2" %}
+{% block preheader %}{{ source_name }} has failed {{ consecutive_failures }} runs in a row.{% endblock %}
+{% block content %}
+<h1 style="margin: 0 0 14px; font-size: 20px; line-height: 28px; color: #16233c;">{{ source_name }} is not answering</h1>
+<p style="margin: 0 0 16px;">The last successful scrape was {{ last_success_label }}, after {{ consecutive_failures }} failed run{{ "s" if consecutive_failures != 1 }} in a row.</p>
+<p style="margin: 0 0 16px;">Until it recovers, notices from this portal will be missing from every organization's matches. A portal that has quietly stopped publishing looks exactly the same from the outside, which is why this is worth a look rather than a wait.</p>
+{% if last_error %}
+<p style="margin: 0 0 6px; font-weight: 600;">Last error</p>
+<p style="margin: 0 0 16px; padding: 12px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 18px; color: #5b6472; background-color: #f6f7f9; border-radius: 6px;">{{ last_error }}</p>
+{% endif %}
+{% endblock %}

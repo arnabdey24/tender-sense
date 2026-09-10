@@ -40,6 +40,14 @@ from app.jobs.tasks.maintenance import (
     refresh_fx_rates,
 )
 from app.jobs.tasks.matching import process_tender, rematch_org
+from app.jobs.tasks.notifications import (
+    alert_sources_down,
+    deadline_reminder_sweep,
+    digest_dispatcher,
+    notify_instant,
+    notify_tender_updated,
+    send_daily_digest,
+)
 from app.jobs.tasks.reprocessing import reparse_source, reprocess_tender
 from app.jobs.tasks.scraping import scrape_due_sources, scrape_source
 
@@ -69,6 +77,12 @@ DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
     mark_source_health,
     purge_old_runs,
     refresh_fx_rates,
+    notify_instant,
+    notify_tender_updated,
+    digest_dispatcher,
+    send_daily_digest,
+    deadline_reminder_sweep,
+    alert_sources_down,
 ]
 
 
@@ -99,6 +113,13 @@ class WorkerSettings:
         # Urgency moves with the clock rather than with any input, so it is
         # re-derived hourly instead of waiting for a re-match that never comes.
         cron(age_match_urgency, minute={5}, run_at_startup=False),
+        # Digests are due at each organization's own local time, so the
+        # dispatcher wakes four times an hour and decides per tenant.
+        cron(digest_dispatcher, minute={0, 15, 30, 45}, run_at_startup=False),
+        # Reminders are checked hourly but sent once per offset per tender,
+        # which the ledger — not this schedule — is what guarantees.
+        cron(deadline_reminder_sweep, minute={35}, run_at_startup=False),
+        cron(alert_sources_down, hour={2}, minute=30, run_at_startup=False),
     ]
     queue_name = QUEUE_DEFAULT
     #: Seeds arq's job context so tasks and log lines know which queue they ran on.

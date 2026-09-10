@@ -1,0 +1,1 @@
+{{ days_left }} day{{ "s" if days_left != 1 }} left: {{ tender_title }}

@@ -1,0 +1,11 @@
+{% extends "_base.html.j2" %}
+{% from "_macros.html.j2" import button, fallback %}
+{% block preheader %}Confirm this address to start receiving tender alerts.{% endblock %}
+{% block content %}
+<p style="margin: 0 0 16px;">Hello{% if recipient_name %} {{ recipient_name }}{% endif %},</p>
+<p style="margin: 0 0 16px;"><strong>{{ organization_name }}</strong> would like to send tender alerts to this address through {{ app_name }}.</p>
+<p style="margin: 0 0 8px;">Nothing will be sent until you confirm.</p>
+{{ button(verify_url, "Confirm this address") }}
+{{ fallback(verify_url) }}
+<p style="margin: 0; font-size: 13px; color: #79828f;">If you were not expecting this, ignore this message — the address stays unused.</p>
+{% endblock %}

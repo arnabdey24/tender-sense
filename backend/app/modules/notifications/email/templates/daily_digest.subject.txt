@@ -1,0 +1,1 @@
+{% if top_count %}{{ top_count }} new tender{{ "s" if top_count != 1 }} worth a look{% else %}Your {{ app_name }} shortlist{% endif %} — {{ digest_date }}

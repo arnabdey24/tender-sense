@@ -1,0 +1,12 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+Hello{% if recipient_name %} {{ recipient_name }}{% endif %},
+
+{{ organization_name }} would like to send tender alerts to this address
+through {{ app_name }}. Nothing will be sent until you confirm.
+
+Confirm this address:
+{{ verify_url }}
+
+If you were not expecting this, ignore this message — the address stays unused.
+{% endblock %}

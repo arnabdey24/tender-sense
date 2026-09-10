@@ -193,7 +193,17 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
 
         result["explanations"] = await generate_explanations(ctx, tender_id)
 
-    logger.info("tender_processed", **{k: v for k, v in result.items() if k != "explanations"})
+        # Alerts come after explanations so the email can quote the prose
+        # rather than a bare grade — and after matching, so an alert is never
+        # sent for a verdict that was then rolled back.
+        from app.jobs.tasks.notifications import notify_instant
+
+        result["alerts"] = await notify_instant(ctx, tender_id)
+
+    logger.info(
+        "tender_processed",
+        **{k: v for k, v in result.items() if k not in ("explanations", "alerts")},
+    )
     return result
 
 

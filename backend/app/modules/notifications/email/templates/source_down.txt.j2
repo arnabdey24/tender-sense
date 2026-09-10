@@ -1,0 +1,16 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+{{ source_name }} is not answering
+
+The last successful scrape was {{ last_success_label }}, after
+{{ consecutive_failures }} failed run{{ "s" if consecutive_failures != 1 }} in a row.
+
+Until it recovers, notices from this portal will be missing from every
+organization's matches. A portal that has quietly stopped publishing looks
+exactly the same from the outside, which is why this is worth a look.
+{% if last_error %}
+
+Last error:
+{{ last_error }}
+{% endif %}
+{% endblock %}

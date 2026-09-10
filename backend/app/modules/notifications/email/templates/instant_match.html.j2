@@ -1,0 +1,41 @@
+{% extends "_base.html.j2" %}
+{% from "_macros.html.j2" import button %}
+{% block preheader %}{{ tender_title }} — closes {{ deadline_label }}.{% endblock %}
+{% block content %}
+<p style="margin: 0 0 4px; font-size: 13px; letter-spacing: 0.4px; text-transform: uppercase; color: #79828f;">Grade {{ grade }} &middot; {{ eligibility_label }}</p>
+<h1 style="margin: 0 0 14px; font-size: 20px; line-height: 28px; color: #16233c;">{{ tender_title }}</h1>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 0 0 18px; border-collapse: collapse;">
+  <tr>
+    <td style="padding: 6px 0; font-size: 14px; color: #79828f; width: 130px;">Buyer</td>
+    <td style="padding: 6px 0; font-size: 14px; color: #2b3444;">{{ procuring_entity or "Not stated" }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 0; font-size: 14px; color: #79828f;">Closes</td>
+    <td style="padding: 6px 0; font-size: 14px; color: #2b3444;">{{ deadline_label }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 0; font-size: 14px; color: #79828f;">Source</td>
+    <td style="padding: 6px 0; font-size: 14px; color: #2b3444;">{{ source_name }}</td>
+  </tr>
+</table>
+{% if why_matched %}
+<p style="margin: 0 0 6px; font-weight: 600;">Why this looks like a fit</p>
+<ul style="margin: 0 0 18px; padding-left: 20px;">
+  {% for reason in why_matched %}
+  <li style="margin: 0 0 4px; font-size: 14px; line-height: 22px;">{{ reason }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% if gaps %}
+<p style="margin: 0 0 6px; font-weight: 600;">Worth checking</p>
+<ul style="margin: 0 0 18px; padding-left: 20px;">
+  {% for gap in gaps %}
+  <li style="margin: 0 0 4px; font-size: 14px; line-height: 22px;">{{ gap }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+{{ button(tender_url, "Open the tender") }}
+{% endblock %}
+{% block footer %}
+<p style="margin: 0 0 6px; font-size: 12px; line-height: 19px; color: #79828f;">Sent to {{ recipient_name }} because {{ organization_name }} asked for instant alerts on strong matches. <a href="{{ unsubscribe_url }}" style="color: #79828f;">Unsubscribe</a>.</p>
+{% endblock %}

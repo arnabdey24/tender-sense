@@ -20,6 +20,8 @@ import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthResetPasswordRouteImport } from './routes/_auth/reset-password'
 import { Route as AuthVerifyEmailRouteImport } from './routes/_auth/verify-email'
 import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
+import { Route as NotificationsUnsubscribeRouteImport } from './routes/notifications/unsubscribe'
+import { Route as NotificationsVerifyRouteImport } from './routes/notifications/verify'
 import { Route as AppAppIndexRouteImport } from './routes/_app/app/index'
 import { Route as AppAppDashboardRouteImport } from './routes/_app/app/dashboard'
 import { Route as AppAppMatchesRouteImport } from './routes/_app/app/matches'
@@ -30,6 +32,7 @@ import { Route as AppOnboardingIndexRouteImport } from './routes/_app/onboarding
 import { Route as AuthGoogleCallbackRouteImport } from './routes/auth/google/callback'
 import { Route as AppAppSettingsIndexRouteImport } from './routes/_app/app/settings/index'
 import { Route as AppAppSettingsMembersRouteImport } from './routes/_app/app/settings/members'
+import { Route as AppAppSettingsNotificationsRouteImport } from './routes/_app/app/settings/notifications'
 import { Route as AppAppSettingsOrganizationRouteImport } from './routes/_app/app/settings/organization'
 import { Route as AppAppSettingsProfileRouteImport } from './routes/_app/app/settings/profile'
 import { Route as AppAppSettingsRulesRouteImport } from './routes/_app/app/settings/rules'
@@ -90,6 +93,17 @@ const InviteAcceptRoute = InviteAcceptRouteImport.update({
   path: '/invite/accept',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotificationsUnsubscribeRoute =
+  NotificationsUnsubscribeRouteImport.update({
+    id: '/notifications/unsubscribe',
+    path: '/notifications/unsubscribe',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const NotificationsVerifyRoute = NotificationsVerifyRouteImport.update({
+  id: '/notifications/verify',
+  path: '/notifications/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppAppIndexRoute = AppAppIndexRouteImport.update({
   id: '/app/',
   path: '/app/',
@@ -140,6 +154,12 @@ const AppAppSettingsMembersRoute = AppAppSettingsMembersRouteImport.update({
   path: '/app/settings/members',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAppSettingsNotificationsRoute =
+  AppAppSettingsNotificationsRouteImport.update({
+    id: '/app/settings/notifications',
+    path: '/app/settings/notifications',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppAppSettingsOrganizationRoute =
   AppAppSettingsOrganizationRouteImport.update({
     id: '/app/settings/organization',
@@ -182,6 +202,8 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
   '/invite/accept': typeof InviteAcceptRoute
+  '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
+  '/notifications/verify': typeof NotificationsVerifyRoute
   '/app/dashboard': typeof AppAppDashboardRoute
   '/app/matches': typeof AppAppMatchesRoute
   '/app/notifications': typeof AppAppNotificationsRoute
@@ -191,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/app/': typeof AppAppIndexRoute
   '/onboarding/': typeof AppOnboardingIndexRoute
   '/app/settings/members': typeof AppAppSettingsMembersRoute
+  '/app/settings/notifications': typeof AppAppSettingsNotificationsRoute
   '/app/settings/organization': typeof AppAppSettingsOrganizationRoute
   '/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/app/settings/rules': typeof AppAppSettingsRulesRoute
@@ -209,6 +232,8 @@ export interface FileRoutesByTo {
   '/reset-password': typeof AuthResetPasswordRoute
   '/verify-email': typeof AuthVerifyEmailRoute
   '/invite/accept': typeof InviteAcceptRoute
+  '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
+  '/notifications/verify': typeof NotificationsVerifyRoute
   '/app/dashboard': typeof AppAppDashboardRoute
   '/app/matches': typeof AppAppMatchesRoute
   '/app/notifications': typeof AppAppNotificationsRoute
@@ -218,6 +243,7 @@ export interface FileRoutesByTo {
   '/app': typeof AppAppIndexRoute
   '/onboarding': typeof AppOnboardingIndexRoute
   '/app/settings/members': typeof AppAppSettingsMembersRoute
+  '/app/settings/notifications': typeof AppAppSettingsNotificationsRoute
   '/app/settings/organization': typeof AppAppSettingsOrganizationRoute
   '/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/app/settings/rules': typeof AppAppSettingsRulesRoute
@@ -239,6 +265,8 @@ export interface FileRoutesById {
   '/_auth/reset-password': typeof AuthResetPasswordRoute
   '/_auth/verify-email': typeof AuthVerifyEmailRoute
   '/invite/accept': typeof InviteAcceptRoute
+  '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
+  '/notifications/verify': typeof NotificationsVerifyRoute
   '/_app/app/dashboard': typeof AppAppDashboardRoute
   '/_app/app/matches': typeof AppAppMatchesRoute
   '/_app/app/notifications': typeof AppAppNotificationsRoute
@@ -248,6 +276,7 @@ export interface FileRoutesById {
   '/_app/app/': typeof AppAppIndexRoute
   '/_app/onboarding/': typeof AppOnboardingIndexRoute
   '/_app/app/settings/members': typeof AppAppSettingsMembersRoute
+  '/_app/app/settings/notifications': typeof AppAppSettingsNotificationsRoute
   '/_app/app/settings/organization': typeof AppAppSettingsOrganizationRoute
   '/_app/app/settings/profile': typeof AppAppSettingsProfileRoute
   '/_app/app/settings/rules': typeof AppAppSettingsRulesRoute
@@ -268,6 +297,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/invite/accept'
+    | '/notifications/unsubscribe'
+    | '/notifications/verify'
     | '/app/dashboard'
     | '/app/matches'
     | '/app/notifications'
@@ -277,6 +308,7 @@ export interface FileRouteTypes {
     | '/app/'
     | '/onboarding/'
     | '/app/settings/members'
+    | '/app/settings/notifications'
     | '/app/settings/organization'
     | '/app/settings/profile'
     | '/app/settings/rules'
@@ -295,6 +327,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/verify-email'
     | '/invite/accept'
+    | '/notifications/unsubscribe'
+    | '/notifications/verify'
     | '/app/dashboard'
     | '/app/matches'
     | '/app/notifications'
@@ -304,6 +338,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/onboarding'
     | '/app/settings/members'
+    | '/app/settings/notifications'
     | '/app/settings/organization'
     | '/app/settings/profile'
     | '/app/settings/rules'
@@ -324,6 +359,8 @@ export interface FileRouteTypes {
     | '/_auth/reset-password'
     | '/_auth/verify-email'
     | '/invite/accept'
+    | '/notifications/unsubscribe'
+    | '/notifications/verify'
     | '/_app/app/dashboard'
     | '/_app/app/matches'
     | '/_app/app/notifications'
@@ -333,6 +370,7 @@ export interface FileRouteTypes {
     | '/_app/app/'
     | '/_app/onboarding/'
     | '/_app/app/settings/members'
+    | '/_app/app/settings/notifications'
     | '/_app/app/settings/organization'
     | '/_app/app/settings/profile'
     | '/_app/app/settings/rules'
@@ -348,6 +386,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   HealthRoute: typeof HealthRoute
   InviteAcceptRoute: typeof InviteAcceptRoute
+  NotificationsUnsubscribeRoute: typeof NotificationsUnsubscribeRoute
+  NotificationsVerifyRoute: typeof NotificationsVerifyRoute
   AuthGoogleCallbackRoute: typeof AuthGoogleCallbackRoute
 }
 
@@ -430,6 +470,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteAcceptRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notifications/unsubscribe': {
+      id: '/notifications/unsubscribe'
+      path: '/notifications/unsubscribe'
+      fullPath: '/notifications/unsubscribe'
+      preLoaderRoute: typeof NotificationsUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications/verify': {
+      id: '/notifications/verify'
+      path: '/notifications/verify'
+      fullPath: '/notifications/verify'
+      preLoaderRoute: typeof NotificationsVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/app/': {
       id: '/_app/app/'
       path: '/app'
@@ -500,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAppSettingsMembersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/app/settings/notifications': {
+      id: '/_app/app/settings/notifications'
+      path: '/app/settings/notifications'
+      fullPath: '/app/settings/notifications'
+      preLoaderRoute: typeof AppAppSettingsNotificationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/app/settings/organization': {
       id: '/_app/app/settings/organization'
       path: '/app/settings/organization'
@@ -555,6 +616,7 @@ interface AppRouteChildren {
   AppAppIndexRoute: typeof AppAppIndexRoute
   AppOnboardingIndexRoute: typeof AppOnboardingIndexRoute
   AppAppSettingsMembersRoute: typeof AppAppSettingsMembersRoute
+  AppAppSettingsNotificationsRoute: typeof AppAppSettingsNotificationsRoute
   AppAppSettingsOrganizationRoute: typeof AppAppSettingsOrganizationRoute
   AppAppSettingsProfileRoute: typeof AppAppSettingsProfileRoute
   AppAppSettingsRulesRoute: typeof AppAppSettingsRulesRoute
@@ -574,6 +636,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAppIndexRoute: AppAppIndexRoute,
   AppOnboardingIndexRoute: AppOnboardingIndexRoute,
   AppAppSettingsMembersRoute: AppAppSettingsMembersRoute,
+  AppAppSettingsNotificationsRoute: AppAppSettingsNotificationsRoute,
   AppAppSettingsOrganizationRoute: AppAppSettingsOrganizationRoute,
   AppAppSettingsProfileRoute: AppAppSettingsProfileRoute,
   AppAppSettingsRulesRoute: AppAppSettingsRulesRoute,
@@ -609,6 +672,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   HealthRoute: HealthRoute,
   InviteAcceptRoute: InviteAcceptRoute,
+  NotificationsUnsubscribeRoute: NotificationsUnsubscribeRoute,
+  NotificationsVerifyRoute: NotificationsVerifyRoute,
   AuthGoogleCallbackRoute: AuthGoogleCallbackRoute,
 }
 export const routeTree = rootRouteImport

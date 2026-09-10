@@ -22,7 +22,16 @@ from app.modules.matching.models import (
     TenderMatchHistory,
     Urgency,
 )
-from app.modules.notifications.models import EmailOutbox, EmailStatus
+from app.modules.notifications.models import (
+    EmailOutbox,
+    EmailStatus,
+    Notification,
+    NotificationLedger,
+    NotificationRead,
+    NotificationRecipient,
+    NotificationSettings,
+    NotificationType,
+)
 from app.modules.orgs.models import (
     Invitation,
     Membership,
@@ -80,6 +89,12 @@ __all__ = [
     "MatchingConfig",
     "Membership",
     "MembershipStatus",
+    "Notification",
+    "NotificationLedger",
+    "NotificationRead",
+    "NotificationRecipient",
+    "NotificationSettings",
+    "NotificationType",
     "OAuthAccount",
     "OrgRole",
     "Organization",

@@ -1,0 +1,48 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+Your shortlist for {{ digest_date }}
+
+{{ total_count }} new match{{ "es" if total_count != 1 }} for {{ organization_name }}.
+{% if picks %}
+
+WORTH YOUR ATTENTION
+{% for pick in picks %}
+[{{ pick.grade }}] {{ pick.title }}
+  {{ pick.eligibility_label }} - {{ pick.procuring_entity or "Buyer not stated" }} - closes {{ pick.deadline_label }}
+  {{ pick.summary }}
+  {{ pick.url }}
+{% endfor %}
+{% endif %}
+{% if needs_verification %}
+
+NEEDS A HUMAN CHECK
+A hard rule could not be decided from the notice, so these are not rejections.
+{% for item in needs_verification %}
+  - {{ item.title }} ({{ item.reason }})
+    {{ item.url }}
+{% endfor %}
+{% endif %}
+{% if upcoming_deadlines %}
+
+BIDS YOU ARE WORKING ON
+{% for item in upcoming_deadlines %}
+  - {{ item.title }} - closes {{ item.deadline_label }}
+    {{ item.url }}
+{% endfor %}
+{% endif %}
+{% if other_count %}
+
+{{ other_count }} further match{{ "es" if other_count != 1 }} did not make the cut for this email.
+{% endif %}
+{% if setup_nudge %}
+
+{{ setup_nudge }}
+{% endif %}
+
+Open today's shortlist:
+{{ app_url }}/app/today
+{% endblock %}
+{% block footer %}
+Sent to {{ recipient_name }} as part of {{ organization_name }}'s daily
+shortlist. Unsubscribe: {{ unsubscribe_url }}
+{% endblock %}

@@ -1182,6 +1182,230 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Notification centre
+         * @description Recent notifications for the organization, newest first.
+         *
+         *     Read state is per user: one person clearing their badge does not hide a new
+         *     match from their colleagues.
+         */
+        get: operations["list_notifications_api_v1_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Badge count */
+        get: operations["unread_count_api_v1_notifications_unread_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark everything read */
+        post: operations["read_all_api_v1_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one read */
+        post: operations["read_one_api_v1_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Delivery preferences
+         * @description Created with sensible defaults on first read, in the org's own timezone.
+         */
+        get: operations["get_settings_api_v1_notification_settings_get"];
+        /** Update delivery preferences */
+        put: operations["update_settings_api_v1_notification_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-settings/test-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a test message
+         * @description Prove delivery works before the first real alert depends on it.
+         *
+         *     Rate limited per organization: this endpoint takes an arbitrary address and
+         *     sends mail to it, which is a spam cannon if left uncapped.
+         */
+        post: operations["send_test_email_api_v1_notification_settings_test_email_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-recipients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who receives this organization's mail */
+        get: operations["list_recipients_api_v1_notification_recipients_get"];
+        put?: never;
+        /**
+         * Add a recipient
+         * @description Register an address and email it a confirmation link.
+         *
+         *     Nothing is sent to it until someone holding it confirms — otherwise this
+         *     form would let one admin route a tender shortlist anywhere they liked.
+         */
+        post: operations["add_recipient_api_v1_notification_recipients_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notification-recipients/{recipient_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a recipient */
+        delete: operations["remove_recipient_api_v1_notification_recipients__recipient_id__delete"];
+        options?: never;
+        head?: never;
+        /** Change what a recipient receives */
+        patch: operations["update_recipient_api_v1_notification_recipients__recipient_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/notification-recipients/{recipient_id}/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend the confirmation link
+         * @description Issues a fresh token, so an old link sitting in an inbox stops working.
+         */
+        post: operations["resend_verification_api_v1_notification_recipients__recipient_id__resend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/verify-recipient": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an address from an emailed link
+         * @description Unauthenticated on purpose: the person confirming may have no account.
+         */
+        post: operations["verify_recipient_api_v1_notifications_verify_recipient_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unsubscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stop mail to an address
+         * @description Honoured immediately and permanently, with nothing asked in return.
+         *
+         *     The link keeps working after the first click, because someone re-clicking
+         *     an old message and being told "invalid link" concludes it failed — and
+         *     reports the next message as spam instead.
+         */
+        post: operations["unsubscribe_api_v1_notifications_unsubscribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/sources": {
         parameters: {
             query?: never;
@@ -1518,6 +1742,16 @@ export interface components {
          * @enum {string}
          */
         AttributeType: "money" | "list" | "enum" | "integer" | "boolean" | "text" | "datetime";
+        /** Body_unsubscribe_api_v1_notifications_unsubscribe_post */
+        Body_unsubscribe_api_v1_notifications_unsubscribe_post: {
+            /** Token */
+            token: string;
+        };
+        /** Body_verify_recipient_api_v1_notifications_verify_recipient_post */
+        Body_verify_recipient_api_v1_notifications_verify_recipient_post: {
+            /** Token */
+            token: string;
+        };
         /** CatalogueAttribute */
         CatalogueAttribute: {
             /** Key */
@@ -2091,6 +2325,95 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** NotificationRead */
+        NotificationRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            type: components["schemas"]["NotificationType"];
+            /** Title */
+            title: string;
+            /** Body */
+            body?: string | null;
+            /** Link */
+            link?: string | null;
+            /** Tender Id */
+            tender_id?: string | null;
+            /** Data */
+            data?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Read
+             * @default false
+             */
+            read: boolean;
+        };
+        /** NotificationSettingsRead */
+        NotificationSettingsRead: {
+            /** Inapp Enabled */
+            inapp_enabled: boolean;
+            /** Instant Enabled */
+            instant_enabled: boolean;
+            /** Instant Min Grade */
+            instant_min_grade: string;
+            /** Instant Requires Eligible */
+            instant_requires_eligible: boolean;
+            /** Digest Enabled */
+            digest_enabled: boolean;
+            /**
+             * Digest Time
+             * Format: time
+             */
+            digest_time: string;
+            /** Digest Timezone */
+            digest_timezone: string;
+            /** Digest Min Grade */
+            digest_min_grade: string;
+            /** Reminders Enabled */
+            reminders_enabled: boolean;
+            /** Reminder Offsets */
+            reminder_offsets: number[];
+        };
+        /**
+         * NotificationSettingsUpdate
+         * @description Every field optional: the form patches what the user actually changed.
+         */
+        NotificationSettingsUpdate: {
+            /** Inapp Enabled */
+            inapp_enabled?: boolean | null;
+            /** Instant Enabled */
+            instant_enabled?: boolean | null;
+            /** Instant Min Grade */
+            instant_min_grade?: string | null;
+            /** Instant Requires Eligible */
+            instant_requires_eligible?: boolean | null;
+            /** Digest Enabled */
+            digest_enabled?: boolean | null;
+            /** Digest Time */
+            digest_time?: string | null;
+            /** Digest Timezone */
+            digest_timezone?: string | null;
+            /** Digest Min Grade */
+            digest_min_grade?: string | null;
+            /** Reminders Enabled */
+            reminders_enabled?: boolean | null;
+            /** Reminder Offsets */
+            reminder_offsets?: number[] | null;
+        };
+        /**
+         * NotificationType
+         * @description What a message is about. Recipients subscribe per type.
+         * @enum {string}
+         */
+        NotificationType: "instant_match" | "daily_digest" | "deadline_reminder" | "tender_updated" | "source_down" | "system";
         /**
          * OnMissing
          * @description What to do when the attribute cannot be determined.
@@ -2403,6 +2726,18 @@ export interface components {
             /** Field */
             field: string;
         };
+        /**
+         * PublicActionResponse
+         * @description Answer to an unauthenticated verify/unsubscribe link.
+         */
+        PublicActionResponse: {
+            /** Status */
+            status: string;
+            /** Email */
+            email?: string | null;
+            /** Organization */
+            organization?: string | null;
+        };
         /** ReadinessResponse */
         ReadinessResponse: {
             /**
@@ -2414,6 +2749,48 @@ export interface components {
             database: boolean;
             /** Redis */
             redis: boolean;
+        };
+        /** RecipientCreate */
+        RecipientCreate: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Name */
+            name?: string | null;
+            /** Types */
+            types?: components["schemas"]["NotificationType"][];
+        };
+        /** RecipientRead */
+        RecipientRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name?: string | null;
+            /** Types */
+            types?: string[];
+            /** Verified At */
+            verified_at?: string | null;
+            /** Unsubscribed At */
+            unsubscribed_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** RecipientUpdate */
+        RecipientUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Types */
+            types?: components["schemas"]["NotificationType"][] | null;
         };
         /**
          * Recommendation
@@ -3136,6 +3513,26 @@ export interface components {
             canonical_url: string;
             /** Days To Deadline */
             days_to_deadline?: number | null;
+        };
+        /**
+         * TestEmailRequest
+         * @description Send a test message. Defaults to the signed-in user's own address.
+         */
+        TestEmailRequest: {
+            /** Email */
+            email?: string | null;
+        };
+        /** TestEmailResponse */
+        TestEmailResponse: {
+            /** Queued */
+            queued: boolean;
+            /** To Email */
+            to_email: string;
+        };
+        /** UnreadCount */
+        UnreadCount: {
+            /** Unread */
+            unread: number;
         };
         /**
          * Urgency
@@ -5147,6 +5544,413 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_DecisionWithTender_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_notifications_get: {
+        parameters: {
+            query?: {
+                /** @description Only what this user has not read */
+                unread_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unread_count_api_v1_notifications_unread_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCount"];
+                };
+            };
+        };
+    };
+    read_all_api_v1_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCount"];
+                };
+            };
+        };
+    };
+    read_one_api_v1_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Notification identifier */
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_settings_api_v1_notification_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsRead"];
+                };
+            };
+        };
+    };
+    update_settings_api_v1_notification_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationSettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationSettingsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_test_email_api_v1_notification_settings_test_email_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TestEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TestEmailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recipients_api_v1_notification_recipients_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientRead"][];
+                };
+            };
+        };
+    };
+    add_recipient_api_v1_notification_recipients_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipientCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_recipient_api_v1_notification_recipients__recipient_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Recipient identifier */
+                recipient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_recipient_api_v1_notification_recipients__recipient_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Recipient identifier */
+                recipient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipientUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resend_verification_api_v1_notification_recipients__recipient_id__resend_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Recipient identifier */
+                recipient_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipientRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_recipient_api_v1_notifications_verify_recipient_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_verify_recipient_api_v1_notifications_verify_recipient_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unsubscribe_api_v1_notifications_unsubscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_unsubscribe_api_v1_notifications_unsubscribe_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicActionResponse"];
                 };
             };
             /** @description Validation Error */

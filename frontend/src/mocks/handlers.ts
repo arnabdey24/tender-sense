@@ -5,7 +5,10 @@ import {
   invitationPreview,
   invitations,
   members,
+  notificationSettings,
+  notifications,
   organization,
+  recipients,
   session,
   user,
 } from "@/mocks/fixtures"
@@ -19,10 +22,9 @@ export const handlers = [
 
   // Signed out by default: the silent refresh finds no cookie.
   http.post("*/api/v1/auth/refresh", () =>
-    HttpResponse.json(
-      errorEnvelope("unauthenticated", "No active session."),
-      { status: 401 }
-    )
+    HttpResponse.json(errorEnvelope("unauthenticated", "No active session."), {
+      status: 401,
+    })
   ),
 
   http.post("*/api/v1/auth/login", () => HttpResponse.json(session())),
@@ -44,7 +46,9 @@ export const handlers = [
     HttpResponse.json({ message: "Verification email sent." })
   ),
   http.post("*/api/v1/auth/forgot-password", () =>
-    HttpResponse.json({ message: "If the account exists, a link is on its way." })
+    HttpResponse.json({
+      message: "If the account exists, a link is on its way.",
+    })
   ),
   http.post("*/api/v1/auth/reset-password", () => HttpResponse.json(session())),
   http.post("*/api/v1/auth/change-password", () =>
@@ -55,6 +59,36 @@ export const handlers = [
   http.post("*/api/v1/orgs", () =>
     HttpResponse.json(organization, { status: 201 })
   ),
+  http.get("*/api/v1/notifications", ({ request }) => {
+    const unreadOnly =
+      new URL(request.url).searchParams.get("unread_only") === "true"
+    return HttpResponse.json(
+      unreadOnly ? notifications.filter((n) => !n.read) : notifications
+    )
+  }),
+  http.get("*/api/v1/notifications/unread-count", () =>
+    HttpResponse.json({ unread: notifications.filter((n) => !n.read).length })
+  ),
+  http.post("*/api/v1/notifications/read-all", () =>
+    HttpResponse.json({ unread: 0 })
+  ),
+  http.post(
+    "*/api/v1/notifications/:id/read",
+    () => new HttpResponse(null, { status: 204 })
+  ),
+  http.get("*/api/v1/notification-settings", () =>
+    HttpResponse.json(notificationSettings)
+  ),
+  http.put("*/api/v1/notification-settings", async ({ request }) =>
+    HttpResponse.json({
+      ...notificationSettings,
+      ...((await request.json()) as object),
+    })
+  ),
+  http.get("*/api/v1/notification-recipients", () =>
+    HttpResponse.json(recipients)
+  ),
+
   http.get("*/api/v1/orgs/current", () => HttpResponse.json(organization)),
   http.patch("*/api/v1/orgs/current", () => HttpResponse.json(organization)),
   http.get("*/api/v1/orgs/current/members", () =>
@@ -68,8 +102,9 @@ export const handlers = [
   http.patch("*/api/v1/orgs/current/members/:userId", () =>
     HttpResponse.json(members[1])
   ),
-  http.delete("*/api/v1/orgs/current/members/:userId", () =>
-    new HttpResponse(null, { status: 204 })
+  http.delete(
+    "*/api/v1/orgs/current/members/:userId",
+    () => new HttpResponse(null, { status: 204 })
   ),
   http.get("*/api/v1/orgs/current/invitations", () =>
     HttpResponse.json(invitations)
@@ -80,8 +115,9 @@ export const handlers = [
   http.post("*/api/v1/orgs/current/invitations/:id/resend", () =>
     HttpResponse.json(invitations[0])
   ),
-  http.delete("*/api/v1/orgs/current/invitations/:id", () =>
-    new HttpResponse(null, { status: 204 })
+  http.delete(
+    "*/api/v1/orgs/current/invitations/:id",
+    () => new HttpResponse(null, { status: 204 })
   ),
 
   http.get("*/api/v1/invitations/:token", () =>

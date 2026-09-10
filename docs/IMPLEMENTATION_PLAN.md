@@ -200,8 +200,8 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | M3 AI core + matching (5–6 d) | **done** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
 | M4 Rules + explanations + decisions + eval (4–5 d) | **done** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
 | M5 Ingestion (5 d) | **done** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
-| M6 Notifications (4 d) | **in progress** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
-| M7 Hardening (3–4 d) | **planned** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
+| M6 Notifications (4 d) | **done** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
+| M7 Hardening (3–4 d) | **in progress** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
 
 ### Progress log
 
@@ -808,6 +808,65 @@ source row.
 whether those portals are answering — a degraded source is the honest
 explanation for a thin feed. Staff additionally get probe, scrape-now and
 replay, plus the run history that tells a broken scraper apart from a quiet week.
+
+**M6 done — telling people, exactly once.**
+
+Two rules run through the whole milestone, and almost every design decision in
+it follows from one of them.
+
+**Nothing is mailed to an unproven address.** Without verification, one admin
+could route a competitor's shortlist anywhere by typing an address into a
+settings form. An address receives nothing until someone holding it clicks a
+link; an unsubscribe is permanent; and the in-app centre still works for an
+organization that never adds an address at all.
+
+**Nothing is mailed twice.** Jobs retry, matches are re-scored, and the digest
+dispatcher wakes four times an hour. Every outbound piece of organization mail
+claims the `notification_ledger` first — a unique constraint on
+`(org, type, subject_key)`, claimed *before* anything is enqueued, so a crash
+between deciding and sending costs a message rather than duplicating one. The
+subject key is precise enough to be idempotent: `"<tender>:7"` is the seven-day
+reminder, and the two-day one is a different message about the same tender.
+
+Choices worth recording:
+
+- **The digest is sent at the reader's local time, not the server's.** It is
+  stored as a wall-clock time plus a timezone rather than as UTC, because
+  "eight in the morning" has to survive daylight saving and a company that
+  moves. A new organization inherits its own timezone, so a Dhaka company is
+  not mailed its "morning" shortlist in the afternoon.
+- **A quiet day sends nothing.** An empty digest every morning is how a daily
+  email becomes a filter rule; silence says the same thing and costs nothing.
+  The date stamp is still written, so a quiet day is not retried until midnight.
+- **Instant alerts default to S-grade *and* eligible.** "Drop what you are
+  doing" is a claim, and making it about a mediocre match — or about a tender
+  the company cannot legally bid on — is how a sender gets filtered. Both are
+  configurable; neither default is accidental.
+- **Read state is per user, not per notification.** A match belongs to the
+  company, so one person clearing the badge must not hide the news from their
+  colleagues. That is a `notification_reads` row rather than a flag.
+- **The unsubscribe token is stored raw, and deliberately so.** Unlike a
+  verification or reset token it has to be reproducible at every send, and it
+  is a capability to *stop* mail rather than to read anything. The same
+  reasoning keeps the link working after the first click: someone re-clicking
+  an old message and being told "invalid link" concludes it failed, and reports
+  the next message as spam instead.
+- **Portal outages go to staff, not customers.** A customer cannot fix a
+  scraper, and telling them their feed is incomplete without telling them when
+  it will be fixed only costs their confidence.
+
+Demonstrated end to end against the running stack: a scored S-grade match
+produced an in-app entry and an `instant_match` email that travelled through the
+outbox pump, over real SMTP, and into the inbox with the subject
+*"S-grade match: Supply and installation of core network switches"*.
+
+The frontend ships the notification centre with a polled unread badge on the
+header bell — a badge a minute stale costs nothing, while a socket that has to
+survive a proxy, a sleeping laptop and a token refresh costs a great deal — plus
+a settings page that saves as you change it, a recipient list that shows exactly
+which addresses are confirmed, and the two unauthenticated pages an emailed link
+lands on. The dashboard says once, where it will be read, when an organization
+has no confirmed address at all: matches are piling up in an app nobody has open.
 
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.

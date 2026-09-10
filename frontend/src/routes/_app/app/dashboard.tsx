@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { MatchList } from "@/features/matches/MatchList"
 import { useMatchStats, useTodayShortlist } from "@/features/matches/api"
+import { useRecipients } from "@/features/notifications/api"
 import { useCompleteness } from "@/features/profile/api"
 
 export const Route = createFileRoute("/_app/app/dashboard")({
@@ -47,13 +48,49 @@ function Stat({
   )
 }
 
+/**
+ * A company that never adds a recipient silently receives no email at all —
+ * matches pile up in an app nobody has open. Said once, where it will be read.
+ */
+function EmailDeliveryNudge() {
+  const recipients = useRecipients()
+  if (recipients.isPending || recipients.error) return null
+  if (
+    (recipients.data ?? []).some((r) => r.verified_at && !r.unsubscribed_at)
+  ) {
+    return null
+  }
+
+  const awaiting = (recipients.data ?? []).some((r) => !r.verified_at)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">
+          Nothing is being emailed yet
+        </CardTitle>
+        <CardDescription>
+          {awaiting
+            ? "An address is waiting to be confirmed. Until someone clicks the link in it, matches only appear here in the app."
+            : "Matches appear here, but nobody receives them by email. Add an address so a strong match reaches you when nobody has the app open."}{" "}
+          <Link
+            to="/app/settings/notifications"
+            className="underline underline-offset-4"
+          >
+            Set up notifications
+          </Link>
+        </CardDescription>
+      </CardHeader>
+    </Card>
+  )
+}
+
 function DashboardPage() {
   const stats = useMatchStats()
   const shortlist = useTodayShortlist({ page_size: 5 })
   const completeness = useCompleteness()
 
-  const strong =
-    (stats.data?.by_grade?.S ?? 0) + (stats.data?.by_grade?.A ?? 0)
+  const strong = (stats.data?.by_grade?.S ?? 0) + (stats.data?.by_grade?.A ?? 0)
 
   return (
     <>
@@ -68,7 +105,11 @@ function DashboardPage() {
           value={stats.data?.total}
           isLoading={stats.isPending}
         />
-        <Stat label="Strong fits (S/A)" value={strong} isLoading={stats.isPending} />
+        <Stat
+          label="Strong fits (S/A)"
+          value={strong}
+          isLoading={stats.isPending}
+        />
         <Stat
           label="Closing within 7 days"
           value={stats.data?.closing_within_7_days}
@@ -111,6 +152,8 @@ function DashboardPage() {
           </CardContent>
         </Card>
       ) : null}
+
+      <EmailDeliveryNudge />
 
       <Card>
         <CardHeader>

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
+  BellIcon,
   Building2Icon,
   ChevronRightIcon,
   SatelliteDishIcon,
@@ -47,6 +48,12 @@ const SECTIONS = [
     icon: SatelliteDishIcon,
     title: "Sources",
     description: "The procurement portals we watch, and whether they answer.",
+  },
+  {
+    to: "/app/settings/notifications",
+    icon: BellIcon,
+    title: "Notifications",
+    description: "What you are told about, when, and which addresses hear it.",
   },
   {
     to: "/app/settings/members",

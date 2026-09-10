@@ -129,6 +129,7 @@ async def scrape_source(
     pages = limit_pages or int(config.get("max_pages", 20))
     consecutive_failures = 0
     new_tender_ids: list[str] = []
+    amended_tender_ids: list[str] = []
     fatal: str | None = None
 
     try:
@@ -172,6 +173,9 @@ async def scrape_source(
                     result["created"] += 1
                 elif outcome.outcome is UpsertOutcome.UPDATED:
                     result["updated"] += 1
+                    # Only the upsert knows an amendment happened; by the time
+                    # the pipeline sees the row it looks like any other notice.
+                    amended_tender_ids.append(str(outcome.tender_id))
                 else:
                     result["unchanged"] += 1
                 if outcome.needs_processing:
@@ -209,8 +213,11 @@ async def scrape_source(
     # time, and holding it open through extraction would stall the next portal.
     for tender_id in new_tender_ids:
         await enqueue_processing(tender_id)
+    for tender_id in amended_tender_ids:
+        await _enqueue_update_notice(tender_id)
 
     result["queued"] = len(new_tender_ids)
+    result["amended"] = len(amended_tender_ids)
     result["status"] = status.value
     if fatal:
         result["error"] = fatal
@@ -238,6 +245,15 @@ async def _finish(
     run.failed = int(result.get("failed", 0))
     run.error = error
     await session.flush()
+
+
+async def _enqueue_update_notice(tender_id: str) -> None:
+    """Tell organizations bidding on this tender that the portal changed it."""
+    try:
+        queue = await get_queue()
+        await queue.enqueue_job("notify_tender_updated", tender_id, _job_id=f"updated:{tender_id}")
+    except Exception as exc:  # pragma: no cover - Redis down must not lose the row
+        logger.warning("update_notice_enqueue_failed", tender_id=tender_id, error=str(exc))
 
 
 @tracked_job

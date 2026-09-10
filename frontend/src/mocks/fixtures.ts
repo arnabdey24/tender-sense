@@ -6,6 +6,10 @@ type MemberRead = components["schemas"]["MemberRead"]
 type InvitationRead = components["schemas"]["InvitationRead"]
 type InvitationPreview = components["schemas"]["InvitationPreview"]
 type OrganizationRead = components["schemas"]["OrganizationRead"]
+type NotificationRead = components["schemas"]["NotificationRead"]
+type NotificationSettingsRead =
+  components["schemas"]["NotificationSettingsRead"]
+type RecipientRead = components["schemas"]["RecipientRead"]
 
 export const ORG_ID = "11111111-1111-4111-8111-111111111111"
 export const OTHER_ORG_ID = "22222222-2222-4222-8222-222222222222"
@@ -107,3 +111,54 @@ export function errorEnvelope(
 ) {
   return { error: { code, message, ...(details ? { details } : {}) } }
 }
+
+/** In-app notifications for the centre. */
+export const notifications: NotificationRead[] = [
+  {
+    id: "55555555-5555-4555-8555-555555555555",
+    type: "instant_match",
+    title: "Grade S match: Enterprise network switches",
+    body: "Strong overlap with your networking work.",
+    link: "/app/tenders/66666666-6666-4666-8666-666666666666",
+    tender_id: "66666666-6666-4666-8666-666666666666",
+    data: {},
+    created_at: new Date().toISOString(),
+    read: false,
+  },
+  {
+    id: "77777777-7777-4777-8777-777777777777",
+    type: "deadline_reminder",
+    title: "2 days left: Road resurfacing",
+    body: "You marked this one as a bid.",
+    link: "/app/tenders/88888888-8888-4888-8888-888888888888",
+    tender_id: "88888888-8888-4888-8888-888888888888",
+    data: { days_left: 2 },
+    created_at: new Date().toISOString(),
+    read: true,
+  },
+]
+
+export const notificationSettings: NotificationSettingsRead = {
+  inapp_enabled: true,
+  instant_enabled: true,
+  instant_min_grade: "S",
+  instant_requires_eligible: true,
+  digest_enabled: true,
+  digest_time: "08:00:00",
+  digest_timezone: "Asia/Dhaka",
+  digest_min_grade: "B",
+  reminders_enabled: true,
+  reminder_offsets: [7, 2],
+}
+
+export const recipients: RecipientRead[] = [
+  {
+    id: "99999999-9999-4999-8999-999999999999",
+    email: "bids@example.com",
+    name: "Bid desk",
+    types: [],
+    verified_at: new Date().toISOString(),
+    unsubscribed_at: null,
+    created_at: new Date().toISOString(),
+  },
+]

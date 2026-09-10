@@ -1,0 +1,22 @@
+{% extends "_base.html.j2" %}
+{% from "_macros.html.j2" import button %}
+{% block preheader %}Your bid closes {{ deadline_label }}.{% endblock %}
+{% block content %}
+<p style="margin: 0 0 4px; font-size: 13px; letter-spacing: 0.4px; text-transform: uppercase; color: {{ "#b42318" if days_left <= 2 else "#79828f" }};">{{ days_left }} day{{ "s" if days_left != 1 }} left</p>
+<h1 style="margin: 0 0 14px; font-size: 20px; line-height: 28px; color: #16233c;">{{ tender_title }}</h1>
+<p style="margin: 0 0 16px;">{{ organization_name }} marked this one as a bid. It closes <strong>{{ deadline_label }}</strong>.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width: 100%; margin: 0 0 8px; border-collapse: collapse;">
+  <tr>
+    <td style="padding: 6px 0; font-size: 14px; color: #79828f; width: 130px;">Buyer</td>
+    <td style="padding: 6px 0; font-size: 14px; color: #2b3444;">{{ procuring_entity or "Not stated" }}</td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 0; font-size: 14px; color: #79828f;">Source</td>
+    <td style="padding: 6px 0; font-size: 14px; color: #2b3444;">{{ source_name }}</td>
+  </tr>
+</table>
+{{ button(tender_url, "Open the tender") }}
+{% endblock %}
+{% block footer %}
+<p style="margin: 0 0 6px; font-size: 12px; line-height: 19px; color: #79828f;">Sent to {{ recipient_name }} because {{ organization_name }} is bidding on this tender. <a href="{{ unsubscribe_url }}" style="color: #79828f;">Unsubscribe</a>.</p>
+{% endblock %}

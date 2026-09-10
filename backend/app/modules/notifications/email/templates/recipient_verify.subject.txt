@@ -1,0 +1,1 @@
+Confirm you want {{ app_name }} alerts for {{ organization_name }}

@@ -1,0 +1,31 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+Grade {{ grade }} - {{ eligibility_label }}
+
+{{ tender_title }}
+
+Buyer:  {{ procuring_entity or "Not stated" }}
+Closes: {{ deadline_label }}
+Source: {{ source_name }}
+{% if why_matched %}
+
+Why this looks like a fit:
+{% for reason in why_matched %}
+  - {{ reason }}
+{% endfor %}
+{% endif %}
+{% if gaps %}
+
+Worth checking:
+{% for gap in gaps %}
+  - {{ gap }}
+{% endfor %}
+{% endif %}
+
+Open the tender:
+{{ tender_url }}
+{% endblock %}
+{% block footer %}
+Sent to {{ recipient_name }} because {{ organization_name }} asked for instant
+alerts on strong matches. Unsubscribe: {{ unsubscribe_url }}
+{% endblock %}

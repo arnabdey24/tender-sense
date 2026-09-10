@@ -1,0 +1,18 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+{{ days_left }} day{{ "s" if days_left != 1 }} left
+
+{{ tender_title }}
+
+{{ organization_name }} marked this one as a bid. It closes {{ deadline_label }}.
+
+Buyer:  {{ procuring_entity or "Not stated" }}
+Source: {{ source_name }}
+
+Open the tender:
+{{ tender_url }}
+{% endblock %}
+{% block footer %}
+Sent to {{ recipient_name }} because {{ organization_name }} is bidding on this
+tender. Unsubscribe: {{ unsubscribe_url }}
+{% endblock %}

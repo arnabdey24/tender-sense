@@ -57,6 +57,14 @@ export const qk = {
       ["decisions", "list", params] as const,
     forTender: (tenderId: string) => ["decisions", "tender", tenderId] as const,
   },
+  notifications: {
+    all: () => ["notifications"] as const,
+    list: (unreadOnly: boolean) =>
+      ["notifications", "list", unreadOnly] as const,
+    unreadCount: () => ["notifications", "unread-count"] as const,
+    settings: () => ["notifications", "settings"] as const,
+    recipients: () => ["notifications", "recipients"] as const,
+  },
   admin: {
     all: () => ["admin"] as const,
     sources: () => ["admin", "sources"] as const,

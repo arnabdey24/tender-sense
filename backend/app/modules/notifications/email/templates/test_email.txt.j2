@@ -1,0 +1,10 @@
+{% extends "_base.txt.j2" %}
+{% block content %}
+Delivery is working
+
+{{ triggered_by }} sent this from {{ organization_name }}'s notification
+settings to check that {{ app_name }} mail reaches this address.
+
+If it landed in spam, that is worth fixing before the first real alert arrives
+- a shortlist nobody sees is the same as no shortlist.
+{% endblock %}

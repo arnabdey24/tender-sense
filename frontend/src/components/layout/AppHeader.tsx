@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
+import { useUnreadCount } from "@/features/notifications/api"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
@@ -152,6 +153,46 @@ function OrgSwitcher() {
   )
 }
 
+/**
+ * The bell, with an unread count polled in the background. A badge that is a
+ * minute stale costs nothing; a socket that has to survive a proxy, a sleeping
+ * laptop and a token refresh costs a great deal.
+ */
+function NotificationBell() {
+  const activeOrgId = useAuthStore((s) => s.activeOrgId)
+  const unread = useUnreadCount(Boolean(activeOrgId))
+  const count = unread.data?.unread ?? 0
+  const label = count ? `Notifications (${count} unread)` : "Notifications"
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={label}
+            className="relative"
+            render={<Link to="/app/notifications" />}
+            nativeButton={false}
+          />
+        }
+      >
+        <BellIcon />
+        {count > 0 && (
+          <span
+            aria-hidden
+            className="absolute top-1 right-1 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-4 font-medium text-primary-foreground"
+          >
+            {count > 9 ? "9+" : count}
+          </span>
+        )}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function AppHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
@@ -160,22 +201,7 @@ export function AppHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
       <div className="min-w-0 flex-1">{breadcrumb ?? <AutoBreadcrumb />}</div>
       <div className="flex items-center gap-2">
         <OrgSwitcher />
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Notifications"
-                render={<Link to="/app/notifications" />}
-                nativeButton={false}
-              />
-            }
-          >
-            <BellIcon />
-          </TooltipTrigger>
-          <TooltipContent>Notifications</TooltipContent>
-        </Tooltip>
+        <NotificationBell />
       </div>
     </header>
   )

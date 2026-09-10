@@ -13,16 +13,13 @@
 	# Headers the SPA needs and the API sets for itself. They live here too
 	# because the app is served by this proxy as static files — nothing else
 	# is in a position to add them to an index.html response.
+	# Headers every response gets, whoever served it.
 	header {
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY
 		Referrer-Policy strict-origin-when-cross-origin
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
 		Cross-Origin-Opener-Policy same-origin
-		# The SPA loads only its own bundle and talks only to its own origin.
-		# `unsafe-inline` for styles is what Tailwind's runtime style injection
-		# needs; scripts get no such exemption, which is the half that matters.
-		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		# Served over TLS only, so it cannot pin a plain-HTTP dev host.
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		-Server
@@ -43,6 +40,13 @@
 	}
 
 	handle {
+		# The SPA's policy, set here rather than globally so it cannot loosen
+		# the API's own — the API serves no HTML and no scripts, so it declares
+		# `default-src 'none'` for itself and should keep it.
+		#
+		# `unsafe-inline` for styles is what Tailwind's runtime style injection
+		# needs; scripts get no such exemption, which is the half that matters.
+		header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 		reverse_proxy frontend:80
 	}
 

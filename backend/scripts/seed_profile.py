@@ -65,6 +65,15 @@ async def pick_org(org_id: str | None) -> Organization:
                 .limit(1)
             )
             if org is None:
+                # "Every organization already has a profile" is true but
+                # useless when there are none: a first-time demo lands exactly
+                # here, and the fix is to register, not to pass --org.
+                any_org = await session.scalar(select(Organization.id).limit(1))
+                if any_org is None:
+                    raise SystemExit(
+                        "No organizations yet. Register one in the app first "
+                        "(or POST /api/v1/orgs), then run this again."
+                    )
                 raise SystemExit(
                     "Every organization already has a profile. Pass --org to overwrite one."
                 )

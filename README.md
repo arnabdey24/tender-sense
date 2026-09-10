@@ -51,6 +51,20 @@ proxy at it with `VITE_API_PROXY_TARGET` in `frontend/.env.local`.
 stubs, so no Gemini key is needed for development. Set `AI_PROVIDER=gemini` and
 `GEMINI_API_KEY` for real matching.
 
+One thing to expect from the stub: it *ranks* correctly — the seeded IT tenders
+come out on top for the sample integrator — but its similarities sit well below
+the grade thresholds, which are fitted for real embeddings. So an offline demo
+feed reads as all-C. Rankings, rules, decisions, notifications and the whole
+pipeline behave normally; only the letter grades need a real key, or a re-fit:
+
+```bash
+uv run python -m scripts.calibrate_thresholds          # report
+uv run python -m scripts.calibrate_thresholds --write  # store, and re-grade
+```
+
+Grading is arithmetic over similarities already stored, so a re-fit costs a
+`thresholds_version` bump and no AI calls at all.
+
 ## Working on the backend
 
 ```bash

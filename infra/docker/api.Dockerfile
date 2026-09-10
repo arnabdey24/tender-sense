@@ -23,10 +23,23 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY backend/ ./
 
+# The API and the scrape worker are built from *different* base images and run
+# as different users, but they share one blob volume. Docker fixes a named
+# volume's ownership from whichever image mounts it first, so without a shared
+# group the second one cannot write — and every scraped notice is lost with a
+# permission error nobody sees. A fixed gid, plus setgid on the directory so
+# files created by either user stay group-writable, is what keeps both working.
+ARG BLOB_GID=10001
+
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev \
  && groupadd --system app && useradd --system --gid app --create-home app \
- && mkdir -p /var/lib/tendersense/blobs && chown -R app:app /var/lib/tendersense /app
+ && groupadd --gid ${BLOB_GID} tendersense \
+ && usermod --append --groups tendersense app \
+ && mkdir -p /var/lib/tendersense/blobs \
+ && chown -R app:tendersense /var/lib/tendersense \
+ && chmod -R 2775 /var/lib/tendersense \
+ && chown -R app:app /app
 
 USER app
 EXPOSE 8000

@@ -125,6 +125,26 @@ visited in series. A depth of a few is normal after a dispatch; a depth that
 only grows means the scrape worker is stuck. Restart it: `dc restart worker-scrape`.
 Jobs are re-enqueued by their crons, and every one of them is idempotent.
 
+### Scraping stores nothing ("permission denied" on the blob volume)
+
+Symptom: runs finish `partial` with every notice counted as lost, and
+`dc logs worker-scrape` shows
+`notice_not_stored ... Permission denied: '/var/lib/tendersense/blobs/<source>'`.
+
+The API and the scrape worker are built from different base images and run as
+different users. Docker fixes a named volume's ownership from whichever image
+mounts it first, so a volume created before both images shared a group is owned
+by one of them alone. Current images put both users in a `tendersense` group and
+set the setgid bit; a volume from before that needs fixing once:
+
+```bash
+dc run --rm --no-deps --user root --entrypoint sh api \
+  -c 'chgrp -R tendersense /var/lib/tendersense && chmod -R 2775 /var/lib/tendersense'
+```
+
+Nothing is lost — the notices were never stored, so the next scrape picks them
+up again.
+
 ### Disk filling up
 
 ```bash

@@ -6,18 +6,26 @@ import { z } from "zod"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Button } from "@/components/ui/button"
 import {
+  DataTableColumnsMenu,
+  DataTableDensityToggle,
+  DataTableProvider,
+  DataTableSelectionBar,
+  DataTableSurface,
+  useDataTable,
+  useDataTableContext,
+} from "@/components/ui/data-table"
+import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-} from "@/components/ui/pagination"
+import { Paginator } from "@/components/layout/Paginator"
+import { usePersistentState } from "@/hooks/use-persistent-state"
 import { Switch } from "@/components/ui/switch"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
-import { TendersTable } from "@/features/tenders/TendersTable"
+import { TendersTable, type TenderSort } from "@/features/tenders/TendersTable"
+import { TENDER_COLUMNS } from "@/features/tenders/columns"
+import { useRecordDecisions } from "@/features/decisions/api"
 import { TenderFilterSelect } from "@/features/tenders/TenderFilterSelect"
 import {
   useTenderFacets,
@@ -26,8 +34,8 @@ import {
   type TenderQuery,
 } from "@/features/tenders/api"
 import { categoryLabel, statusLabel } from "@/features/tenders/format"
+import { cn } from "@/lib/utils"
 
-const PAGE_SIZE = 25
 
 const searchSchema = z.object({
   q: z.string().optional(),
@@ -42,6 +50,10 @@ const searchSchema = z.object({
   sort: z
     .enum(["published_at", "deadline_at", "title", "estimated_value"])
     .optional(),
+  // Direction is its own parameter now that column headers can flip it. It was
+  // previously derived from the field, so a user could sort by deadline but
+  // never furthest-first.
+  desc: z.boolean().optional(),
   page: z.number().int().min(1).optional(),
 })
 
@@ -51,6 +63,14 @@ export const Route = createFileRoute("/_app/app/tenders/")({
   validateSearch: searchSchema,
   component: TendersPage,
 })
+
+/** What each field means when you first click it: newest, soonest, A–Z, largest. */
+const DEFAULT_DESC: Record<TenderSort, boolean> = {
+  published_at: true,
+  deadline_at: false,
+  title: false,
+  estimated_value: true,
+}
 
 const CATEGORIES = ["goods", "works", "services", "consulting"] as const
 const STATUSES = ["open", "closed", "cancelled", "awarded"] as const
@@ -84,21 +104,49 @@ function TendersPage() {
     [navigate]
   )
 
+  // A view preference, not a filter: it belongs to the reader, not the URL.
+  const [pageSize, setPageSize] = usePersistentState("tenders:page-size", 10)
+
+  const sortField: TenderSort = search.sort ?? "published_at"
+  const descending = search.desc ?? DEFAULT_DESC[sortField]
+
+  // Clicking the column you are already sorted by reverses it; clicking a new
+  // one starts at that field's natural direction rather than inheriting the
+  // last one, which is what makes "Closes" open on soonest-first.
+  const onSort = (key: TenderSort) => {
+    if (key === sortField) setSearch({ desc: !descending })
+    else setSearch({ sort: key, desc: DEFAULT_DESC[key] })
+  }
+
   const query: TenderQuery = {
     q: search.q,
     source: search.source,
     category: search.category,
     status: search.status,
     open_only: search.open_only,
-    sort: search.sort ?? "published_at",
-    descending: (search.sort ?? "published_at") !== "deadline_at",
+    sort: sortField,
+    descending,
     page: search.page ?? 1,
-    page_size: PAGE_SIZE,
+    page_size: pageSize,
   }
 
   const tenders = useTenders(query)
   const facets = useTenderFacets(query)
   const sources = useSources()
+
+  const items = React.useMemo(
+    () => tenders.data?.items ?? [],
+    [tenders.data?.items]
+  )
+  const rowIds = React.useMemo(() => items.map((t) => t.id), [items])
+  const table = useDataTable({
+    rowIds,
+    storageKey: "tenders",
+    columns: TENDER_COLUMNS,
+    // Absent on roughly nine notices in ten, so it does not earn a column
+    // until someone asks for it.
+    defaultHidden: ["value"],
+  })
 
   // Local text buffer for the search box, reconciled with the URL during render
   // (React's "adjust state on prop change" pattern) rather than in an effect.
@@ -111,7 +159,6 @@ function TendersPage() {
 
   const total = tenders.data?.total ?? 0
   const page = search.page ?? 1
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   const activeFilters = [
     search.q && {
@@ -156,7 +203,8 @@ function TendersPage() {
 
       {/* One self-describing toolbar. Each control states what it filters, so
           the five stacked labels above them were saying it twice. */}
-      <div className="flex flex-col gap-3">
+      <DataTableProvider value={table}>
+        <DataTableSurface className="flex flex-col gap-3">
         <form
           className="flex flex-wrap items-center gap-2"
           onSubmit={(e) => {
@@ -212,7 +260,9 @@ function TendersPage() {
               options={sourceOptions}
             />
           </div>
-          <div className="w-36">
+          {/* The desktop table sorts from its column headers; a phone gets
+              stacked rows with no headers to click, so it keeps the select. */}
+          <div className="w-36 md:hidden">
             <TenderFilterSelect
               label="Sort by"
               anyLabel="Newest first"
@@ -232,13 +282,31 @@ function TendersPage() {
             Open only
           </label>
 
-          <Button type="submit" size="sm">
+          {/* Filtering a list is not this page's primary action — opening a
+              notice is — so it does not take the brand fill. */}
+          <Button type="submit" size="sm" variant="outline">
             Search
           </Button>
+
+          <div className="ml-auto hidden items-center gap-1 md:flex">
+            <DataTableDensityToggle />
+            <DataTableColumnsMenu />
+          </div>
         </form>
 
-        {/* What is actually applied, and one click to undo each of them. */}
-        <div className="flex flex-wrap items-center gap-2 border-b pb-3 text-sm">
+        {/* The same band reports either what is filtered or what is selected.
+            Putting the selection bar below would push the table down and move
+            the row the user just clicked out from under the cursor. */}
+        <DataTableSelectionBar>
+          <TenderBulkActions />
+        </DataTableSelectionBar>
+
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-2 border-b pb-3 text-sm",
+            table.selected.size > 0 && "hidden"
+          )}
+        >
           <span className="text-muted-foreground tabular-nums">
             {tenders.isPending
               ? "Searching…"
@@ -277,43 +345,69 @@ function TendersPage() {
           )}
         </div>
 
-          <ApiErrorAlert error={tenders.error} />
+        <ApiErrorAlert error={tenders.error} />
 
-          <TendersTable
-            tenders={tenders.data?.items ?? []}
-            isLoading={tenders.isPending}
-          />
+        <TendersTable
+          tenders={items}
+          isLoading={tenders.isPending}
+          sort={sortField}
+          descending={descending}
+          onSort={onSort}
+        />
 
-          {pageCount > 1 ? (
-            <Pagination className="justify-between">
-              <span className="text-sm text-muted-foreground">
-                Page {page} of {pageCount}
-              </span>
-              <PaginationContent>
-                <PaginationItem>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setSearch({ page: page - 1 })}
-                  >
-                    Previous
-                  </Button>
-                </PaginationItem>
-                <PaginationItem>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= pageCount}
-                    onClick={() => setSearch({ page: page + 1 })}
-                  >
-                    Next
-                  </Button>
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          ) : null}
-      </div>
+        <Paginator
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          noun="notice"
+          onPage={(next) => {
+            setSearch({ page: next === 1 ? undefined : next })
+            window.scrollTo({ top: 0 })
+          }}
+          onPageSize={(size) => {
+            setPageSize(size)
+            // The old page number can point past the end of the resized set.
+            setSearch({ page: undefined })
+          }}
+        />
+        </DataTableSurface>
+      </DataTableProvider>
+    </>
+  )
+}
+
+/**
+ * Bid, hold or skip across every selected notice.
+ *
+ * There is no bulk endpoint; the per-tender route is a PUT, so this fans out
+ * over it. The selection clears only once the write settles, so a failure
+ * leaves the rows selected and the action repeatable.
+ */
+function TenderBulkActions() {
+  const { selected, clearSelection } = useDataTableContext()
+  const record = useRecordDecisions()
+
+  const apply = (decision: "bid" | "hold" | "skip") => {
+    record.mutate(
+      { tenderIds: [...selected], decision },
+      { onSuccess: ({ failed }) => failed === 0 && clearSelection() }
+    )
+  }
+
+  return (
+    <>
+      {(["bid", "hold", "skip"] as const).map((decision) => (
+        <Button
+          key={decision}
+          variant="outline"
+          size="sm"
+          disabled={record.isPending}
+          onClick={() => apply(decision)}
+          className="capitalize"
+        >
+          {decision}
+        </Button>
+      ))}
     </>
   )
 }

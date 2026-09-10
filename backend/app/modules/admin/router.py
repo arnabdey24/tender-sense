@@ -15,8 +15,11 @@ from app.core.deps import DbSession, Superuser
 from app.modules.admin import service
 from app.modules.admin.schemas import (
     ImportResponse,
+    ScraperRunRead,
     SourceAdminRead,
     SourceCreate,
+    SourceHealthCheck,
+    SourceRunResponse,
     SourceUpdate,
     TenderCreate,
     TenderCreateResponse,
@@ -56,6 +59,52 @@ async def update_source(
 async def delete_source(source_id: SourceId, _: Superuser, db: DbSession) -> None:
     """Remove a source and, by cascade, its tenders and raw documents."""
     await service.delete_source(db, source_id)
+
+
+@router.post(
+    "/sources/{source_id}/run",
+    response_model=SourceRunResponse,
+    summary="Scrape a source now",
+)
+async def run_source(source_id: SourceId, _: Superuser, db: DbSession) -> SourceRunResponse:
+    """Queue one portal for scraping.
+
+    Deduplicated by source, so pressing this twice does not start two passes
+    over the same portal.
+    """
+    source = await service.get_source(db, source_id)
+    job_id = await service.enqueue_scrape(db, source_id)
+    return SourceRunResponse(source_code=source.code, job_id=job_id, enqueued=job_id is not None)
+
+
+@router.post(
+    "/sources/{source_id}/check",
+    response_model=SourceHealthCheck,
+    summary="Probe a source now",
+)
+async def check_source(source_id: SourceId, _: Superuser, db: DbSession) -> SourceHealthCheck:
+    """Ask the portal whether it is reachable, rather than reading the health
+    recorded by past runs."""
+    code, reachable, detail = await service.probe_source(db, source_id)
+    return SourceHealthCheck(source_code=code, reachable=reachable, detail=detail)
+
+
+@router.get(
+    "/scraper-runs",
+    response_model=list[ScraperRunRead],
+    summary="Recent scrape runs",
+)
+async def list_scraper_runs(
+    _: Superuser,
+    db: DbSession,
+    source_id: Annotated[UUID | None, Query(description="Filter to one source")] = None,
+) -> list[ScraperRunRead]:
+    """A scraper that quietly stops returning notices looks exactly like a quiet
+    portal. These records are the only way to tell the difference."""
+    return [
+        ScraperRunRead.model_validate(run)
+        for run in await service.recent_scraper_runs(db, source_id)
+    ]
 
 
 @router.post(

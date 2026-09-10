@@ -717,6 +717,34 @@ Forty-six tests replay the parser over the captured HTML, including a
 deliberately malformed row that must be skipped without costing the other
 ninety-nine.
 
+**The scrape job and run tracking.** Migration `0008_runs` adds `job_runs` and
+`scraper_runs`, verified through apply, downgrade and re-apply. A cron dispatches
+every enabled source four times a day, off-peak in Dhaka, onto the scrape queue —
+which is capped at one job at a time, so portals are visited in series rather
+than all at once.
+
+The shape is conservative on purpose. The failure that matters is not a crash;
+it is a portal deciding we are abusive and cutting us off, which takes the whole
+product with it:
+
+- **Consecutive detail failures abort the run.** A portal that has started
+  refusing us will not relent because we asked forty more times.
+- **Every notice commits on its own**, so one unparseable record costs one
+  record rather than the page it arrived on. A run that lost some notices is
+  recorded `partial` — worth seeing, not worth alerting.
+- **Health comes from consecutive failures, not the last run.** One timeout is
+  weather; three in a row marks the source `down`. Recovering clears the count.
+- **A failed run is written down.** A scraper that quietly stops returning
+  notices looks exactly like a portal with nothing to publish; the run record is
+  the only thing that tells them apart, so `/admin/scraper-runs` exists and an
+  unregistered adapter fails visibly rather than doing nothing.
+
+Two bugs caught while wiring it: the source's configured `base_url` was being
+discarded in favour of a value read from the wrong place, and an empty one was
+passed as `None`, which would have overridden the adapter's own default with
+nothing. `build_adapter` now omits the argument entirely when there is no
+configured value.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

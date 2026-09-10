@@ -79,6 +79,30 @@ class ImportResponse(BaseModel):
     errors: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class ScraperRunRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    source_id: UUID
+    status: str
+    started_at: datetime
+    finished_at: datetime | None = None
+    notices_seen: int
+    created: int
+    updated: int
+    unchanged: int
+    failed: int
+    error: str | None = None
+
+
+class SourceHealthCheck(BaseModel):
+    """A live probe, distinct from the health recorded by past runs."""
+
+    source_code: str
+    reachable: bool
+    detail: str | None = None
+
+
 class ReprocessResponse(BaseModel):
     tender_id: UUID
     enqueued: bool

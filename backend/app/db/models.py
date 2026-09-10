@@ -8,6 +8,7 @@ generated migrations.
 from __future__ import annotations
 
 from app.db.base import Base
+from app.jobs.runs import JobRun, RunStatus, ScraperRun
 from app.modules.auth.models import AuthToken, RefreshSession, TokenPurpose
 from app.modules.decisions.models import Decision, TenderDecision
 from app.modules.matching.ai_usage import AiUsage
@@ -74,6 +75,7 @@ __all__ = [
     "ExtractionStatus",
     "FxRate",
     "Invitation",
+    "JobRun",
     "MatchGrade",
     "MatchingConfig",
     "Membership",
@@ -93,6 +95,8 @@ __all__ = [
     "RuleOverride",
     "RuleSet",
     "RuleSetVersion",
+    "RunStatus",
+    "ScraperRun",
     "SourceHealth",
     "Tender",
     "TenderDecision",

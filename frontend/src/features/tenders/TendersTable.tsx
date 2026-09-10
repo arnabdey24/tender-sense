@@ -19,23 +19,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import type { TenderSummary } from "@/features/tenders/api"
+import { Deadline } from "@/features/tenders/Deadline"
 import {
   categoryLabel,
-  deadlineInfo,
   formatDate,
   formatValue,
   statusLabel,
-  type DeadlineTone,
 } from "@/features/tenders/format"
-import { cn } from "@/lib/utils"
-
-const DEADLINE_TONE: Record<DeadlineTone, string> = {
-  expired: "text-muted-foreground",
-  critical: "text-destructive",
-  high: "text-warning",
-  normal: "text-foreground",
-  none: "text-muted-foreground",
-}
 
 /**
  * Six columns of left-aligned grey text read as one undifferentiated block.
@@ -85,37 +75,69 @@ export function TendersTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="text-xs font-medium text-muted-foreground">
-              Notice
-            </TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground">
-              Buyer
-            </TableHead>
-            <TableHead className="text-xs font-medium text-muted-foreground">
-              Category
-            </TableHead>
-            <TableHead className="text-right text-xs font-medium text-muted-foreground">
-              Value
-            </TableHead>
-            <TableHead className="text-right text-xs font-medium text-muted-foreground">
-              Published
-            </TableHead>
-            <TableHead className="text-right text-xs font-medium text-muted-foreground">
-              Closes
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {tenders.map((tender) => {
-            const deadline = deadlineInfo(
-              tender.days_to_deadline,
-              tender.deadline_at
-            )
-            return (
+    <>
+      {/* Below md the table clipped mid-word at the viewport edge and pushed
+          value, published and the deadline off-screen with no scroll
+          affordance — losing the one field that decides whether a notice is
+          worth reading. On a phone each notice is a stacked row instead. */}
+      <ul className="flex flex-col md:hidden">
+        {tenders.map((tender) => (
+          <li key={tender.id} className="border-t first:border-t-0">
+            <Link
+              to="/app/tenders/$tenderId"
+              params={{ tenderId: tender.id }}
+              className="flex flex-col gap-1.5 rounded-lg px-2 py-3.5 transition-colors hover:bg-muted/60"
+            >
+              <span className="text-sm font-medium">{tender.title}</span>
+              <span className="text-xs text-muted-foreground">
+                {tender.procuring_entity ?? "—"}
+              </span>
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                <Badge variant="outline">{tender.source_code}</Badge>
+                <span>{categoryLabel(tender.procurement_category)}</span>
+                {formatValue(tender.estimated_value, tender.currency) !==
+                "—" ? (
+                  <span className="tabular-nums">
+                    {formatValue(tender.estimated_value, tender.currency)}
+                  </span>
+                ) : null}
+                <Deadline
+                  days={tender.days_to_deadline}
+                  deadlineAt={tender.deadline_at}
+                  className="ml-auto text-xs"
+                />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      <div className="hidden overflow-x-auto md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                Notice
+              </TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                Buyer
+              </TableHead>
+              <TableHead className="text-xs font-medium text-muted-foreground">
+                Category
+              </TableHead>
+              <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                Value
+              </TableHead>
+              <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                Published
+              </TableHead>
+              <TableHead className="text-right text-xs font-medium text-muted-foreground">
+                Closes
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tenders.map((tender) => (
               <TableRow key={tender.id}>
                 <TableCell className="max-w-sm py-3 align-top whitespace-normal">
                   <Link
@@ -146,27 +168,26 @@ export function TendersTable({
                   {categoryLabel(tender.procurement_category)}
                 </TableCell>
 
-                <TableCell className="py-3 text-right align-top text-sm tabular-nums whitespace-nowrap">
+                <TableCell className="py-3 text-right align-top text-sm whitespace-nowrap tabular-nums">
                   {formatValue(tender.estimated_value, tender.currency)}
                 </TableCell>
 
-                <TableCell className="py-3 text-right align-top text-sm tabular-nums whitespace-nowrap text-muted-foreground">
+                <TableCell className="py-3 text-right align-top text-sm whitespace-nowrap text-muted-foreground tabular-nums">
                   {formatDate(tender.published_at)}
                 </TableCell>
 
-                <TableCell
-                  className={cn(
-                    "py-3 text-right align-top text-sm font-medium tabular-nums whitespace-nowrap",
-                    DEADLINE_TONE[deadline.tone]
-                  )}
-                >
-                  {deadline.label}
+                <TableCell className="py-3 text-right align-top text-sm">
+                  <Deadline
+                    days={tender.days_to_deadline}
+                    deadlineAt={tender.deadline_at}
+                    muteNormal
+                  />
                 </TableCell>
               </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </div>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   )
 }

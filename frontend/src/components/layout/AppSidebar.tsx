@@ -161,7 +161,9 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger render={<SidebarMenuButton size="lg" />}>
-                <Avatar className="size-8">
+                {/* Without shrink-0 the avatar collapses under the name beside
+                    it and the fallback initials print over the first glyph. */}
+                <Avatar className="size-8 shrink-0">
                   {user?.avatar_url ? (
                     <AvatarImage src={user.avatar_url} alt="" />
                   ) : null}
@@ -169,7 +171,7 @@ export function AppSidebar() {
                     {initials(user?.full_name, user?.email)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex min-w-0 flex-col gap-0.5 text-left leading-none">
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-left leading-none">
                   <span className="truncate font-medium">
                     {user?.full_name ?? "Signed in"}
                   </span>
@@ -177,7 +179,7 @@ export function AppSidebar() {
                     {user?.email ?? ""}
                   </span>
                 </div>
-                <ChevronsUpDownIcon className="ml-auto" />
+                <ChevronsUpDownIcon className="ml-auto shrink-0" />
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 side="top"

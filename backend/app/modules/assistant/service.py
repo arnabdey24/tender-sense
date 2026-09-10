@@ -78,6 +78,21 @@ async def reserve(org_id: UUID, kind: str, amount: int, limit: int) -> None:
         raise RateLimitedError(f"Your organization's daily {kind} limit has been reached.")
 
 
+async def refund(org_id: UUID, kind: str, amount: int) -> None:
+    """Give back budget that was reserved up front but never spent.
+
+    ``reserve`` has to claim the whole session length before the session starts,
+    because there is no way to know in advance how long someone will talk. Left
+    unrefunded, a ten-second call costs the same as a ten-minute one and a day's
+    allowance disappears in six taps of the microphone.
+    """
+    if amount <= 0:
+        return
+    redis = await get_queue()
+    key = f"assistant:budget:{org_id}:{utcnow().date()}:{kind}"
+    await redis.decrby(key, amount)
+
+
 async def acquire(conversation_id: UUID, seconds: int) -> str:
     redis = await get_queue()
     token = secrets.token_urlsafe(24)

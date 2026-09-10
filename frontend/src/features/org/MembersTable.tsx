@@ -114,7 +114,7 @@ export function MembersTable({
             <TableRow key={member.user_id}>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Avatar className="size-7">
+                  <Avatar className="size-7 shrink-0">
                     {member.avatar_url ? (
                       <AvatarImage src={member.avatar_url} alt="" />
                     ) : null}
@@ -159,14 +159,19 @@ export function MembersTable({
                     </SelectContent>
                   </Select>
                 ) : (
-                  <Badge variant="secondary">{member.role}</Badge>
+                  <Badge variant="secondary" className="capitalize">
+                    {member.role}
+                  </Badge>
                 )}
               </TableCell>
               <TableCell>
+                {/* The raw enum was printed straight out, so this cell read
+                    "active" in lower case beside every other pill in the app,
+                    which is written as prose. */}
                 <Badge
                   variant={member.status === "active" ? "success" : "outline"}
                 >
-                  {member.status}
+                  {member.status === "active" ? "Active" : "Disabled"}
                 </Badge>
               </TableCell>
               {isAdmin ? (

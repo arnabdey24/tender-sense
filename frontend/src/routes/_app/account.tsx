@@ -240,7 +240,7 @@ function AccountPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <div className="flex items-center gap-4">
-            <Avatar className="size-12">
+            <Avatar className="size-12 shrink-0">
               {user?.avatar_url ? (
                 <AvatarImage src={user.avatar_url} alt="" />
               ) : null}

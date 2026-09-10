@@ -15,29 +15,19 @@ import { DecisionPanel } from "@/features/decisions/DecisionPanel"
 import { EligibilityList } from "@/features/matches/EligibilityList"
 import { explanationOf } from "@/features/matches/explanation"
 import { VerdictStrip } from "@/features/matches/verdict"
+import { Deadline } from "@/features/tenders/Deadline"
 import { RequirementsList } from "@/features/tenders/RequirementsList"
 import { useTender } from "@/features/tenders/api"
 import {
   categoryLabel,
-  deadlineInfo,
   formatDate,
   formatValue,
   statusLabel,
-  type DeadlineTone,
 } from "@/features/tenders/format"
-import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/tenders/$tenderId")({
   component: TenderDetailPage,
 })
-
-const DEADLINE_TONE: Record<DeadlineTone, string> = {
-  expired: "text-muted-foreground",
-  critical: "text-destructive",
-  high: "text-warning",
-  normal: "text-foreground",
-  none: "text-muted-foreground",
-}
 
 /** A titled block separated by a rule, not another nested card. */
 function Section({
@@ -171,7 +161,6 @@ function TenderDetailPage() {
     | { attributes?: Record<string, unknown> }
     | null
     | undefined
-  const deadline = deadlineInfo(t.days_to_deadline, t.deadline_at)
 
   return (
     <div className="flex flex-col gap-6">
@@ -187,14 +176,7 @@ function TenderDetailPage() {
           {t.procuring_entity ?? "Procuring entity not stated"}
         </p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-          <span
-            className={cn(
-              "font-medium tabular-nums",
-              DEADLINE_TONE[deadline.tone]
-            )}
-          >
-            {deadline.label}
-          </span>
+          <Deadline days={t.days_to_deadline} deadlineAt={t.deadline_at} />
           <span className="text-muted-foreground">·</span>
           <Badge variant="secondary">{statusLabel(t.status)}</Badge>
           <Badge variant="outline">{t.source_code}</Badge>

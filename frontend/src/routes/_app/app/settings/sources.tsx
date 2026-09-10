@@ -113,7 +113,10 @@ function SourceTable() {
               </TableCell>
               <TableCell>{countryName(source.country) || "—"}</TableCell>
               <TableCell>
-                <SourceHealthBadge health={source.health} />
+                <SourceHealthBadge
+                  health={source.health}
+                  enabled={source.enabled}
+                />
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {formatWhen(source.last_run_at)}

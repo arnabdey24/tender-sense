@@ -9,6 +9,14 @@ describe("SourceHealthBadge", () => {
     expect(screen.getByText("Healthy")).toBeInTheDocument()
   })
 
+  it("reports a paused source as paused, not as its stale health", () => {
+    // A source nobody is polling has no health to report; showing the "ok" from
+    // before it was switched off is how a dead portal looks fine.
+    renderWithProviders(<SourceHealthBadge health="ok" enabled={false} />)
+    expect(screen.getByText("Paused")).toBeInTheDocument()
+    expect(screen.queryByText("Healthy")).not.toBeInTheDocument()
+  })
+
   it("keeps degraded visually distinct from down", () => {
     // One timeout is weather; three failures in a row is a broken portal.
     // Collapsing the two would either cry wolf or hide a real outage.

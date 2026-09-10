@@ -16,6 +16,7 @@ from google.genai import types
 from app.ai.base import Usage
 from app.core.config import settings
 from app.core.deps import get_current_org, get_current_user
+from app.core.exceptions import ConflictError, RateLimitedError
 from app.core.ids import new_id
 from app.core.logging import get_logger
 from app.db.session import session_scope
@@ -51,6 +52,8 @@ async def voice_socket(socket: WebSocket) -> None:
         return
     await socket.accept()
     lock: str | None = None
+    reserved = 0
+    started_at = 0.0
     conversation = None
     data: dict[str, Any] = {}
     current_id = new_id()
@@ -123,6 +126,8 @@ async def voice_socket(socket: WebSocket) -> None:
         await service.reserve(
             conversation.org_id, "voice seconds", duration, settings.assistant_daily_voice_seconds
         )
+        reserved = duration
+        started_at = time.monotonic()
         language = hello.get("language", "auto")
         if language not in {"auto", "en", "bn"}:
             raise ValueError("Unsupported language")
@@ -336,16 +341,26 @@ async def voice_socket(socket: WebSocket) -> None:
         pass
     except Exception as exc:
         logger.warning("assistant_voice_ended", error_type=type(exc).__name__)
-        with contextlib.suppress(Exception):
-            await emit(
-                "error",
-                {
-                    "message": (
-                        "Live voice ended. Your transcript is saved; "
-                        "you can continue by typing or start voice again."
-                    )
-                },
+        # A hit limit and a dropped connection are different problems with
+        # different fixes, and "voice ended" sent the user looking for a fault
+        # that was not there. Say which one it was.
+        if isinstance(exc, RateLimitedError):
+            message = (
+                "Your organization has used today's live voice allowance. "
+                "Typing still works, and voice is available again tomorrow."
             )
+        elif isinstance(exc, ConflictError):
+            message = (
+                "This conversation already has a response or voice session "
+                "running. Wait for it to finish, then start voice again."
+            )
+        else:
+            message = (
+                "Live voice ended. Your transcript is saved; "
+                "you can continue by typing or start voice again."
+            )
+        with contextlib.suppress(Exception):
+            await emit("error", {"message": message})
     finally:
         with anyio.CancelScope(shield=True):
             if conversation is not None and lock:
@@ -363,6 +378,14 @@ async def voice_socket(socket: WebSocket) -> None:
                                 purpose="assistant_voice",
                                 org_id=conversation.org_id,
                             )
+                if reserved:
+                    spent = int(time.monotonic() - started_at)
+                    with contextlib.suppress(Exception):
+                        await service.refund(
+                            conversation.org_id,
+                            "voice seconds",
+                            max(0, reserved - spent),
+                        )
                 await service.release(conversation.id, lock)
             with contextlib.suppress(Exception):
                 await socket.close()

@@ -21,7 +21,18 @@ const VARIANTS: Record<
  * "Degraded" is deliberately distinct from "down": one timeout is weather,
  * three failures in a row is a broken portal, and collapsing the two would
  * either cry wolf or hide a real outage.
+ *
+ * A paused source reports neither. Health describes the last poll, and a source
+ * nobody is polling has no health to report — it used to render the stale "ok"
+ * from before it was paused, so a switched-off portal read as Healthy.
  */
-export function SourceHealthBadge({ health }: { health: SourceHealth }) {
+export function SourceHealthBadge({
+  health,
+  enabled = true,
+}: {
+  health: SourceHealth
+  enabled?: boolean
+}) {
+  if (!enabled) return <Badge variant="outline">Paused</Badge>
   return <Badge variant={VARIANTS[health]}>{LABELS[health]}</Badge>
 }

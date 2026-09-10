@@ -976,6 +976,10 @@ function AssistantSession({
               <div className="ml-auto flex items-center gap-1">
                 <InputGroupButton
                   size="icon-sm"
+                  // The addon paints its children in muted-foreground, which is
+                  // the same grey a disabled control uses — so an enabled
+                  // microphone looked switched off. Ink weight, brand on hover.
+                  className="text-foreground hover:text-primary disabled:text-muted-foreground"
                   aria-label="Start live voice"
                   title={
                     capabilities.data?.voice_enabled ||

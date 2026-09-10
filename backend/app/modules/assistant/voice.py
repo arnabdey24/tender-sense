@@ -133,10 +133,10 @@ async def voice_socket(socket: WebSocket) -> None:
             raise ValueError("Unsupported language")
         # Picking a language narrows the recogniser to it; "auto" still only ever
         # offers the product's two, never the whole set it would guess across.
-        allowed = list(settings.assistant_voice_languages)
+        language_codes = list(settings.assistant_voice_languages)
         if language != "auto":
             prefix = "bn" if language == "bn" else "en"
-            allowed = [c for c in allowed if c.startswith(prefix)] or allowed
+            language_codes = [c for c in language_codes if c.startswith(prefix)] or language_codes
         config = types.LiveConnectConfig(
             response_modalities=["AUDIO"],
             # Without this the Live API picks its own default voice. No
@@ -152,16 +152,10 @@ async def voice_socket(socket: WebSocket) -> None:
             system_instruction=instruction(data, language)
             + "\nPrior conversation:\n"
             + json.dumps(history, ensure_ascii=False),
-            tools=[
-                types.Tool(
-                    function_declarations=[declaration(), navigate_declaration()]
-                )
-            ],
+            tools=[types.Tool(function_declarations=[declaration(), navigate_declaration()])],
             # Unconstrained, Bangla speech comes back transcribed as Hindi in
             # Devanagari. This is the product's two languages and nothing else.
-            input_audio_transcription=types.AudioTranscriptionConfig(
-                language_codes=allowed
-            ),
+            input_audio_transcription=types.AudioTranscriptionConfig(language_codes=language_codes),
             output_audio_transcription=types.AudioTranscriptionConfig(),
             context_window_compression=types.ContextWindowCompressionConfig(
                 sliding_window=types.SlidingWindow()
@@ -293,9 +287,7 @@ async def voice_socket(socket: WebSocket) -> None:
                                     for call in response.tool_call.function_calls or []:
                                         try:
                                             if call.name == "open_in_app":
-                                                output = resolve_navigation(
-                                                    data, call.args or {}
-                                                )
+                                                output = resolve_navigation(data, call.args or {})
                                                 await emit("navigate", output)
                                                 answers.append(
                                                     types.FunctionResponse(

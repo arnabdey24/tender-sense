@@ -13,7 +13,8 @@ from app.modules.assistant.schemas import AnalyzeInput, Event, NavigateInput, Tu
 from app.modules.assistant.tools import analyze
 
 SYSTEM = """You are the TenderSense tender assistant. Discuss ONLY the supplied context:
-the selected tender when there is one, otherwise the company's graded shortlist. Support English, Bangla, and mixed conversation.
+the selected tender when there is one, otherwise the company's graded shortlist.
+Support English, Bangla, and mixed conversation.
 Explain evidence, applicable rules, calculation steps and uncertainty concisely.
 Do not expose private deliberations. Do not invent requirements, numbers, quotes,
 win probabilities, or sources. Similarity is not a probability of winning.
@@ -83,9 +84,7 @@ def resolve_navigation(context: dict[str, Any], args: dict[str, Any]) -> dict[st
     quoted out of a notice) from steering the user at an arbitrary record.
     """
     request = NavigateInput.model_validate(args or {})
-    filters = (
-        request.filters.model_dump(exclude_none=True) if request.filters else {}
-    )
+    filters = request.filters.model_dump(exclude_none=True) if request.filters else {}
     if request.tender_id is None:
         if request.page is None:
             raise ValueError("Nothing to open")
@@ -103,9 +102,7 @@ def resolve_navigation(context: dict[str, Any], args: dict[str, Any]) -> dict[st
 def instruction(context: dict[str, Any], language: str, page: str | None = None) -> str:
     # Bound the context; raw document ingestion is intentionally a separate feature.
     where = (
-        f"\nThe user is currently on: {page}. Do not navigate them here again.\n"
-        if page
-        else ""
+        f"\nThe user is currently on: {page}. Do not navigate them here again.\n" if page else ""
     )
     return (
         SYSTEM
@@ -191,9 +188,7 @@ async def generate(
                 config=types.GenerateContentConfig(
                     system_instruction=instruction(context, turn.language, turn.page),
                     tools=[
-                        types.Tool(
-                            function_declarations=[declaration(), navigate_declaration()]
-                        )
+                        types.Tool(function_declarations=[declaration(), navigate_declaration()])
                     ],
                     max_output_tokens=3000,
                     temperature=0.2,

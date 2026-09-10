@@ -41,7 +41,7 @@ def create_app() -> FastAPI:
     configure_logging()
     app = FastAPI(
         title=settings.project_name,
-        version="0.1.0",
+        version=settings.release or "1.0.0",
         docs_url="/docs" if not settings.is_production else None,
         redoc_url=None,
         openapi_url="/openapi.json",

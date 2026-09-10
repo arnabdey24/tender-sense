@@ -1,0 +1,152 @@
+name: Release
+
+# Tags are the trigger, so a release is a deliberate act with a name attached
+# rather than something that happens on every merge. The tag is also what the
+# images are labelled with, which is the only reliable way to answer "what is
+# actually running on the VM" months later.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)publish, e.g. v1.0.0"
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  # A release must never publish something the test suite has not seen. This is
+  # the same work CI does on a branch; running it again here is a few minutes
+  # against the cost of shipping a tag that was never green.
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: tendersense
+          POSTGRES_PASSWORD: tendersense
+          POSTGRES_DB: tendersense_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tendersense"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      SECRET_KEY: ci-secret-key-not-used-in-production-0123456789
+      POSTGRES_HOST: localhost
+      POSTGRES_DB: tendersense_test
+      REDIS_HOST: localhost
+      AI_PROVIDER: fake
+      COVERAGE_CORE: sysmon
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv sync --frozen
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy app scripts
+      - run: uv run alembic upgrade head
+      - run: uv run python -m scripts.seed_demo
+      - run: uv run pytest -m "not live"
+
+  # The tag names the images. `type=semver` also moves `1` and `1.2` so a
+  # deployment can pin as loosely or as tightly as it wants.
+  images:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: .
+            dockerfile: infra/docker/api.Dockerfile
+          - name: worker
+            context: .
+            dockerfile: infra/docker/worker.Dockerfile
+          - name: frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.name }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.tag || github.ref_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag || github.ref_name }}
+            type=semver,pattern={{major}},value=${{ inputs.tag || github.ref_name }}
+            type=sha
+          labels: |
+            org.opencontainers.image.title=TenderSense ${{ matrix.name }}
+            org.opencontainers.image.version=${{ inputs.tag || github.ref_name }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  release:
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        # The annotated tag's own message is the release note. It was written
+        # when the release was cut, by whoever cut it, which beats anything
+        # generated from a list of commit subjects.
+        run: |
+          NOTES="$(git tag -l --format='%(contents)' "$TAG")"
+          if [ -z "$NOTES" ]; then
+            NOTES="See the commit history for $TAG."
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            printf '%s\n' "$NOTES" | gh release edit "$TAG" --notes-file -
+          else
+            printf '%s\n' "$NOTES" | gh release create "$TAG" \
+              --title "$TAG" --notes-file - --verify-tag
+          fi

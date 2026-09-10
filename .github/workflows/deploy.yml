@@ -1,0 +1,76 @@
+name: Deploy
+
+# Runs after a release publishes its images, and on demand for a rollback.
+#
+# It stays dormant until someone configures a target: the job is gated on the
+# `DEPLOY_HOST` repository variable, so an unconfigured repo shows "skipped"
+# rather than a red X on every release. A pipeline that is always failing is a
+# pipeline nobody reads.
+#
+# To enable, set these on the repository:
+#
+#   Variables  DEPLOY_HOST         the VM's hostname or IP
+#              DEPLOY_USER         the SSH user (must be able to run docker)
+#              DEPLOY_PATH         where the checkout lives, e.g. /srv/tendersense
+#   Secrets    DEPLOY_SSH_KEY      private key whose public half is authorised
+#              DEPLOY_KNOWN_HOSTS  output of `ssh-keyscan <host>`
+#
+# Nothing secret travels through this workflow. The VM keeps its own `.env`;
+# all this does is check out a tag, pull published images and restart — which
+# is exactly what `scripts/deploy.sh` does when run by hand.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version to deploy, e.g. v1.0.0"
+        required: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_HOST != ''
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trust the host and load the key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          test -n "$SSH_KEY" || { echo "DEPLOY_SSH_KEY is not set"; exit 1; }
+          test -n "$KNOWN_HOSTS" || { echo "DEPLOY_KNOWN_HOSTS is not set"; exit 1; }
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/known_hosts ~/.ssh/deploy_key
+
+      - name: Roll the stack forward
+        env:
+          RELEASE: ${{ inputs.tag || github.event.release.tag_name }}
+          TARGET: ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        # The real work lives in scripts/deploy.sh so it can be read, reviewed,
+        # and run by hand when GitHub is the last thing anyone wants involved.
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" \
+            "cd '$DEPLOY_PATH' && git fetch --tags --prune origin && \
+             git show '$RELEASE:scripts/deploy.sh' > /tmp/tendersense-deploy.sh && \
+             chmod +x /tmp/tendersense-deploy.sh && \
+             RELEASE='$RELEASE' /tmp/tendersense-deploy.sh"
+
+      - name: Say what is running
+        if: always()
+        env:
+          TARGET: ${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -o BatchMode=yes "$TARGET" \
+            "cd '$DEPLOY_PATH' && git describe --tags --always && \
+             docker compose -f docker-compose.yml -f docker-compose.prod.yml ps" \
+            >> "$GITHUB_STEP_SUMMARY"

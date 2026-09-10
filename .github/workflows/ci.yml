@@ -129,10 +129,19 @@ jobs:
       SECRET_KEY: ci-secret-key-not-used-in-production-0123456789
     steps:
       - uses: actions/checkout@v4
+      # A workflow's own mistakes only surface when it runs, which for the
+      # release and deploy pipelines means "during a release".
+      - name: Workflows are valid
+        run: |
+          curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz \
+            | tar xz actionlint
+          ./actionlint -color
       - name: Development stack is valid
         run: docker compose config --quiet
       - name: Production stack is valid
         run: docker compose -f docker-compose.yml -f docker-compose.prod.yml config --quiet
+      - name: The deploy script parses
+        run: bash -n scripts/deploy.sh && bash -n scripts/backup.sh
       - name: Caddy configuration is valid
         run: |
           docker run --rm -v "$PWD/infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro" \

@@ -4,8 +4,15 @@
 # thing it deliberately does *not* do is publish a database or Redis port: on a
 # single VM those are reachable from the internet the moment they are mapped,
 # and Postgres with a weak password is the shortest path to losing the pool.
+#
+# Services name a published image *and* keep the base file's build stanza. That
+# is deliberate: `docker compose pull` fetches the release the CI pipeline
+# built, while a VM with no registry access can still `--build` its way out of
+# a hole. RELEASE pins the version; leaving it unset means `latest`, which is
+# fine for a first bring-up and wrong for anything you want to reproduce.
 services:
   api:
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${RELEASE:-latest}
     command:
       ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--proxy-headers", "--forwarded-allow-ips", "*"]
     environment:
@@ -22,6 +29,7 @@ services:
     restart: always
 
   worker:
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${RELEASE:-latest}
     environment:
       ENVIRONMENT: production
       LOG_JSON: "true"
@@ -31,6 +39,7 @@ services:
     restart: always
 
   worker-scrape:
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/worker:${RELEASE:-latest}
     environment:
       ENVIRONMENT: production
       LOG_JSON: "true"
@@ -39,6 +48,7 @@ services:
     restart: always
 
   migrate:
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${RELEASE:-latest}
     environment:
       ENVIRONMENT: production
 
@@ -58,6 +68,7 @@ services:
     restart: always
 
   frontend:
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/frontend:${RELEASE:-latest}
     security_opt:
       - no-new-privileges:true
     restart: always

@@ -949,6 +949,38 @@ authentication would have failed at send time with credentials that were set
 correctly in `.env`. Sentry's DSN, the reply-to address and the token budget
 were missing the same way.
 
+**Release engineering — the pipeline that makes a tag installable.**
+
+CI proved the code was good and nothing turned that into something you could
+install. Pushing a `v*` tag now re-runs the whole suite, publishes `api`,
+`worker` and `frontend` images to GHCR tagged with the version, and opens a
+GitHub Release whose notes are the annotated tag's own message.
+
+Re-running the tests on the tag looks redundant against the branch build. It is
+a few minutes set against publishing a tag that was never green.
+
+The deploy half lives in `scripts/deploy.sh`, not inside the workflow. That is
+the important choice: the workflow runs the same script over SSH, so a GitHub
+outage costs nothing and the manual path *is* the real path rather than a
+fallback nobody has tried. It pulls before it restarts — pulling is the slow,
+failure-prone half, and doing it while the old version still serves keeps the
+outage to a container restart rather than a download — and it waits for
+`/health/ready` before reporting success, because a deploy that says "done"
+while the API is down sends everyone to bed.
+
+The deploy workflow is gated on a `DEPLOY_HOST` repository variable, so a
+repository with no VM configured shows *skipped* rather than a red X on every
+release. A pipeline that is always failing is a pipeline nobody reads.
+
+The production overlay names published images while keeping the base file's
+build stanza, so `docker compose pull` fetches what CI built while a VM with no
+registry access can still build its way out of a hole. `RELEASE` pins the
+version, and the API reports it as its own OpenAPI version — which is what to
+trust when the checkout and the containers have drifted apart.
+
+CI gained `actionlint`, because a workflow's own mistakes otherwise surface only
+when it runs, and for a release pipeline that means "during a release".
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

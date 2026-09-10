@@ -199,22 +199,48 @@ nobody has restored is a hypothesis.
 
 ## Deploying
 
+Releases are cut by tag. Pushing `v*` runs the suite, publishes images to GHCR
+and opens a GitHub Release; the VM pulls those images rather than building.
+
 ```bash
-git pull
-dc build
-dc up -d
-dc logs -f migrate api
+RELEASE=v1.1.0 ./scripts/deploy.sh
 ```
 
-`migrate` runs to completion before `api` and the workers start, so a schema
-change lands before anything reads the new shape. Migrations are written to
-apply, downgrade and re-apply cleanly; if one fails, the API does not start,
-which is the intended behaviour — a half-migrated database serving traffic is
-worse than a few minutes of downtime.
+That script is the whole deployment: check out the tag, `docker compose pull`,
+run migrations, restart, and wait for `/health/ready`. The Deploy workflow runs
+exactly the same script over SSH, so a GitHub outage costs you nothing — the
+manual path is the real path.
 
-**Rolling back a bad deploy:** `git checkout <previous>` and rebuild. Do not
-downgrade a migration to roll back an application change unless the migration is
-the problem: downgrades drop columns, and the data in them does not come back.
+It pulls before it restarts, deliberately. Pulling is the slow, failure-prone
+half, and doing it while the old version still serves keeps the outage to a
+container restart rather than a download.
+
+`migrate` runs to completion before `api` and the workers start, so a schema
+change lands before anything reads the new shape. Migrations apply, downgrade
+and re-apply cleanly (CI proves the round trip on every push); if one fails the
+API does not start, which is intended — a half-migrated database serving traffic
+is worse than a few minutes of downtime.
+
+**Rolling back:**
+
+```bash
+RELEASE=v1.0.0 ./scripts/deploy.sh
+```
+
+or run the Deploy workflow with the older tag. Do not downgrade a migration to
+roll back an application change unless the migration is the problem: downgrades
+drop columns, and the data in them does not come back. If a release added a
+column, the previous version simply ignores it.
+
+**What is actually running:**
+
+```bash
+git -C /srv/tendersense describe --tags
+curl -sS https://$DOMAIN/openapi.json | jq -r .info.version
+```
+
+The second reads the version the API reports for itself, which is the one that
+matters when the checkout and the containers have drifted apart.
 
 ## Rotating secrets
 

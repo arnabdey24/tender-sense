@@ -130,6 +130,28 @@ Back both up: the database holds the accounts and decisions, and the blob volume
 holds raw portal payloads, which for many closed notices is the only copy left
 anywhere — and the only thing that makes a broken parser fixable after the fact.
 
+### Releasing
+
+Pushing a `v*` tag runs the whole test suite again, publishes `api`, `worker`
+and `frontend` images to GHCR, and opens a GitHub Release whose notes are the
+tag's own message.
+
+```bash
+git tag -a v1.1.0 -m "What changed and why"
+git push origin v1.1.0
+```
+
+The VM then pulls those images rather than building on the box:
+
+```bash
+RELEASE=v1.1.0 ./scripts/deploy.sh      # by hand, on the VM
+```
+
+The Deploy workflow does the same thing over SSH once `DEPLOY_HOST` and its
+companions are set on the repository — until then it skips rather than failing,
+because a pipeline that is always red is a pipeline nobody reads. The variables
+it needs are listed at the top of `.github/workflows/deploy.yml`.
+
 **[docs/RUNBOOK.md](docs/RUNBOOK.md)** covers the rest: what to check when a
 portal goes quiet, why mail is not arriving, how to restore a backup, which
 metrics are worth alerting on, and what is safe to restart.

@@ -111,5 +111,14 @@ fe-test: ## Run frontend unit tests
 fe-types: ## Regenerate the typed API client from the running API
 	cd frontend && npm run api:types
 
+.PHONY: release
+release: ## Tag and push a release: make release V=v1.1.0 M="what changed"
+	@test -n "$(V)" || { echo 'usage: make release V=v1.1.0 M="what changed"'; exit 1; }
+	@test -n "$(M)" || { echo 'usage: make release V=v1.1.0 M="what changed"'; exit 1; }
+	@test -z "$$(git status --porcelain)" || { echo 'working tree is dirty'; exit 1; }
+	git tag -a "$(V)" -m "$(M)"
+	git push origin "$(V)"
+	@echo "pushed $(V) — the Release workflow builds and publishes it"
+
 .PHONY: check
 check: lint test fe-test ## Everything CI runs

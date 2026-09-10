@@ -437,7 +437,14 @@ class EgpBdAdapter:
             external_id=str(ref.external_id),
             canonical_url=f"{BASE_URL}{DETAIL_PATH}?id={ref.external_id}",
             title=title[:1000],
-            summary=_field(fields, "Invitation for") or row.get("procurement_nature") or None,
+            # No fallback to procurement nature. When "Invitation for" is
+            # absent, that fallback put the notice *type* — "Tender - Single
+            # Lot" — under a Summary heading that promises prose, and the
+            # nature is already carried as `procurement_category` below, so
+            # nothing is lost by leaving this null. An empty summary is
+            # displayed as absent, which is true; a category mislabelled as a
+            # summary is not.
+            summary=_field(fields, "Invitation for") or None,
             description=description,
             procuring_entity=(
                 _field(fields, "Procuring Entity Name")

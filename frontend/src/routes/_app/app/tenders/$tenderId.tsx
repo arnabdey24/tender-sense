@@ -19,9 +19,11 @@ import { Deadline } from "@/features/tenders/Deadline"
 import { RequirementsList } from "@/features/tenders/RequirementsList"
 import { useTender } from "@/features/tenders/api"
 import {
+  addsNothing,
   categoryLabel,
   formatDate,
   formatValue,
+  sourceLabel,
   statusLabel,
 } from "@/features/tenders/format"
 
@@ -162,6 +164,13 @@ function TenderDetailPage() {
     | null
     | undefined
 
+  // Each field is measured against the title, and the description also against
+  // the summary, so a portal that repeats itself does not get three headings.
+  const summary = addsNothing(t.summary, t.title) ? null : t.summary
+  const description = addsNothing(t.description, t.title, summary)
+    ? null
+    : t.description
+
   return (
     <div className="flex flex-col gap-6">
       {backLink}
@@ -179,7 +188,7 @@ function TenderDetailPage() {
           <Deadline days={t.days_to_deadline} deadlineAt={t.deadline_at} />
           <span className="text-muted-foreground">·</span>
           <Badge variant="secondary">{statusLabel(t.status)}</Badge>
-          <Badge variant="outline">{t.source_code}</Badge>
+          <Badge variant="outline">{sourceLabel(t.source_code)}</Badge>
           <div className="ml-auto flex items-center gap-2">
             {assistant && (
               <Button
@@ -225,18 +234,38 @@ function TenderDetailPage() {
             <Fact label="Deadline" value={formatDate(t.deadline_at)} />
           </dl>
 
-          {t.summary ? (
+          {/*
+            Portals repeat themselves. e-GP's "Brief Description" is very often
+            the package title with "as per tender documents" on the end, and
+            its summary field falls back to the notice *type*, so this page was
+            printing the same sentence three times under three headings and
+            reading as though it were padded. A section is rendered only when
+            it says something the heading above it has not.
+          */}
+          {summary ? (
             <Section title="Summary">
               <p className="max-w-prose text-pretty text-sm leading-relaxed">
-                {t.summary}
+                {summary}
               </p>
             </Section>
           ) : null}
 
-          {t.description ? (
+          {description ? (
             <Section title="Description">
               <p className="max-w-prose text-pretty text-sm leading-relaxed whitespace-pre-wrap">
-                {t.description}
+                {description}
+              </p>
+            </Section>
+          ) : null}
+
+          {/* Saying so is better than a gap where prose should be: it tells a
+              bidder the notice really is this thin, and where to go next. */}
+          {!summary && !description ? (
+            <Section title="Description">
+              <p className="max-w-prose text-pretty text-sm leading-relaxed text-muted-foreground">
+                The portal published nothing beyond the title for this notice.
+                The bidding documents on the portal are the only fuller
+                description, and they are not parsed here yet.
               </p>
             </Section>
           ) : null}

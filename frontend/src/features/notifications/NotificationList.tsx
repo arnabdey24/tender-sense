@@ -5,7 +5,7 @@ import {
   CalendarClockIcon,
   InfoIcon,
   RefreshCwIcon,
-  SparklesIcon,
+  TargetIcon,
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -24,7 +24,7 @@ import type {
 } from "@/features/notifications/api"
 
 const ICONS: Record<NotificationType, typeof BellIcon> = {
-  instant_match: SparklesIcon,
+  instant_match: TargetIcon,
   daily_digest: BellIcon,
   deadline_reminder: CalendarClockIcon,
   tender_updated: RefreshCwIcon,

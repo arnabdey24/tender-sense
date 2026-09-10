@@ -23,7 +23,8 @@ import {
   MinusIcon,
   PlusIcon,
   SearchIcon,
-  SparklesIcon,
+  ListChecksIcon,
+  MessageCircleQuestionIcon,
   SquareIcon,
   Trash2Icon,
   XIcon,
@@ -111,12 +112,12 @@ const STARTERS: {
   label: string
   text: string
   kind?: AnalysisRequest["kind"]
-  icon: typeof SparklesIcon
+  icon: typeof ChartColumnIcon
 }[] = [
   {
     label: "Explain the recommendation",
     text: "Explain why this tender received its recommendation, including the evidence.",
-    icon: SparklesIcon,
+    icon: MessageCircleQuestionIcon,
   },
   {
     label: "Visualize our capability fit",
@@ -134,7 +135,7 @@ const STARTERS: {
     label: "Create a preparation checklist",
     text: "Create a draft bid preparation checklist.",
     kind: "checklist",
-    icon: FileTextIcon,
+    icon: ListChecksIcon,
   },
 ]
 
@@ -941,15 +942,12 @@ function AssistantSession({
                 aria-label={
                   live ? "Return to live conversation" : "Ask TenderSense"
                 }
-                className="relative size-12 rounded-full p-0 shadow-lg sm:h-12 sm:w-auto sm:px-5"
+                className="relative size-12 rounded-full p-0 shadow-lg"
                 onClick={() => setOpen(true)}
               >
-                <MessageCircleIcon data-icon="inline-start" />
-                <span className="hidden sm:inline">
-                  {live ? "Return to live conversation" : "Ask TenderSense"}
-                </span>
+                <MessageCircleIcon className="size-5" />
                 {live && (
-                  <span className="absolute top-1 right-1 size-2 rounded-full bg-success sm:static" />
+                  <span className="absolute top-1 right-1 size-2.5 rounded-full bg-success ring-2 ring-primary" />
                 )}
               </Button>
               {live && (

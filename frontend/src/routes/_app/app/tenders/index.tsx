@@ -1,16 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { SearchIcon, XIcon } from "lucide-react"
 import * as React from "react"
 import { z } from "zod"
 
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import {
   Pagination,
   PaginationContent,
@@ -114,6 +113,34 @@ function TendersPage() {
   const page = search.page ?? 1
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
+  const activeFilters = [
+    search.q && {
+      key: "q",
+      label: `“${search.q}”`,
+      clear: () => setSearch({ q: undefined }),
+    },
+    search.category && {
+      key: "category",
+      label: categoryLabel(search.category),
+      clear: () => setSearch({ category: undefined }),
+    },
+    search.status && {
+      key: "status",
+      label: statusLabel(search.status),
+      clear: () => setSearch({ status: undefined }),
+    },
+    search.source && {
+      key: "source",
+      label: search.source,
+      clear: () => setSearch({ source: undefined }),
+    },
+    search.open_only && {
+      key: "open_only",
+      label: "Open only",
+      clear: () => setSearch({ open_only: undefined }),
+    },
+  ].filter(Boolean) as { key: string; label: string; clear: () => void }[]
+
   const sourceOptions = (sources.data ?? []).map((s) => ({
     value: s.code,
     label: s.name,
@@ -127,93 +154,128 @@ function TendersPage() {
         description="The shared pool of procurement notices TenderSense tracks."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
+      {/* One self-describing toolbar. Each control states what it filters, so
+          the five stacked labels above them were saying it twice. */}
+      <div className="flex flex-col gap-3">
+        <form
+          className="flex flex-wrap items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            setSearch({ q: draftQ.trim() || undefined })
+          }}
+        >
+          <InputGroup className="min-w-64 flex-1">
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
+              id="tender-search"
+              aria-label="Search tenders"
+              value={draftQ}
+              onChange={(e) => setDraftQ(e.target.value)}
+              placeholder="Search title, summary or buyer"
+            />
+          </InputGroup>
+
+          <div className="w-40">
+            <TenderFilterSelect
+              label="Category"
+              anyLabel="Any category"
+              value={search.category}
+              onChange={(v) => setSearch({ category: v as Search["category"] })}
+              options={CATEGORIES.map((c) => ({
+                value: c,
+                label: categoryLabel(c),
+                count: facets.data?.by_category?.[c],
+              }))}
+            />
+          </div>
+          <div className="w-36">
+            <TenderFilterSelect
+              label="Status"
+              anyLabel="Any status"
+              value={search.status}
+              onChange={(v) => setSearch({ status: v as Search["status"] })}
+              options={STATUSES.map((s) => ({
+                value: s,
+                label: statusLabel(s),
+                count: facets.data?.by_status?.[s],
+              }))}
+            />
+          </div>
+          <div className="w-40">
+            <TenderFilterSelect
+              label="Source"
+              anyLabel="Any source"
+              value={search.source}
+              onChange={(v) => setSearch({ source: v })}
+              options={sourceOptions}
+            />
+          </div>
+          <div className="w-36">
+            <TenderFilterSelect
+              label="Sort by"
+              anyLabel="Newest first"
+              value={search.sort}
+              onChange={(v) => setSearch({ sort: v as Search["sort"] })}
+              options={SORTS.filter((s) => s.value !== "published_at")}
+            />
+          </div>
+
+          <label className="flex h-8 shrink-0 items-center gap-2 rounded-lg border px-2.5 text-sm">
+            <Switch
+              checked={search.open_only ?? false}
+              onCheckedChange={(checked) =>
+                setSearch({ open_only: checked || undefined })
+              }
+            />
+            Open only
+          </label>
+
+          <Button type="submit" size="sm">
+            Search
+          </Button>
+        </form>
+
+        {/* What is actually applied, and one click to undo each of them. */}
+        <div className="flex flex-wrap items-center gap-2 border-b pb-3 text-sm">
+          <span className="text-muted-foreground tabular-nums">
             {tenders.isPending
               ? "Searching…"
               : `${total.toLocaleString()} notice${total === 1 ? "" : "s"}`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <form
-            className="flex flex-wrap items-end gap-3"
-            onSubmit={(e) => {
-              e.preventDefault()
-              setSearch({ q: draftQ.trim() || undefined })
-            }}
-          >
-            <div className="flex min-w-56 flex-1 flex-col gap-1">
-              <label htmlFor="tender-search" className="text-xs font-medium">
-                Search
-              </label>
-              <Input
-                id="tender-search"
-                value={draftQ}
-                onChange={(e) => setDraftQ(e.target.value)}
-                placeholder="Title, summary or buyer"
-              />
-            </div>
-            <div className="flex w-40 flex-col gap-1">
-              <span className="text-xs font-medium">Category</span>
-              <TenderFilterSelect
-                label="Category"
-                value={search.category}
-                onChange={(v) =>
-                  setSearch({ category: v as Search["category"] })
+          </span>
+          {activeFilters.length > 0 && (
+            <>
+              <span className="text-muted-foreground">·</span>
+              {activeFilters.map((filter) => (
+                <button
+                  key={filter.key}
+                  type="button"
+                  onClick={filter.clear}
+                  className="inline-flex items-center gap-1 rounded-4xl bg-muted px-2 py-0.5 text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  {filter.label}
+                  <XIcon className="size-3" />
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() =>
+                  setSearch({
+                    q: undefined,
+                    category: undefined,
+                    status: undefined,
+                    source: undefined,
+                    open_only: undefined,
+                  })
                 }
-                options={CATEGORIES.map((c) => ({
-                  value: c,
-                  label: categoryLabel(c),
-                  count: facets.data?.by_category?.[c],
-                }))}
-              />
-            </div>
-            <div className="flex w-40 flex-col gap-1">
-              <span className="text-xs font-medium">Status</span>
-              <TenderFilterSelect
-                label="Status"
-                value={search.status}
-                onChange={(v) => setSearch({ status: v as Search["status"] })}
-                options={STATUSES.map((s) => ({
-                  value: s,
-                  label: statusLabel(s),
-                  count: facets.data?.by_status?.[s],
-                }))}
-              />
-            </div>
-            <div className="flex w-44 flex-col gap-1">
-              <span className="text-xs font-medium">Source</span>
-              <TenderFilterSelect
-                label="Source"
-                value={search.source}
-                onChange={(v) => setSearch({ source: v })}
-                options={sourceOptions}
-              />
-            </div>
-            <div className="flex w-36 flex-col gap-1">
-              <span className="text-xs font-medium">Sort by</span>
-              <TenderFilterSelect
-                label="Sort by"
-                value={search.sort}
-                anyLabel="Newest"
-                onChange={(v) => setSearch({ sort: v as Search["sort"] })}
-                options={SORTS.filter((s) => s.value !== "published_at")}
-              />
-            </div>
-            <label className="flex h-8 items-center gap-2 text-sm">
-              <Switch
-                checked={search.open_only ?? false}
-                onCheckedChange={(checked) =>
-                  setSearch({ open_only: checked || undefined })
-                }
-              />
-              Open only
-            </label>
-            <Button type="submit" size="sm">
-              Search
-            </Button>
-          </form>
+                className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              >
+                Clear all
+              </button>
+            </>
+          )}
+        </div>
 
           <ApiErrorAlert error={tenders.error} />
 
@@ -251,8 +313,7 @@ function TendersPage() {
               </PaginationContent>
             </Pagination>
           ) : null}
-        </CardContent>
-      </Card>
+      </div>
     </>
   )
 }

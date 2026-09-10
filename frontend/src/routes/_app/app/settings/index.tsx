@@ -5,7 +5,7 @@ import {
   ChevronRightIcon,
   SatelliteDishIcon,
   ScaleIcon,
-  SparklesIcon,
+  WrenchIcon,
   UserRoundIcon,
   UsersIcon,
 } from "lucide-react"
@@ -33,7 +33,7 @@ const SECTIONS = [
   },
   {
     to: "/app/settings/profile",
-    icon: SparklesIcon,
+    icon: WrenchIcon,
     title: "Capability profile",
     description: "What you do — this is what tenders are matched against.",
   },

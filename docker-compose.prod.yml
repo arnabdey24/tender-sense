@@ -8,11 +8,15 @@
 # Services name a published image *and* keep the base file's build stanza. That
 # is deliberate: `docker compose pull` fetches the release the CI pipeline
 # built, while a VM with no registry access can still `--build` its way out of
-# a hole. RELEASE pins the version; leaving it unset means `latest`, which is
+# a hole. IMAGE_TAG pins the version; leaving it unset means `latest`, which is
 # fine for a first bring-up and wrong for anything you want to reproduce.
+#
+# IMAGE_TAG is the *image* tag (1.0.0), not the git tag (v1.0.0) — the release
+# pipeline strips the leading `v`. scripts/deploy.sh derives one from the other,
+# so a hand-run `docker compose` needs IMAGE_TAG set, not RELEASE.
 services:
   api:
-    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${RELEASE:-latest}
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${IMAGE_TAG:-latest}
     command:
       ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--proxy-headers", "--forwarded-allow-ips", "*"]
     environment:
@@ -29,7 +33,7 @@ services:
     restart: always
 
   worker:
-    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${RELEASE:-latest}
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${IMAGE_TAG:-latest}
     environment:
       ENVIRONMENT: production
       LOG_JSON: "true"
@@ -39,7 +43,7 @@ services:
     restart: always
 
   worker-scrape:
-    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/worker:${RELEASE:-latest}
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/worker:${IMAGE_TAG:-latest}
     environment:
       ENVIRONMENT: production
       LOG_JSON: "true"
@@ -48,7 +52,7 @@ services:
     restart: always
 
   migrate:
-    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${RELEASE:-latest}
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${IMAGE_TAG:-latest}
     environment:
       ENVIRONMENT: production
 
@@ -68,7 +72,7 @@ services:
     restart: always
 
   frontend:
-    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/frontend:${RELEASE:-latest}
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/frontend:${IMAGE_TAG:-latest}
     security_opt:
       - no-new-privileges:true
     restart: always

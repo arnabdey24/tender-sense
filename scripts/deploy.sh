@@ -27,6 +27,14 @@ git checkout --detach "$RELEASE" || fail "no such tag: $RELEASE"
 
 export RELEASE
 
+# Git tags carry a leading `v`; the images do not. docker/metadata-action's
+# `type=semver` strips it, so v1.0.0 publishes as 1.0.0 — asking the registry
+# for `v1.0.0` gets "manifest unknown". Convert at the boundary rather than
+# making the tag or the pipeline lie about which namespace it is in.
+IMAGE_TAG="${RELEASE#v}"
+export IMAGE_TAG
+log "images pinned to ${IMAGE_TAG}"
+
 log "pulling images"
 "${COMPOSE[@]}" pull || fail "could not pull the images for $RELEASE"
 

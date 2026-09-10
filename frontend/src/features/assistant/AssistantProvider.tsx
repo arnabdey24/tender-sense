@@ -83,6 +83,7 @@ import { useAuthStore } from "@/lib/auth/store"
 import { qk } from "@/lib/api/query-keys"
 import { useTender, useTenders } from "@/features/tenders/api"
 import { useMatch } from "@/features/matches/api"
+import { useDraggableCorner } from "@/hooks/use-draggable-corner"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { AssistantContext } from "./context"
@@ -412,6 +413,14 @@ function AssistantSession({
   const previewTimer = useRef<ReturnType<typeof setInterval> | undefined>(
     undefined
   )
+  // Matches the CSS anchor the launcher shipped with, so a reader who never
+  // drags it sees no change.
+  const launcher = useDraggableCorner({
+    storageKey: "assistant-launcher:offset",
+    defaultOffset: { right: 24, bottom: 24 },
+    size: { width: 56, height: 56 },
+  })
+
   const live = !["idle", "error"].includes(voiceState)
   const enabled = active && capabilities.data?.enabled !== false
 
@@ -1086,20 +1095,49 @@ function AssistantSession({
       {enabled && (
         <>
           {!open && (
-            <div className="assistant-launcher">
-              {/* A labelled pill covers the content beneath it on a phone, so
-                  below `sm` the launcher is the icon alone. */}
+            <div
+              className="assistant-launcher"
+              style={{
+                right: launcher.offset.right,
+                bottom: launcher.offset.bottom,
+              }}
+            >
+              {/*
+                48px sat under the comfortable target size for a control that
+                floats over content and is reached one-handed on a phone. 56px,
+                still icon-only — the label is on the button's accessible name,
+                not printed beside it.
+
+                It is also draggable, because a fixed corner button always
+                covers *something*: the last row of a table, the pagination, a
+                form's submit. Rather than guess which corner is safe, the
+                reader moves it and it stays moved. A press that does not
+                travel is still a click, so activation is unaffected, and
+                keyboard users are untouched — the drag is pointer-only.
+              */}
               <Button
                 size="lg"
                 aria-label={
                   live ? "Return to live conversation" : "Ask TenderSense"
                 }
-                className="relative size-12 rounded-full p-0 shadow-lg"
-                onClick={() => setOpen(true)}
+                title="Ask TenderSense — drag to move"
+                className={cn(
+                  "relative size-14 touch-none rounded-full p-0 shadow-lg transition-shadow duration-[var(--motion-base)] ease-(--motion-ease-out) hover:shadow-xl",
+                  launcher.dragging
+                    ? "cursor-grabbing shadow-xl"
+                    : "cursor-grab"
+                )}
+                {...launcher.handlers}
+                onClick={() => {
+                  // Swallow the click that ends a drag; open on a real press.
+                  if (launcher.consumeDrag()) return
+                  setOpen(true)
+                }}
+                onDoubleClick={launcher.reset}
               >
-                <MessageCircleIcon className="size-5" />
+                <MessageCircleIcon className="size-6!" />
                 {live && (
-                  <span className="absolute top-1 right-1 size-2.5 rounded-full bg-success ring-2 ring-primary" />
+                  <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-success ring-2 ring-primary" />
                 )}
               </Button>
               {live && (

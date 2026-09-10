@@ -390,6 +390,16 @@ function AssistantSession({
   const [mobileTab, setMobileTab] = useState("conversation")
   const [selected, setSelected] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
+  /**
+   * Bumped whenever a fresh conversation starts, and used as the welcome
+   * orb's key so it remounts and replays its wake.
+   *
+   * Pressing New conversation on a chat that is already empty is a no-op by
+   * definition — there is nothing to clear — and with no visible response it
+   * reads as a broken button. Replaying the orb answers the press: yes, this
+   * is a new conversation.
+   */
+  const [chatEpoch, setChatEpoch] = useState(0)
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [artifact, setArtifact] = useState<Artifact | null>(null)
@@ -499,10 +509,21 @@ function AssistantSession({
     setMessages(result.messages)
     setArtifact(result.messages.flatMap((m) => m.artifacts).at(-1) ?? null)
   }
-  async function selectTender(id: string, fresh = false) {
+  /**
+   * Point the panel at a tender, or at the workspace.
+   *
+   * `null` is the workspace conversation — about the shortlist rather than one
+   * notice — and is the state the panel opens in from the launcher, so this
+   * has to accept it. It used to take a bare `string`, which is what made the
+   * New conversation button dead on exactly the conversation most people
+   * start in.
+   */
+  async function selectTender(id: string | null, fresh = false) {
     setOpen(true)
     setPicking(false)
     setHistory(null)
+    // `fresh` is the whole point of the New conversation button, so it must
+    // never be short-circuited by "you are already on this tender".
     if (id === selected && !fresh) return
     stop()
     endVoice()
@@ -510,11 +531,12 @@ function AssistantSession({
     setSelected(id)
     setConversation(null)
     setMessages([])
+    setChatEpoch((n) => n + 1)
     setArtifact(null)
     setError(null)
     setLoading(true)
     try {
-      const recent = fresh ? [] : await getConversations(id)
+      const recent = fresh ? [] : await getConversations(id ?? undefined)
       if (recent[0]) await restore(recent[0].id, selectionEpoch)
     } catch (cause) {
       if (epoch.current === selectionEpoch)
@@ -750,7 +772,7 @@ function AssistantSession({
                   <MessageScrollerItem messageId="welcome">
                     <div className="flex flex-col gap-6 pt-5 pb-3">
                       <div className="flex flex-col items-start gap-4">
-                        <VoiceOrb />
+                        <VoiceOrb key={chatEpoch} intro />
                         <div>
                           <h2 className="text-2xl leading-tight font-medium tracking-[-0.02em]">
                             Let’s talk it through.
@@ -1122,9 +1144,13 @@ function AssistantSession({
                 }
                 title="Ask TenderSense — drag to move"
                 className={cn(
-                  "relative size-14 touch-none rounded-full p-0 shadow-lg transition-shadow duration-[var(--motion-base)] ease-(--motion-ease-out) hover:shadow-xl",
+                  "group/launcher relative size-14 touch-none rounded-full p-0 shadow-lg",
+                  // It should look pressable before it is pressed: the button
+                  // lifts under a pointer and gives under one.
+                  "transition-[transform,box-shadow] duration-[var(--motion-base)] ease-(--motion-ease-out)",
+                  "hover:scale-105 hover:shadow-xl active:scale-95 active:duration-[var(--motion-fast)]",
                   launcher.dragging
-                    ? "cursor-grabbing shadow-xl"
+                    ? "scale-105 cursor-grabbing shadow-xl"
                     : "cursor-grab"
                 )}
                 {...launcher.handlers}
@@ -1135,7 +1161,7 @@ function AssistantSession({
                 }}
                 onDoubleClick={launcher.reset}
               >
-                <MessageCircleIcon className="size-6!" />
+                <MessageCircleIcon className="size-6! transition-transform duration-[var(--motion-base)] ease-(--motion-ease-out) group-hover/launcher:-rotate-6" />
                 {live && (
                   <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-success ring-2 ring-primary" />
                 )}
@@ -1213,7 +1239,11 @@ function AssistantSession({
                   size="icon-sm"
                   aria-label="New conversation"
                   disabled={busy || live || loading}
-                  onClick={() => selected && void selectTender(selected, true)}
+                  // No truthiness guard on `selected`: null is the workspace
+                  // conversation, not "nothing selected", and guarding on it
+                  // meant this button did nothing at all in the state the
+                  // panel opens in.
+                  onClick={() => void selectTender(selected, true)}
                 >
                   <PlusIcon />
                 </Button>

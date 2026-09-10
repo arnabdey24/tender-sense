@@ -30,16 +30,21 @@ function Stat({
   value: number | undefined
   isLoading?: boolean
 }) {
+  // Stacked one-per-row on a phone, four tiles at full desktop spacing pushed
+  // the day's shortlist most of a screen down. Below `sm` the label and value
+  // sit as one tight group instead.
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardDescription>{label}</CardDescription>
+    <Card className="gap-1 [--card-spacing:--spacing(3)] sm:gap-4 sm:[--card-spacing:--spacing(4)]">
+      <CardHeader className="pb-0 sm:pb-2">
+        <CardDescription className="text-xs sm:text-sm">
+          {label}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-7 w-14 sm:h-8 sm:w-16" />
         ) : (
-          <span className="text-3xl font-semibold tabular-nums">
+          <span className="text-2xl font-semibold tabular-nums sm:text-3xl">
             {value ?? 0}
           </span>
         )}
@@ -99,7 +104,9 @@ function DashboardPage() {
         description="Your tender activity at a glance."
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Two-up on a phone: stacked one-per-row, four tiles pushed the day's
+          shortlist off the first screen entirely. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Stat
           label="Open matches"
           value={stats.data?.total}

@@ -101,8 +101,15 @@
     "colorNeverAlone": "Grades carry a letter; rule results carry a label and icon; voice states carry readable text.",
     "reducedMotion": "Honoured, including the assistant voice orb."
   },
+  "pinnedExceptions": [
+    {
+      "what": "The assistant voice orb keeps a conic gradient, a specular highlight and an inset shadow.",
+      "conflictsWith": "The flat-material rule and the 2D icon language.",
+      "ruling": "The product owner declared the orb the sole exception after a finish review scored the treatment as a slop tell. Honoured deliberately; scope is the orb alone. Do not generalise it to any other surface."
+    }
+  ],
   "notCanonized": [
-    "The dashboard's four-across stat-tile row is the incumbent composition, retained because this pass was scoped to the visual layer. It is not a pattern to reproduce on new surfaces; it is the hero-metric template the craft floor warns about.",
+    "The dashboard's four-across stat-tile row is the incumbent composition, retained because this pass was scoped to the visual layer. It is not a pattern to reproduce on new surfaces; it is the hero-metric template the craft floor warns about. The tiles were compressed below `sm` so they stop eating a phone's first viewport, but the arrangement stands and the direction contract records the conflict.",
     "`--warning-foreground` used as a text colour on the page ground was a shipped defect (near-black in both themes, invisible on dark). It was repaired in EligibilityList and the warning badge, and the rule is now recorded — but the token pattern is not a system rule to copy.",
     "The bare `d` keypress that toggles the theme is an incumbent behaviour with no discoverability; it is now surfaced in the theme control's tooltip, but a global single-letter hotkey is not a pattern the system endorses."
   ]

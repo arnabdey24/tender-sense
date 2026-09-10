@@ -299,6 +299,13 @@ The assistant's orb encodes microphone amplitude as scale and session state as
 motion, with a readable text label always present beside it. It carries no
 meaning in colour alone and stops entirely under `prefers-reduced-motion`.
 
+**It is the one sanctioned exception to the flat-material rule.** The orb keeps
+its conic gradient, specular highlight and inset shadow. A finish review scored
+that as contradicting the flat 2D world; the product owner overruled it
+deliberately. The exception covers the orb and nothing else — no other surface
+inherits imitation dimensionality from it, and this is not a licence to add
+gradients or bevels elsewhere.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -313,7 +320,10 @@ meaning in colour alone and stops entirely under `prefers-reduced-motion`.
 ### Don't:
 
 - Don't invert one theme to make the other.
-- Don't use brand blue for anything but action, selection, link or focus.
+- Don't use brand blue for anything but action, selection, link or focus. A
+  status count (the unread badge) takes ink, not brand.
+- Don't wash a surface with a brand-tinted radial gradient. The hero glow behind
+  a headline is the generic-SaaS tell; both instances were removed.
 - Don't reuse a grade or status colour as a chart series.
 - Don't put a kicker or eyebrow above a heading.
 - Don't ship gradient text, glass-as-decoration, coloured left-border accents,

@@ -370,8 +370,12 @@
  * once, as the page arrives, then rests. Not a loop — a loop is decoration.
  */
 @media (prefers-reduced-motion: no-preference) {
+  /* The arcs draw themselves on, innermost first — the signal arriving,
+     rather than three shapes fading up. Each path carries pathLength="1",
+     so one dash length draws all three radii at the same rate. */
   .logo-signal [data-signal] path {
-    opacity: 0;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
     animation: logo-arc-in 620ms var(--motion-ease-out) forwards;
   }
   .logo-signal [data-signal] path:nth-child(2) {
@@ -384,10 +388,10 @@
 
 @keyframes logo-arc-in {
   from {
-    opacity: 0;
+    stroke-dashoffset: 1;
   }
   to {
-    opacity: 1;
+    stroke-dashoffset: 0;
   }
 }
 

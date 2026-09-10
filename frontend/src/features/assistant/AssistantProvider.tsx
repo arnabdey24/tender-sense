@@ -929,14 +929,23 @@ function AssistantSession({
         <>
           {!open && (
             <div className="assistant-launcher">
+              {/* A labelled pill covers the content beneath it on a phone, so
+                  below `sm` the launcher is the icon alone. */}
               <Button
                 size="lg"
-                className="h-12 rounded-full px-5 shadow-lg"
+                aria-label={
+                  live ? "Return to live conversation" : "Ask TenderSense"
+                }
+                className="relative size-12 rounded-full p-0 shadow-lg sm:h-12 sm:w-auto sm:px-5"
                 onClick={() => setOpen(true)}
               >
                 <MessageCircleIcon data-icon="inline-start" />
-                {live ? "Return to live conversation" : "Ask TenderSense"}
-                {live && <span className="size-2 rounded-full bg-success" />}
+                <span className="hidden sm:inline">
+                  {live ? "Return to live conversation" : "Ask TenderSense"}
+                </span>
+                {live && (
+                  <span className="absolute top-1 right-1 size-2 rounded-full bg-success sm:static" />
+                )}
               </Button>
               {live && (
                 <Button variant="destructive" size="sm" onClick={endVoice}>
@@ -970,9 +979,28 @@ function AssistantSession({
                   <SparklesIcon className="size-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <DialogTitle className="text-sm font-medium">TenderSense assistant</DialogTitle>
-                  <DialogDescription className="mt-1 text-[11px]">
-                    A clearer path from notice to decision
+                  {/*
+                    "TenderSense assistant" needs two lines beside five action
+                    buttons at 420px, and truncates to "TenderSense as…" on a
+                    phone. The mark sits immediately to the left, so the product
+                    name is already on screen; the description below carries it
+                    for screen readers.
+                  */}
+                  <DialogTitle className="truncate text-sm font-medium">
+                    Assistant
+                  </DialogTitle>
+                  {/*
+                    The tagline that used to sit here ("a clearer path from
+                    notice to decision") told the reader nothing and wrapped to
+                    two lines, so the header ate 190px of a phone screen. The
+                    panel already states its grounding twice below — the mode
+                    marker and the composer footnote — so this stays for screen
+                    readers only.
+                  */}
+                  <DialogDescription className="sr-only">
+                    TenderSense assistant. Ask about the selected tender;
+                    answers are grounded in its notice, your company profile,
+                    and the recorded assessment.
                   </DialogDescription>
                 </div>
                 <Button

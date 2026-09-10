@@ -74,11 +74,7 @@ function LandingPage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden border-b">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(ellipse_55%_100%_at_50%_0%,color-mix(in_oklch,var(--primary)_13%,transparent),transparent)]"
-          />
+        <section className="relative border-b">
           <div className="relative mx-auto flex w-full max-w-5xl flex-col items-center gap-8 px-6 py-24 text-center sm:py-32">
             <LogoMark
               size={64}

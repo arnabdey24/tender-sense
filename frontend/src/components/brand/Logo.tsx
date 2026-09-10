@@ -40,19 +40,36 @@ export function LogoMark({
         strokeLinecap="round"
         opacity="0.55"
       >
-        <path d="M15.51 9.13A3.5 3.5 0 0 1 15.51 14.87" />
-        <path d="M16.94 7.09A6 6 0 0 1 16.94 16.91" />
-        {!compact && <path d="M18.38 5.04A8.5 8.5 0 0 1 18.38 18.96" />}
+        {/* pathLength normalises the three radii so one dash length draws them
+            all evenly when the landing hero animates the signal. */}
+        <path pathLength={1} d="M16.72 9.54A3 3 0 0 1 16.72 14.46" />
+        <path pathLength={1} d="M17.98 7.74A5.2 5.2 0 0 1 17.98 16.26" />
+        {!compact && (
+          <path pathLength={1} d="M19.25 5.94A7.4 7.4 0 0 1 19.25 18.06" />
+        )}
       </g>
-      <rect x="2" y="2.5" width="11" height="19" rx="2.6" fill="currentColor" />
+      {/*
+        A page, not a handset: 13 × 18 is close to paper's 1:1.4, and the 1.5
+        corner radius keeps it from rounding into a phone. The top rule is
+        heavier than the rest so it reads as a notice's title line.
+      */}
+      <rect x="2" y="3" width="13" height="18" rx="1.5" fill="currentColor" />
       <g
         stroke="var(--logo-paper, var(--background))"
-        strokeWidth={compact ? 1.6 : 1.5}
         strokeLinecap="round"
       >
-        <path d="M5 7.75H10" />
-        <path d="M5 12H10" />
-        {!compact && <path d="M5 16.25H8" />}
+        {compact ? (
+          <>
+            <path d="M5 8.5H12" strokeWidth={2.6} />
+            <path d="M5 14H10" strokeWidth={1.9} />
+          </>
+        ) : (
+          <>
+            <path d="M5 8H12" strokeWidth={2.2} />
+            <path d="M5 12H12" strokeWidth={1.5} />
+            <path d="M5 16H9.5" strokeWidth={1.5} />
+          </>
+        )}
       </g>
     </svg>
   )

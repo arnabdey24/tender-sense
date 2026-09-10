@@ -187,12 +187,12 @@ function NotificationBell() {
       >
         <BellIcon />
         {count > 0 && (
-          // Sat over the middle of the bell before, hiding the glyph it was
-          // meant to annotate. Pushed out to the corner, with a ring so it
-          // still separates from the icon behind it.
+          // Ink rather than brand: an unread count is status, and blue is
+          // reserved for things you can act on. It also sat over the middle of
+          // the bell before, hiding the glyph it annotates.
           <span
             aria-hidden
-            className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-none font-semibold text-primary-foreground ring-2 ring-background tabular-nums"
+            className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-foreground px-1 text-[10px] leading-none font-semibold text-background ring-2 ring-background tabular-nums"
           >
             {count > 9 ? "9+" : count}
           </span>
@@ -206,9 +206,11 @@ function NotificationBell() {
 export function AppHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   return (
     // Sticky and translucent: the breadcrumb and org context stay reachable
-    // while a long tender scrolls beneath them.
-    <header className="material-chrome sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-4">
-      <SidebarTrigger className="-ml-1" />
+    // while a long tender scrolls beneath them. Horizontal padding matches the
+    // content column's, so the header's chrome starts on the page's gutter
+    // instead of 4px inside it.
+    <header className="material-chrome sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-4 md:px-6">
+      <SidebarTrigger className="-ms-2" />
       <Separator orientation="vertical" className="mr-2 h-4" />
       <div className="min-w-0 flex-1">{breadcrumb ?? <AutoBreadcrumb />}</div>
       <div className="flex items-center gap-1">

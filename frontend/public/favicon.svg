@@ -1,13 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
   <title>TenderSense</title>
   <rect width="32" height="32" rx="7" fill="#0062a1"/>
-  <g stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.6">
-    <path d="M20.91 12.56A4.2 4.2 0 0 1 20.91 19.44"/>
-    <path d="M22.52 10.27A7 7 0 0 1 22.52 21.73"/>
+  <g stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" fill="none" opacity="0.6">
+    <path d="M21.57 13.05A3.6 3.6 0 0 1 21.57 18.95"/>
+    <path d="M23.06 10.92A6.2 6.2 0 0 1 23.06 21.08"/>
   </g>
-  <rect x="6.5" y="7" width="12" height="18" rx="3" fill="#ffffff"/>
-  <g stroke="#0062a1" stroke-width="2" stroke-linecap="round">
-    <path d="M9.6 12.2H15.4"/>
-    <path d="M9.6 16.4H15.4"/>
+  <rect x="6" y="7" width="13.5" height="18.5" rx="2" fill="#ffffff"/>
+  <g stroke="#0062a1" stroke-linecap="round">
+    <path d="M8.7 11.6H16.8" stroke-width="2.5"/>
+    <path d="M8.7 16.2H16.8" stroke-width="1.8"/>
+    <path d="M8.7 20.4H13.6" stroke-width="1.8"/>
   </g>
 </svg>

@@ -1,13 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 
 import { PageHeader } from "@/components/layout/PageHeader"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { PageBody, PageSection } from "@/components/layout/PageSection"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { OrganizationForm } from "@/features/org/OrganizationForm"
@@ -51,32 +45,33 @@ function OrganizationSettingsPage() {
         description="Your company details, used across matching and notifications."
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>
-            {isAdmin
+      <PageBody>
+        <PageSection
+          title="Profile"
+          caption={
+            isAdmin
               ? "Only admins can change these."
-              : "Ask an admin to change these."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <ApiErrorAlert error={org.error} />
-          {org.isPending ? (
-            <div className="flex flex-col gap-3">
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-9 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          ) : org.data && isAdmin ? (
-            // Remounts when the organization changes, so the form's default
-            // values follow an org switch instead of sticking to the first one.
-            <OrganizationForm key={org.data.id} org={org.data} />
-          ) : (
-            <ReadOnlyOrg />
-          )}
-        </CardContent>
-      </Card>
+              : "Ask an admin to change these."
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <ApiErrorAlert error={org.error} />
+            {org.isPending ? (
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-24 w-full" />
+              </div>
+            ) : org.data && isAdmin ? (
+              // Remounts when the organization changes, so the form's default
+              // values follow an org switch instead of sticking to the first one.
+              <OrganizationForm key={org.data.id} org={org.data} />
+            ) : (
+              <ReadOnlyOrg />
+            )}
+          </div>
+        </PageSection>
+      </PageBody>
     </>
   )
 }

@@ -7,14 +7,8 @@ import {
 } from "lucide-react"
 
 import { PageHeader } from "@/components/layout/PageHeader"
+import { PageBody, PageSection } from "@/components/layout/PageSection"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Empty,
   EmptyDescription,
@@ -255,52 +249,32 @@ function SourcesSettingsPage() {
         description="The procurement portals TenderSense watches on your behalf."
       />
 
-      <div className="flex flex-col gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Portals</CardTitle>
-            <CardDescription>
-              The tender pool is shared, so every portal here feeds every
-              organization's matches. A portal marked degraded or down means
-              notices may be missing from your feed.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SourceTable />
-          </CardContent>
-        </Card>
+      <PageBody>
+        <PageSection
+          title="Portals"
+          caption="The tender pool is shared, so every portal here feeds every organization's matches. A portal marked degraded or down means notices may be missing from your feed."
+        >
+          <SourceTable />
+        </PageSection>
 
         {isSuperuser && (
           <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Operator controls</CardTitle>
-                <CardDescription>
-                  Replaying re-parses pages already stored — it fetches nothing,
-                  which is what makes it safe to run against a portal that has
-                  started refusing us.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <OperatorControls />
-              </CardContent>
-            </Card>
+            <PageSection
+              title="Operator controls"
+              caption="Replaying re-parses pages already stored — it fetches nothing, which is what makes it safe to run against a portal that has started refusing us."
+            >
+              <OperatorControls />
+            </PageSection>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent runs</CardTitle>
-                <CardDescription>
-                  A scraper that quietly stops returning notices looks exactly
-                  like a quiet portal. These records are the difference.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RunHistory />
-              </CardContent>
-            </Card>
+            <PageSection
+              title="Recent runs"
+              caption="A scraper that quietly stops returning notices looks exactly like a quiet portal. These records are the difference."
+            >
+              <RunHistory />
+            </PageSection>
           </>
         )}
-      </div>
+      </PageBody>
     </>
   )
 }

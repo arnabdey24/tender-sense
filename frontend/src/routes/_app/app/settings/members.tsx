@@ -1,13 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 
 import { PageHeader } from "@/components/layout/PageHeader"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { PageBody, PageSection } from "@/components/layout/PageSection"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { InvitationsTable } from "@/features/org/InvitationsTable"
 import { InviteDialog } from "@/features/org/InviteDialog"
@@ -34,44 +28,42 @@ export function MembersPanel() {
         actions={isAdmin ? <InviteDialog /> : undefined}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Team</CardTitle>
-          <CardDescription>
-            {members.data
+      <PageBody>
+        <PageSection
+          title="Team"
+          caption={
+            members.data
               ? `${members.data.total} member${members.data.total === 1 ? "" : "s"}`
-              : "Loading members…"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <ApiErrorAlert error={members.error} />
-          <MembersTable
-            members={members.data?.items ?? []}
-            isLoading={members.isPending}
-            isAdmin={isAdmin}
-            currentUserId={currentUserId}
-          />
-        </CardContent>
-      </Card>
-
-      {isAdmin ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending invitations</CardTitle>
-            <CardDescription>
-              Links that have been emailed but not yet accepted.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <ApiErrorAlert error={invitations.error} />
-            <InvitationsTable
-              invitations={invitations.data ?? []}
-              isLoading={invitations.isPending}
+              : "Loading members…"
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <ApiErrorAlert error={members.error} />
+            <MembersTable
+              members={members.data?.items ?? []}
+              isLoading={members.isPending}
               isAdmin={isAdmin}
+              currentUserId={currentUserId}
             />
-          </CardContent>
-        </Card>
-      ) : null}
+          </div>
+        </PageSection>
+
+        {isAdmin ? (
+          <PageSection
+            title="Pending invitations"
+            caption="Links that have been emailed but not yet accepted."
+          >
+            <div className="flex flex-col gap-4">
+              <ApiErrorAlert error={invitations.error} />
+              <InvitationsTable
+                invitations={invitations.data ?? []}
+                isLoading={invitations.isPending}
+                isAdmin={isAdmin}
+              />
+            </div>
+          </PageSection>
+        ) : null}
+      </PageBody>
     </>
   )
 }

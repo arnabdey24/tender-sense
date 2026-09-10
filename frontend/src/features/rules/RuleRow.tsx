@@ -198,14 +198,6 @@ export function RuleRow({
           )}
         </div>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Remove ${attribute?.label ?? rule.attribute}`}
-          onClick={onRemove}
-        >
-          <TrashIcon />
-        </Button>
       </div>
 
       <div className="flex flex-wrap items-end gap-2">
@@ -242,14 +234,24 @@ export function RuleRow({
           />
           Active
         </label>
-        {attribute ? (
-          <span className="text-xs text-muted-foreground">
-            {attribute.source === "ai_extraction"
-              ? "Read from the notice by AI — low confidence becomes a check."
-              : "Taken from the portal."}
-          </span>
-        ) : null}
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="ml-auto"
+          aria-label={`Remove ${attribute?.label ?? rule.attribute}`}
+          onClick={onRemove}
+        >
+          <TrashIcon />
+        </Button>
       </div>
+
+      {attribute ? (
+        <p className="border-t pt-2.5 text-xs text-muted-foreground">
+          {attribute.source === "ai_extraction"
+            ? "Read from the notice itself — where it is unclear, this becomes a check rather than a pass."
+            : "Taken from the portal's own fields."}
+        </p>
+      ) : null}
     </li>
   )
 }

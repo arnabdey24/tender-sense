@@ -3,15 +3,9 @@ import { SendIcon } from "lucide-react"
 import * as React from "react"
 
 import { PageHeader } from "@/components/layout/PageHeader"
+import { PageBody, PageSection } from "@/components/layout/PageSection"
 import { StringCombobox } from "@/components/form/StringCombobox"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
@@ -165,6 +159,7 @@ function SettingsForm({
             description="Your local time, so it lands in your morning rather than the server's."
           >
             <div className="flex flex-col gap-2">
+              <span className="text-xs text-muted-foreground">Time</span>
               <Input
                 type="time"
                 value={(settings.digest_time ?? "08:00:00").slice(0, 5)}
@@ -174,6 +169,9 @@ function SettingsForm({
                 disabled={!canEdit}
                 aria-label="Digest send time"
               />
+              <span className="mt-1 text-xs text-muted-foreground">
+                Timezone
+              </span>
               <StringCombobox
                 items={timezones}
                 value={settings.digest_timezone}
@@ -225,7 +223,7 @@ function SettingsForm({
               <Button
                 key={days}
                 size="sm"
-                variant={offsets.includes(days) ? "secondary" : "outline"}
+                variant={offsets.includes(days) ? "default" : "outline"}
                 onClick={() => toggleOffset(days)}
                 disabled={!canEdit}
                 aria-pressed={offsets.includes(days)}
@@ -252,53 +250,44 @@ function NotificationSettingsPage() {
         description="What TenderSense tells you about, when, and where it lands."
       />
 
-      <div className="flex flex-col gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Delivery</CardTitle>
-            <CardDescription>
-              {isAdmin
-                ? "Changes save as you make them."
-                : "Ask an admin to change these."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ApiErrorAlert error={settings.error} />
-            {settings.isPending ? (
-              <div className="flex flex-col gap-3">
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-              </div>
-            ) : settings.data ? (
-              <SettingsForm settings={settings.data} canEdit={isAdmin} />
-            ) : null}
-          </CardContent>
-        </Card>
+      <PageBody>
+        <PageSection
+          title="Delivery"
+          caption={
+            isAdmin
+              ? "Changes save as you make them."
+              : "Ask an admin to change these."
+          }
+        >
+          <ApiErrorAlert error={settings.error} />
+          {settings.isPending ? (
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : settings.data ? (
+            <SettingsForm settings={settings.data} canEdit={isAdmin} />
+          ) : null}
+        </PageSection>
 
         <RecipientsCard canEdit={isAdmin} />
 
         {isAdmin && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Check delivery</CardTitle>
-              <CardDescription>
-                Prove mail arrives before the first real alert depends on it. A
-                shortlist nobody sees is the same as no shortlist.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                variant="outline"
-                onClick={() => testEmail.mutate()}
-                disabled={testEmail.isPending}
-              >
-                <SendIcon /> Send myself a test message
-              </Button>
-            </CardContent>
-          </Card>
+          <PageSection
+            title="Check delivery"
+            caption="Prove mail arrives before the first real alert depends on it. A shortlist nobody sees is the same as no shortlist."
+          >
+            <Button
+              variant="outline"
+              onClick={() => testEmail.mutate()}
+              disabled={testEmail.isPending}
+            >
+              <SendIcon /> Send myself a test message
+            </Button>
+          </PageSection>
         )}
-      </div>
+      </PageBody>
     </>
   )
 }

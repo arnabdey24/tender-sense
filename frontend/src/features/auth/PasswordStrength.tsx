@@ -5,7 +5,15 @@ import {
 } from "@/components/ui/progress"
 import { passwordScore, STRENGTH_LABELS } from "@/features/auth/password"
 
+/**
+ * Silent until there is a password to judge.
+ *
+ * It used to render "Too short" against an empty untouched field — telling
+ * someone off for a box they had not reached yet, on the account page where the
+ * field sits idle most of the time.
+ */
 export function PasswordStrength({ password }: { password: string }) {
+  if (!password) return null
   const score = passwordScore(password)
 
   return (

@@ -3,15 +3,9 @@ import { PlayIcon, PlusIcon, RotateCcwIcon, SaveIcon } from "lucide-react"
 import * as React from "react"
 
 import { PageHeader } from "@/components/layout/PageHeader"
+import { PageBody, PageSection } from "@/components/layout/PageSection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -124,8 +118,10 @@ function PreviewPanel({
               <li key={sample.tender_id} className="flex flex-col">
                 <span className="truncate">{sample.title}</span>
                 <span className="text-xs text-muted-foreground">
-                  {[...(sample.failing_rules ?? []), ...(sample.unknown_rules ?? [])]
-                    .join(", ") || sample.status}
+                  {[
+                    ...(sample.failing_rules ?? []),
+                    ...(sample.unknown_rules ?? []),
+                  ].join(", ") || sample.status}
                 </span>
               </li>
             ))}
@@ -205,7 +201,11 @@ function RulesPage() {
               <Button
                 disabled={save.isPending || !dirty}
                 onClick={() =>
-                  save.mutate({ name: ruleSet.data?.name ?? "Bidding criteria", definition: definition(), note: null })
+                  save.mutate({
+                    name: ruleSet.data?.name ?? "Bidding criteria",
+                    definition: definition(),
+                    note: null,
+                  })
                 }
               >
                 {save.isPending ? (
@@ -220,100 +220,93 @@ function RulesPage() {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Rules</CardTitle>
-          <CardDescription>
-            All rules must be met. A rule marked "blocks bidding" can make a
-            tender ineligible; an advisory one only colours the recommendation.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {rules.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No criteria yet — every tender counts as eligible.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {rules.map((rule, index) => (
-                <RuleRow
-                  key={rule.id}
-                  rule={rule}
-                  catalogue={catalogue.data}
-                  onChange={(next) =>
-                    setDraft(rules.map((r, i) => (i === index ? next : r)))
+      <PageBody>
+        <PageSection
+          title="Rules"
+          caption={
+            'All rules must be met. A rule marked "blocks bidding" can make a tender ineligible; an advisory one only colours the recommendation.'
+          }
+        >
+          <div className="flex flex-col gap-4">
+            {rules.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No criteria yet — every tender counts as eligible.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {rules.map((rule, index) => (
+                  <RuleRow
+                    key={rule.id}
+                    rule={rule}
+                    catalogue={catalogue.data}
+                    onChange={(next) =>
+                      setDraft(rules.map((r, i) => (i === index ? next : r)))
+                    }
+                    onRemove={() =>
+                      setDraft(rules.filter((_, i) => i !== index))
+                    }
+                  />
+                ))}
+              </ul>
+            )}
+
+            {isAdmin ? (
+              <Dialog>
+                <DialogTrigger
+                  render={
+                    <Button variant="outline" className="self-start">
+                      <PlusIcon data-icon="inline-start" />
+                      Add a rule
+                    </Button>
                   }
-                  onRemove={() => setDraft(rules.filter((_, i) => i !== index))}
                 />
-              ))}
-            </ul>
-          )}
+                <DialogContent className="max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Add a rule</DialogTitle>
+                    <DialogDescription>
+                      Start from something most companies want, then adjust it.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <ItemGroup className="gap-2">
+                    {presets.map((preset) => (
+                      <Item
+                        key={preset.key}
+                        variant="outline"
+                        onClick={() =>
+                          setDraft([...rules, ruleFromPreset(preset, rules)])
+                        }
+                      >
+                        <ItemContent>
+                          <ItemTitle>{preset.label}</ItemTitle>
+                          <ItemDescription>
+                            {preset.description}
+                          </ItemDescription>
+                        </ItemContent>
+                      </Item>
+                    ))}
+                  </ItemGroup>
+                </DialogContent>
+              </Dialog>
+            ) : null}
 
-          {isAdmin ? (
-            <Dialog>
-              <DialogTrigger
-                render={
-                  <Button variant="outline" className="self-start">
-                    <PlusIcon data-icon="inline-start" />
-                    Add a rule
-                  </Button>
-                }
-              />
-              <DialogContent className="max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Add a rule</DialogTitle>
-                  <DialogDescription>
-                    Start from something most companies want, then adjust it.
-                  </DialogDescription>
-                </DialogHeader>
-                <ItemGroup className="gap-2">
-                  {presets.map((preset) => (
-                    <Item
-                      key={preset.key}
-                      variant="outline"
-                      onClick={() =>
-                        setDraft([...rules, ruleFromPreset(preset, rules)])
-                      }
-                    >
-                      <ItemContent>
-                        <ItemTitle>{preset.label}</ItemTitle>
-                        <ItemDescription>{preset.description}</ItemDescription>
-                      </ItemContent>
-                    </Item>
-                  ))}
-                </ItemGroup>
-              </DialogContent>
-            </Dialog>
-          ) : null}
+            <ApiErrorAlert error={save.error} />
+          </div>
+        </PageSection>
 
-          <ApiErrorAlert error={save.error} />
-        </CardContent>
-      </Card>
-
-      {preview.data ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">What this would do</CardTitle>
-            <CardDescription>
-              Run against your open tenders. Nothing is saved until you press
-              Save.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {preview.data ? (
+          <PageSection
+            title="What this would do"
+            caption="Run against your open tenders. Nothing is saved until you press Save."
+          >
             <PreviewPanel preview={preview} rules={rules} />
-          </CardContent>
-        </Card>
-      ) : null}
+          </PageSection>
+        ) : null}
 
-      {isAdmin && (versions.data?.length ?? 0) > 1 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">History</CardTitle>
-            <CardDescription>
-              Older versions are kept, so a past verdict can always be explained.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+        {isAdmin && (versions.data?.length ?? 0) > 1 ? (
+          <PageSection
+            title="History"
+            caption="Older versions are kept, so a past verdict can always be explained."
+          >
             <ul className="flex flex-col gap-2">
               {(versions.data ?? []).map((version) => (
                 <li
@@ -340,9 +333,9 @@ function RulesPage() {
                 </li>
               ))}
             </ul>
-          </CardContent>
-        </Card>
-      ) : null}
+          </PageSection>
+        ) : null}
+      </PageBody>
     </>
   )
 }

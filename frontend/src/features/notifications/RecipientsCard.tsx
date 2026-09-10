@@ -10,15 +10,9 @@ import * as React from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { PageSection } from "@/components/layout/PageSection"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import {
   useAddRecipient,
@@ -73,15 +67,11 @@ export function RecipientsCard({ canEdit }: { canEdit: boolean }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Who receives these emails</CardTitle>
-        <CardDescription>
-          An address receives nothing until someone holding it confirms — so
-          nobody can be signed up for your shortlist without knowing.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <PageSection
+      title="Who receives these emails"
+      caption="An address receives nothing until someone holding it confirms — so nobody can be signed up for your shortlist without knowing."
+    >
+      <div className="flex flex-col gap-4">
         <ApiErrorAlert error={recipients.error} />
 
         {recipients.isPending ? (
@@ -172,7 +162,7 @@ export function RecipientsCard({ canEdit }: { canEdit: boolean }) {
             </Button>
           </form>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </PageSection>
   )
 }

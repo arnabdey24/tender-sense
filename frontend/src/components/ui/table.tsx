@@ -1,26 +1,57 @@
 import * as React from "react"
 import { cn } from "cn"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+function Table({
+  className,
+  scroll = true,
+  ...props
+}: React.ComponentProps<"table"> & {
+  /**
+   * Wrap in a horizontally scrolling container. Opt out when the columns are
+   * designed to fit: `overflow-x: auto` forces `overflow-y` to `auto` too,
+   * which makes the container a scroll root and stops a sticky header from
+   * ever sticking to the page.
+   */
+  scroll?: boolean
+}) {
+  const table = (
+    <table
+      data-slot="table"
+      className={cn("w-full caption-bottom text-sm", className)}
+      {...props}
+    />
+  )
+
+  if (!scroll) return table
+
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
-      <table
-        data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
-        {...props}
-      />
+    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+      {table}
     </div>
   )
 }
 
-function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
+function TableHeader({
+  className,
+  sticky = false,
+  ...props
+}: React.ComponentProps<"thead"> & {
+  /** Holds the column labels against the app header while the body scrolls. */
+  sticky?: boolean
+}) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
+      data-sticky={sticky || undefined}
+      className={cn(
+        "[&_tr]:border-b",
+        // A collapsed border vanishes under a sticky row, so the hairline is
+        // drawn as an inset shadow on the cells instead. `top-14` is the app
+        // header's 56px.
+        sticky &&
+          "sticky top-14 z-20 [&_tr]:border-b-0 [&_th]:bg-surface-sunken [&_th]:shadow-[inset_0_-1px_0_var(--border)]",
+        className
+      )}
       {...props}
     />
   )
@@ -54,7 +85,10 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        // Row states are their own tokens rather than opacity maths on muted,
+        // so a row still reads as hovered when it sits on a sunken surface.
+        "border-b transition-colors duration-[var(--motion-fast)] hover:bg-row-hover has-aria-expanded:bg-row-hover data-selected:bg-row-selected data-[state=selected]:bg-row-selected",
+        "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring data-active:bg-row-hover",
         className
       )}
       {...props}
@@ -67,7 +101,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        "group/head h-9 px-2 text-left align-middle text-[11px] font-medium tracking-[0.04em] uppercase whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
@@ -80,7 +114,10 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        // Vertical padding comes from the density variable on the surface
+        // above, so switching density is one attribute flip, not a re-render
+        // of class strings on every cell.
+        "px-2 py-[var(--row-pad-y,0.5rem)] align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

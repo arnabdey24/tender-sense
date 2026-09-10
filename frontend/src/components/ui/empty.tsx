@@ -1,14 +1,38 @@
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 
-function Empty({ className, ...props }: React.ComponentProps<"div">) {
+const emptyVariants = cva(
+  "flex w-full min-w-0 flex-col items-center text-center text-balance",
+  {
+    variants: {
+      size: {
+        /* A page that has nothing to show at all. */
+        default: "flex-1 justify-center gap-4 rounded-xl border-dashed p-6",
+        /*
+         * An empty region inside a page that has other content. The default
+         * takes `flex-1` and centres, which inside a filled page inflated a
+         * two-line message into roughly 350px of nothing above the fold.
+         * This one occupies what it needs and no more.
+         */
+        compact: "gap-2.5 rounded-xl px-4 py-9",
+      },
+    },
+    defaultVariants: {
+      size: "default",
+    },
+  }
+)
+
+function Empty({
+  className,
+  size,
+  ...props
+}: React.ComponentProps<"div"> & VariantProps<typeof emptyVariants>) {
   return (
     <div
       data-slot="empty"
-      className={cn(
-        "flex w-full min-w-0 flex-1 flex-col items-center justify-center gap-4 rounded-xl border-dashed p-6 text-center text-balance",
-        className
-      )}
+      data-size={size ?? "default"}
+      className={cn(emptyVariants({ size, className }))}
       {...props}
     />
   )
@@ -25,7 +49,7 @@ function EmptyHeader({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 const emptyMediaVariants = cva(
-  "mb-2 flex shrink-0 items-center justify-center [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "mb-2 flex shrink-0 items-center justify-center in-data-[size=compact]:mb-0 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {

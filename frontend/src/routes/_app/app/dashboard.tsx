@@ -1,232 +1,223 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { ArrowRightIcon } from "lucide-react"
+import * as React from "react"
 
 import { PageHeader } from "@/components/layout/PageHeader"
-import { Badge } from "@/components/ui/badge"
+import { SectionHeader } from "@/components/layout/SectionHeader"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
+import { MatchCharts } from "@/features/matches/MatchCharts"
 import { MatchList } from "@/features/matches/MatchList"
 import {
   useMatches,
   useMatchStats,
   useTodayShortlist,
+  type MatchQuery,
+  type MatchStats,
 } from "@/features/matches/api"
-import { useRecipients } from "@/features/notifications/api"
-import { useCompleteness } from "@/features/profile/api"
+import { SetupStrip } from "@/features/profile/SetupStrip"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/dashboard")({
   component: DashboardPage,
 })
 
 /**
- * Counts belong on one line, not in four boxes.
- *
  * Four outlined tiles across the top is the arrangement every dashboard
- * reaches for, and it spends the best space on the screen — the part read
- * first — on aggregate totals, pushing the day's actual decisions below the
- * fold. These are context for the shortlist, so they read as one strip of
- * figures above it.
+ * reaches for. It spends the part of the screen that is read first on
+ * aggregate totals and pushes the day's actual decisions below the fold, and
+ * on this product it was rendering "Strong fits: 0" — a number nobody can act
+ * on — in the best position available.
+ *
+ * The counts survive, because knowing there are 23 open matches is useful.
+ * What changes is that each one now *filters the list beneath it* instead of
+ * navigating away, so a figure earns its space twice: it reports a total, and
+ * it is the control that shows you what the total is made of.
+ *
+ * "Strong fits" is gone as a segment. The API filters on a single grade, so
+ * S-and-A could not be one query, and on this data it would have read zero
+ * every morning — the dead tile again, in a new place. "Needs checking" takes
+ * the slot: it is a real query, it has a real count, and unlike a grade band
+ * it names a task somebody has to do.
  */
-function StatStrip({
+type SegmentId = "new" | "closing" | "checking" | "open"
+
+const SEGMENTS: {
+  id: SegmentId
+  label: string
+  count: (s?: MatchStats) => number
+  empty: { title: string; description: string }
+  query?: MatchQuery
+}[] = [
+  {
+    id: "new",
+    label: "New today",
+    count: (s) => s?.new_today ?? 0,
+    empty: {
+      title: "Nothing new today",
+      description: "Graded matches appear here as tenders arrive each morning.",
+    },
+  },
+  {
+    id: "closing",
+    label: "Closing this week",
+    count: (s) => s?.closing_within_7_days ?? 0,
+    query: {
+      deadline_within_days: 7,
+      open_only: true,
+      sort: "deadline_at",
+      descending: false,
+      page_size: 8,
+    },
+    empty: {
+      title: "Nothing closes this week",
+      description: "The nearest deadlines are further out than seven days.",
+    },
+  },
+  {
+    id: "checking",
+    label: "Needs checking",
+    count: (s) => s?.by_eligibility?.needs_verification ?? 0,
+    query: { eligibility: "needs_verification", open_only: true, page_size: 8 },
+    empty: {
+      title: "Nothing is waiting on a check",
+      description:
+        "Every open match has enough information to decide eligibility.",
+    },
+  },
+  {
+    id: "open",
+    label: "All open",
+    count: (s) => s?.total ?? 0,
+    query: {
+      open_only: true,
+      sort: "similarity",
+      descending: true,
+      page_size: 8,
+    },
+    empty: {
+      title: "No open matches",
+      description: "Once tenders are graded against your profile they land here.",
+    },
+  },
+]
+
+function TriageTabs({
+  active,
+  onChange,
   stats,
   isLoading,
 }: {
-  stats: {
-    total?: number
-    strong?: number
-    closing?: number
-    newToday?: number
-  }
+  active: SegmentId
+  onChange: (id: SegmentId) => void
+  stats?: MatchStats
   isLoading?: boolean
 }) {
-  const items = [
-    { label: "Open matches", value: stats.total, to: "/app/matches" as const },
-    { label: "Strong fits", value: stats.strong, to: "/app/matches" as const },
-    {
-      label: "Closing in 7 days",
-      value: stats.closing,
-      to: "/app/matches" as const,
-    },
-    { label: "New today", value: stats.newToday, to: "/app/today" as const },
-  ]
-
-  // Each figure is the door into the list it counts; a number you cannot act on
-  // is decoration. That makes this a set of links rather than a description
-  // list, which is also the only markup where an anchor is legal here.
   return (
-    <nav
-      aria-label="Match totals"
-      className="grid grid-cols-2 gap-px overflow-hidden rounded-xl bg-border sm:grid-cols-4"
+    <div
+      role="tablist"
+      aria-label="Match queues"
+      className="flex w-full gap-1 overflow-x-auto rounded-xl bg-surface-sunken p-1"
     >
-      {items.map((item) => (
-        <Link
-          key={item.label}
-          to={item.to}
-          className="flex flex-col gap-1 bg-card px-4 py-3 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring"
-        >
-          <span className="text-xs text-muted-foreground">{item.label}</span>
-          <span className="text-xl leading-none font-semibold tabular-nums">
-            {isLoading ? <Skeleton className="h-5 w-10" /> : (item.value ?? 0)}
-          </span>
-        </Link>
-      ))}
-    </nav>
-  )
-}
-
-/**
- * A company that never adds a recipient silently receives no email at all —
- * matches pile up in an app nobody has open. Said once, where it will be read.
- */
-function EmailDeliveryNudge() {
-  const recipients = useRecipients()
-  if (recipients.isPending || recipients.error) return null
-  if (
-    (recipients.data ?? []).some((r) => r.verified_at && !r.unsubscribed_at)
-  ) {
-    return null
-  }
-
-  const awaiting = (recipients.data ?? []).some((r) => !r.verified_at)
-
-  return (
-    <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-      <h3 className="text-sm font-medium">Nothing is being emailed yet</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">
-        {awaiting
-          ? "An address is waiting to be confirmed. Until someone clicks the link in it, matches only appear here in the app."
-          : "Matches appear here, but nobody receives them by email. Add an address so a strong match reaches you when nobody has the app open."}
-      </p>
-      <Link
-        to="/app/settings/notifications"
-        className="mt-2 inline-block text-sm text-primary underline underline-offset-4"
-      >
-        Set up notifications
-      </Link>
-    </div>
-  )
-}
-
-function ProfileNudge() {
-  const completeness = useCompleteness()
-  if ((completeness.data?.score ?? 100) >= 100) return null
-
-  return (
-    <div className="rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-      <h3 className="text-sm font-medium">Finish your profile</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-pretty text-muted-foreground">
-        {completeness.data?.next_step ??
-          "A fuller profile means sharper matches."}
-      </p>
-      <Progress value={completeness.data?.score ?? 0} className="mt-3" />
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {(completeness.data?.sections ?? []).map((section) => (
-          <Badge
-            key={section.key}
-            variant={section.complete ? "success" : "outline"}
+      {SEGMENTS.map((segment) => {
+        const selected = segment.id === active
+        return (
+          <button
+            key={segment.id}
+            role="tab"
+            type="button"
+            aria-selected={selected}
+            onClick={() => onChange(segment.id)}
+            className={cn(
+              "flex min-w-0 flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm whitespace-nowrap transition-colors duration-[var(--motion-fast)] outline-none",
+              "focus-visible:ring-3 focus-visible:ring-ring/50",
+              selected
+                ? "bg-card font-medium text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground"
+            )}
           >
-            {section.label}
-          </Badge>
-        ))}
-      </div>
-      <Link
-        to="/app/settings/profile"
-        className="mt-3 inline-block text-sm text-primary underline underline-offset-4"
-      >
-        Open the profile
-      </Link>
+            <span className="truncate">{segment.label}</span>
+            {isLoading ? (
+              <Skeleton className="h-4 w-5" />
+            ) : (
+              <span
+                className={cn(
+                  "text-sm tabular-nums",
+                  // A count is a status, and status takes ink, not brand.
+                  selected ? "font-semibold" : "text-muted-foreground"
+                )}
+              >
+                {segment.count(stats)}
+              </span>
+            )}
+          </button>
+        )
+      })}
     </div>
   )
 }
 
 function DashboardPage() {
+  const [active, setActive] = React.useState<SegmentId>("new")
+  const segment = SEGMENTS.find((s) => s.id === active) ?? SEGMENTS[0]
+
   const stats = useMatchStats()
-  const shortlist = useTodayShortlist({ page_size: 6 })
-  const strong = (stats.data?.by_grade?.S ?? 0) + (stats.data?.by_grade?.A ?? 0)
-  // "Nothing new today" is true and useless on its own while two dozen graded
-  // matches sit unread. The nearest deadlines are what to do instead.
-  const closing = useMatches({
-    sort: "deadline_at",
-    descending: false,
-    open_only: true,
-    page_size: 5,
-  })
-  const nothingNew =
-    !shortlist.isPending && (shortlist.data?.items?.length ?? 0) === 0
+  const shortlist = useTodayShortlist({ page_size: 8 })
+  // The list endpoint serves every segment but "new today", which has its own
+  // route. Both are cached, so switching tabs is instant after the first look.
+  const listed = useMatches(segment.query ?? { page_size: 8 })
+
+  const source = active === "new" ? shortlist : listed
+  const items = source.data?.items ?? []
 
   return (
     <>
       <PageHeader
         title="Dashboard"
-        description="What is worth your attention this morning."
+        description="What needs a decision this morning."
       />
 
-      <StatStrip
-        isLoading={stats.isPending}
-        stats={{
-          total: stats.data?.total,
-          strong,
-          closing: stats.data?.closing_within_7_days,
-          newToday: stats.data?.new_today,
-        }}
-      />
+      <SetupStrip />
 
-      {/* The shortlist is the point of the page, so it gets the width; the
-          things that need setting up sit beside it, not above it. */}
-      <div className="grid gap-x-10 gap-y-8 lg:grid-cols-12">
-        <section className="lg:col-span-8">
-          <div className="mb-3 flex items-baseline justify-between gap-3">
-            <h2 className="font-heading text-base font-medium">
-              Today&rsquo;s shortlist
-            </h2>
+      <section className="flex flex-col gap-3">
+        <TriageTabs
+          active={active}
+          onChange={setActive}
+          stats={stats.data}
+          isLoading={stats.isPending}
+        />
+
+        <ApiErrorAlert error={source.error} />
+
+        <MatchList
+          matches={items}
+          isLoading={source.isPending}
+          emptyTitle={segment.empty.title}
+          emptyDescription={segment.empty.description}
+        />
+
+        {items.length > 0 ? (
+          <div className="flex justify-end border-t pt-3">
             <Button
               variant="ghost"
               size="sm"
-              render={<Link to="/app/today" />}
+              render={<Link to={active === "new" ? "/app/today" : "/app/matches"} />}
               nativeButton={false}
             >
-              See everything new
+              {active === "new" ? "See everything new" : "Open all matches"}
               <ArrowRightIcon data-icon="inline-end" />
             </Button>
           </div>
-          <ApiErrorAlert error={shortlist.error} />
-          <MatchList
-            matches={shortlist.data?.items ?? []}
-            isLoading={shortlist.isPending}
-            emptyTitle="Nothing new today"
-            emptyDescription="Strong matches will appear here as tenders arrive."
-          />
-          {nothingNew && (closing.data?.items?.length ?? 0) > 0 ? (
-            <div className="mt-8">
-              <div className="mb-3 flex items-baseline justify-between gap-3">
-                <h2 className="font-heading text-base font-medium">
-                  Closing soonest
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  render={<Link to="/app/matches" />}
-                  nativeButton={false}
-                >
-                  All matches
-                  <ArrowRightIcon data-icon="inline-end" />
-                </Button>
-              </div>
-              <MatchList
-                matches={closing.data?.items ?? []}
-                isLoading={closing.isPending}
-              />
-            </div>
-          ) : null}
-        </section>
+        ) : null}
+      </section>
 
-        <aside className="flex flex-col gap-4 lg:col-span-4">
-          <ProfileNudge />
-          <EmailDeliveryNudge />
-        </aside>
-      </div>
+      {/* Below the queue on purpose: these describe the pool, they are not
+          the day's decisions. */}
+      <section>
+        <SectionHeader title="How the pool looks" />
+        <MatchCharts stats={stats.data} isLoading={stats.isPending} />
+      </section>
     </>
   )
 }

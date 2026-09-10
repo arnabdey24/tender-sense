@@ -35,6 +35,13 @@ from app.modules.profiles.models import (
     ProfilePastProject,
     ProfileService,
 )
+from app.modules.rules.models import (
+    FxRate,
+    OverrideVerdict,
+    RuleOverride,
+    RuleSet,
+    RuleSetVersion,
+)
 from app.modules.tenders.models import (
     DocumentKind,
     EmbeddingChunk,
@@ -61,6 +68,7 @@ __all__ = [
     "EmbeddingChunk",
     "ExplanationKind",
     "ExtractionStatus",
+    "FxRate",
     "Invitation",
     "MatchGrade",
     "MatchingConfig",
@@ -69,6 +77,7 @@ __all__ = [
     "OAuthAccount",
     "OrgRole",
     "Organization",
+    "OverrideVerdict",
     "ProcurementCategory",
     "ProfileCertification",
     "ProfileEmbedding",
@@ -77,6 +86,9 @@ __all__ = [
     "ProfileService",
     "Recommendation",
     "RefreshSession",
+    "RuleOverride",
+    "RuleSet",
+    "RuleSetVersion",
     "SourceHealth",
     "Tender",
     "TenderDocument",

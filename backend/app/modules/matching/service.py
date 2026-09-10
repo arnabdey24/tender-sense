@@ -21,7 +21,6 @@ from app.core.logging import get_logger
 from app.core.time import utcnow
 from app.modules.matching.embedding_store import load_profile_vectors, load_tender_vectors
 from app.modules.matching.models import (
-    EligibilityStatus,
     ExplanationKind,
     MatchGrade,
     MatchingConfig,
@@ -38,6 +37,7 @@ from app.modules.matching.scoring import (
 )
 from app.modules.orgs.models import Organization
 from app.modules.profiles.models import CompanyProfile
+from app.modules.rules.service import active_version, definition_of, evaluate_for_tender
 from app.modules.tenders.models import Tender, TenderExtraction
 
 logger = get_logger(__name__)
@@ -105,16 +105,18 @@ async def match_tender_for_org(
 ) -> MatchOutcome:
     """Score, grade and store one match.
 
-    Eligibility is left at "needs verification" here; the rule engine fills it
-    in once rule sets land. Until then a match is honest about not having
-    checked, which is the whole point of that status existing.
+    Eligibility comes from the organization's active rule set. An organization
+    that has written no rules gets "eligible" — they have not failed to answer
+    anything — while an undecidable hard rule surfaces as "needs verification"
+    rather than a rejection.
     """
     config = thresholds or await active_thresholds(session)
     extraction = await current_extraction(session, tender.id)
+    rule_version = await active_version(session, org.id)
 
     fingerprint = inputs_fingerprint(
         profile_version=profile.version,
-        rule_set_version_id=None,
+        rule_set_version_id=str(rule_version.id) if rule_version else None,
         extraction_id=str(extraction.id) if extraction else None,
         embedding_model=embedding_model,
         thresholds_version=config.version,
@@ -161,7 +163,16 @@ async def match_tender_for_org(
     )
 
     grade = grade_for(score.similarity, config)
-    eligibility = EligibilityStatus.NEEDS_VERIFICATION
+
+    evaluation = await evaluate_for_tender(
+        session,
+        tender=tender,
+        profile=profile,
+        org_id=org.id,
+        definition=definition_of(rule_version),
+        extraction=extraction,
+    )
+    eligibility = evaluation.status
     recommendation = recommend(grade, eligibility, urgency)
     explanation = templated_explanation(
         grade=grade,
@@ -169,6 +180,7 @@ async def match_tender_for_org(
         urgency=urgency,
         recommendation=recommendation,
         score=score,
+        rule_results=evaluation.as_json(),
     )
 
     now = utcnow()
@@ -190,6 +202,7 @@ async def match_tender_for_org(
     match.score_breakdown = score.breakdown()
     match.grade = grade
     match.eligibility_status = eligibility
+    match.rule_results = evaluation.as_json()
     match.recommendation = recommendation
     match.urgency = urgency
     match.explanation = explanation
@@ -198,6 +211,7 @@ async def match_tender_for_org(
     match.inputs_fingerprint = fingerprint
     match.profile_version = profile.version
     match.extraction_id = extraction.id if extraction else None
+    match.rule_set_version_id = rule_version.id if rule_version else None
     match.embedding_model = embedding_model
     match.thresholds_version = config.version
     await session.flush()

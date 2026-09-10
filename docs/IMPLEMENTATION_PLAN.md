@@ -550,6 +550,31 @@ One bug found by a test: the profile stored certifications folded at the colon
 (`ISO90012015`), so a certification rule turned on how somebody had typed it.
 Both now use one `comparison_key`, in one place, so they cannot drift again.
 
+**Eligibility is wired into the feed.** Migration `0005_rules` adds rule sets,
+their immutable versions, per-tender overrides and FX rates; verified to apply,
+downgrade and re-apply. Every match now carries a real verdict and the per-rule
+reasoning behind it, and the rule set version is part of the match fingerprint,
+so changing a rule invalidates every stored verdict rather than being skipped.
+
+Three decisions worth recording:
+
+- **Portal metadata wins over extraction.** A scraped deadline is a fact and an
+  inferred one is a guess, so where both exist the scraped value is used and the
+  model's is discarded — not averaged, not chosen by confidence. Confidence
+  scores for portal-supplied fields are dropped too, because the value being
+  compared is not the one the model scored.
+- **An override can only answer what the engine could not.** A person may
+  resolve an unknown rule, but silently flipping one the engine *did* decide
+  would leave the stored reasoning showing a rule passing beside the evidence
+  that it failed.
+- **An unreadable rule definition degrades to "no rules".** A definition written
+  by an older schema must not take the whole feed down; every tender losing its
+  verdict is far worse than briefly losing the criteria.
+
+Money comparisons normalise through stored FX rates. Without a rate the rule is
+unknown rather than compared raw — a BDT requirement against a USD profile is a
+hundredfold error, not a rounding one.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

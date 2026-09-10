@@ -20,14 +20,14 @@ from app.modules.tenders.service import get_tender_detail
 WORKSPACE_MATCH_LIMIT = 25
 
 
-async def load_workspace_context(db: AsyncSession, org_id: UUID) -> dict[str, Any]:
-    """Context for a conversation that is not pinned to one notice.
+async def _shortlist(db: AsyncSession, org_id: UUID) -> tuple[list[dict[str, Any]], int]:
+    """The organization's graded shortlist, flattened for the prompt.
 
-    The assistant still answers from recorded assessments only — this is the
-    same evidence as a tender conversation, widened from one notice to the
-    current shortlist so it can help choose one.
+    Every conversation gets this, including one opened on a single notice — the
+    assistant is asked to open *other* tenders ("show me the road one") far more
+    often than it is asked about the one already on screen, and it can only open
+    what this turn actually handed it.
     """
-    profile = await read_profile(db, org_id)
     rows, total = await match_repo.list_matches(
         db,
         org_id=org_id,
@@ -50,6 +50,18 @@ async def load_workspace_context(db: AsyncSession, org_id: UUID) -> dict[str, An
                 "days_to_deadline": read["tender"].get("days_to_deadline"),
             }
         )
+    return matches, total
+
+
+async def load_workspace_context(db: AsyncSession, org_id: UUID) -> dict[str, Any]:
+    """Context for a conversation that is not pinned to one notice.
+
+    The assistant still answers from recorded assessments only — this is the
+    same evidence as a tender conversation, widened from one notice to the
+    current shortlist so it can help choose one.
+    """
+    profile = await read_profile(db, org_id)
+    matches, total = await _shortlist(db, org_id)
     sources = [
         {
             "id": "profile",
@@ -84,6 +96,10 @@ async def load_context(
         return await load_workspace_context(db, org_id)
     tender = await get_tender_detail(db, tender_id)
     profile = await read_profile(db, org_id)
+    # The shortlist travels with a tender conversation too, so "open the road
+    # one" can be honoured. Without it this turn knows exactly one tender id —
+    # the one already on screen — and every other request fell back to it.
+    matches, match_total = await _shortlist(db, org_id)
     row = await match_repo.get_match(db, org_id=org_id, tender_id=tender_id)
     match: dict[str, Any] | None = None
     if row:
@@ -124,16 +140,27 @@ async def load_context(
                     "url": tender.canonical_url if rule.get("evidence") else None,
                 }
             )
+    sources.append(
+        {
+            "id": "shortlist",
+            "label": "Your graded shortlist",
+            "quote": json.dumps(matches)[:16000],
+            "url": None,
+        }
+    )
     identity = {
         "tender": tender.version,
         "profile": profile.version,
         "match": match.get("fingerprint") if match else None,
+        "matches": [m["tender_id"] for m in matches],
     }
     return {
         "version": hashlib.sha256(json.dumps(identity, sort_keys=True).encode()).hexdigest()[:16],
         "tender": tender.model_dump(mode="json"),
         "profile": profile.model_dump(mode="json"),
         "match": match,
+        "matches": matches,
+        "match_total": match_total,
         "sources": sources,
         "profile_changed": bool(match and match["profile_version"] != profile.version),
     }

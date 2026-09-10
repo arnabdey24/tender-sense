@@ -603,3 +603,69 @@ class TestRuleSet:
         assert result.evidence == "average annual turnover of USD 100"
         assert "USD 100" in (result.tender_value or "")
         assert evaluation.as_json()[0]["rule_id"] == "r1"
+
+
+class TestSameCurrency:
+    """A rule between two amounts in one currency must not need an FX rate.
+
+    Caught by the rule preview showing every tender as "needs checking" for a
+    Bangladeshi customer whose notices and profile were both in BDT: each side
+    was converted to USD independently, and with no stored rate both became
+    unknown — so a money rule could never decide anything.
+    """
+
+    def _turnover(self, currency: str, fx: dict[str, float] | None = None) -> str:
+        return run(
+            rule(),
+            tender={"min_annual_turnover": {"amount": 5_000_000, "currency": currency}},
+            profile={"annual_turnover": {"amount": 20_000_000, "currency": currency}},
+            confidence={"min_annual_turnover": 0.9},
+            fx=fx,
+        )
+
+    @pytest.mark.parametrize("currency", ["BDT", "USD", "NPR"])
+    def test_matching_currencies_compare_without_any_rate(self, currency: str) -> None:
+        assert self._turnover(currency) == "pass"
+
+    def test_a_failure_is_still_detected_without_a_rate(self) -> None:
+        assert (
+            run(
+                rule(),
+                tender={"min_annual_turnover": {"amount": 50_000_000, "currency": "BDT"}},
+                profile={"annual_turnover": {"amount": 20_000_000, "currency": "BDT"}},
+                confidence={"min_annual_turnover": 0.9},
+            )
+            == "fail"
+        )
+
+    def test_a_cross_currency_pair_still_needs_a_rate(self) -> None:
+        """The protection that made this bug worth having in the first place."""
+        assert (
+            run(
+                rule(),
+                tender={"min_annual_turnover": {"amount": 5_000_000, "currency": "BDT"}},
+                profile={"annual_turnover": {"amount": 20_000_000, "currency": "USD"}},
+                confidence={"min_annual_turnover": 0.9},
+            )
+            == "unknown"
+        )
+
+    def test_between_bounds_in_the_tenders_own_currency(self) -> None:
+        assert (
+            run(
+                rule(
+                    id="r_value",
+                    attribute="estimated_value",
+                    operator=Operator.BETWEEN,
+                    value={
+                        "source": "literal",
+                        "data": {
+                            "min": {"amount": 1_000_000, "currency": "BDT"},
+                            "max": {"amount": 100_000_000, "currency": "BDT"},
+                        },
+                    },
+                ),
+                tender={"estimated_value": {"amount": 50_000_000, "currency": "BDT"}},
+            )
+            == "pass"
+        )

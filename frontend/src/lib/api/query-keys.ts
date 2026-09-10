@@ -45,5 +45,17 @@ export const qk = {
     completeness: () => ["profile", "completeness"] as const,
     taxonomies: () => ["profile", "taxonomies"] as const,
   },
+  rules: {
+    all: () => ["rules"] as const,
+    catalogue: () => ["rules", "catalogue"] as const,
+    current: () => ["rules", "current"] as const,
+    versions: () => ["rules", "versions"] as const,
+  },
+  decisions: {
+    all: () => ["decisions"] as const,
+    list: (params: Record<string, unknown>) =>
+      ["decisions", "list", params] as const,
+    forTender: (tenderId: string) => ["decisions", "tender", tenderId] as const,
+  },
   health: () => ["health"] as const,
 } as const

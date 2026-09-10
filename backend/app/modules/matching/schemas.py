@@ -17,6 +17,7 @@ from app.modules.matching.models import (
     Recommendation,
     Urgency,
 )
+from app.modules.rules.schemas import RuleStatus
 from app.modules.tenders.schemas import TenderSummary
 
 
@@ -45,7 +46,9 @@ class MatchRead(BaseModel):
     explanation: dict[str, Any] = Field(default_factory=dict)
     explanation_text: str | None = None
     score_breakdown: dict[str, Any] = Field(default_factory=dict)
-    rule_results: list[Any] = Field(default_factory=list)
+    #: Declared concretely rather than as `Any`, so the generated frontend
+    #: client knows the shape and the eligibility list needs no cast.
+    rule_results: list[RuleStatus] = Field(default_factory=list)
     first_matched_at: datetime | None = None
     created_at: datetime
     tender: TenderSummary

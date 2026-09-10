@@ -124,30 +124,54 @@ class Evaluation:
 # -- normalisation ----------------------------------------------------------
 
 
-def _as_money(value: Any, *, fx: dict[str, float] | None, base: str) -> float | None:
-    """Convert a money value to the base currency, or ``None`` if it cannot be.
-
-    Comparing BDT against USD without converting is not a near-miss, it is a
-    thousand-fold error in whichever direction — so an unconvertible pair has to
-    be unknown rather than compared raw.
-    """
+def _amount_and_currency(value: Any, *, base: str) -> tuple[float, str] | None:
+    """Pull an amount and its currency out of whatever shape a value has."""
     if isinstance(value, int | float):
-        return float(value)
+        return float(value), base.upper()
     if not isinstance(value, dict):
         return None
-
     amount = value.get("amount")
     if amount is None:
         return None
-    currency = (value.get("currency") or base or "").upper()
-    if not currency or currency == base.upper():
-        return float(amount)
+    return float(amount), (value.get("currency") or base or "").upper()
 
-    rates = fx or {}
-    rate = rates.get(currency)
+
+def _convert(
+    amount: float, currency: str, *, fx: dict[str, float] | None, base: str
+) -> float | None:
+    if currency == base.upper():
+        return amount
+    rate = (fx or {}).get(currency)
     if rate is None or rate == 0:
         return None
-    return float(amount) / rate
+    return amount / rate
+
+
+def _comparable_pair(
+    left: Any, right: Any, *, fx: dict[str, float] | None, base: str
+) -> tuple[float, float] | None:
+    """Put two money values on the same scale, or give up.
+
+    Amounts already sharing a currency are compared directly and need no rate
+    at all — a Bangladeshi buyer's BDT requirement against a BDT profile is a
+    plain comparison. Only a genuine cross-currency pair needs converting, and
+    an unconvertible one is unknown rather than compared raw, because BDT
+    against USD uncompared is a hundredfold error rather than a near miss.
+    """
+    a = _amount_and_currency(left, base=base)
+    b = _amount_and_currency(right, base=base)
+    if a is None or b is None:
+        return None
+
+    (left_amount, left_currency), (right_amount, right_currency) = a, b
+    if left_currency == right_currency:
+        return left_amount, right_amount
+
+    converted_left = _convert(left_amount, left_currency, fx=fx, base=base)
+    converted_right = _convert(right_amount, right_currency, fx=fx, base=base)
+    if converted_left is None or converted_right is None:
+        return None
+    return converted_left, converted_right
 
 
 def _as_list(value: Any) -> list[str] | None:
@@ -203,21 +227,20 @@ def _compare(
 ) -> bool | None:
     """Apply one operator. ``None`` means "could not decide"."""
     if attribute_type is AttributeType.MONEY:
-        left = _as_money(tender_value, fx=fx, base=base_currency)
-        if left is None:
-            return None
         if operator is Operator.BETWEEN:
             bounds = expected if isinstance(expected, dict) else {}
-            low = _as_money(bounds.get("min"), fx=fx, base=base_currency)
-            high = _as_money(bounds.get("max"), fx=fx, base=base_currency)
-            if low is None and high is None:
+            low_pair = _comparable_pair(tender_value, bounds.get("min"), fx=fx, base=base_currency)
+            high_pair = _comparable_pair(tender_value, bounds.get("max"), fx=fx, base=base_currency)
+            if low_pair is None and high_pair is None:
                 return None
-            if low is not None and left < low:
+            if low_pair is not None and low_pair[0] < low_pair[1]:
                 return False
-            return not (high is not None and left > high)
-        right = _as_money(expected, fx=fx, base=base_currency)
-        if right is None:
+            return not (high_pair is not None and high_pair[0] > high_pair[1])
+
+        pair = _comparable_pair(tender_value, expected, fx=fx, base=base_currency)
+        if pair is None:
             return None
+        left, right = pair
         return left <= right if operator is Operator.LTE else left >= right
 
     if attribute_type is AttributeType.INTEGER:

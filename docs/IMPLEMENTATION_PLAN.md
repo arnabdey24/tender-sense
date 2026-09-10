@@ -597,6 +597,35 @@ mark that row rather than showing one message for the whole form. Any member may
 record a decision — the person who spots a tender is often not the admin — but
 only admins change the rules, because a rule decides what everyone is shown.
 
+**Rule builder, decision panel and eligibility list.** The builder reads its
+whole vocabulary from `/rules/catalogue`, so it cannot offer an attribute or
+operator the engine would reject, and changing an attribute falls back to a
+valid operator rather than sending a pair that fails. A rule row reads as a
+sentence — *when [required annual turnover] [is at most] [from your profile:
+annual turnover]* — with importance, what-if-unknown, and a note saying whether
+the value was scraped or read by AI.
+
+The wording of `on_missing` is deliberate: "Ask me to check", "Treat as met",
+"Treat as not met". Someone choosing the third should understand they are
+rejecting on *absence of information*, which the raw enum names hide.
+
+The eligibility list sorts blockers first, then questions, then what passed, and
+shows the model's quote beside each extracted claim — so a user can check it
+against the notice rather than taking the model's word.
+
+**A bug the preview surfaced immediately.** Adding the turnover preset and
+pressing "Try it" reported *34 checked, 0 eligible, 34 need checking*. The cause
+was not the rule: money values were converted to a USD base **independently on
+each side**, so a Bangladeshi customer whose notices and profile are both in BDT
+got `unknown` on both sides with no stored rate — a money rule could never
+decide anything for them. Amounts already sharing a currency now compare
+directly and need no rate at all; only a genuine cross-currency pair converts,
+and an unconvertible one is still unknown rather than compared raw. Six tests
+cover both paths.
+
+That is exactly what the preview is for: the rule was written correctly, and the
+feature still showed the customer that it would flag everything.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

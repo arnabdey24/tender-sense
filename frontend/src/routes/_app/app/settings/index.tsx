@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   Building2Icon,
   ChevronRightIcon,
+  ScaleIcon,
   SparklesIcon,
   UserRoundIcon,
   UsersIcon,
@@ -26,6 +27,12 @@ const SECTIONS = [
     icon: SparklesIcon,
     title: "Capability profile",
     description: "What you do — this is what tenders are matched against.",
+  },
+  {
+    to: "/app/settings/rules",
+    icon: ScaleIcon,
+    title: "Bidding criteria",
+    description: "Rules that decide which tenders you can actually bid on.",
   },
   {
     to: "/app/settings/members",

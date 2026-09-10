@@ -1613,7 +1613,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Rule Results */
-            rule_results?: unknown[];
+            rule_results?: components["schemas"]["RuleStatus"][];
             /** First Matched At */
             first_matched_at?: string | null;
             /**
@@ -1670,7 +1670,7 @@ export interface components {
                 [key: string]: unknown;
             };
             /** Rule Results */
-            rule_results?: unknown[];
+            rule_results?: components["schemas"]["RuleStatus"][];
             /** First Matched At */
             first_matched_at?: string | null;
             /**

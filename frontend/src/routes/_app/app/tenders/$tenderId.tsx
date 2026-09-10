@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { DeadlineBadge } from "@/features/tenders/DeadlineBadge"
 import { useMatch } from "@/features/matches/api"
+import { DecisionPanel } from "@/features/decisions/DecisionPanel"
+import { EligibilityList } from "@/features/matches/EligibilityList"
 import { explanationOf } from "@/features/matches/explanation"
 import { VerdictStrip } from "@/features/matches/verdict"
 import { useTender } from "@/features/tenders/api"
@@ -77,6 +79,23 @@ function VerdictCard({ tenderId }: { tenderId: string }) {
         {explanation.next_step ? (
           <p className="text-sm font-medium">Next: {explanation.next_step}</p>
         ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** Rule-by-rule eligibility, with the quote behind each claim. */
+function EligibilityCard({ tenderId }: { tenderId: string }) {
+  const match = useMatch(tenderId)
+  if (match.isPending || !match.data) return null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Eligibility</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <EligibilityList results={match.data.rule_results ?? []} />
       </CardContent>
     </Card>
   )
@@ -147,6 +166,10 @@ function TenderDetailPage() {
       </div>
 
       <VerdictCard tenderId={tenderId} />
+
+      <EligibilityCard tenderId={tenderId} />
+
+      <DecisionPanel tenderId={tenderId} />
 
       <Card>
         <CardHeader>

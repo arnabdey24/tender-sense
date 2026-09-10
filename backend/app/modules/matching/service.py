@@ -49,6 +49,8 @@ class MatchOutcome:
     created: bool = False
     updated: bool = False
     skipped: bool = False
+    not_scorable: bool = False
+    """One side had no vectors, so no verdict was stored."""
     grade: MatchGrade | None = None
 
     @property
@@ -138,6 +140,22 @@ async def match_tender_for_org(
 
     facet_vectors = await load_profile_vectors(session, profile.id, model=embedding_model)
     chunk_vectors = await load_tender_vectors(session, tender.id, model=embedding_model)
+
+    # Scoring against nothing yields 0.0, which would be stored as a C grade —
+    # a confident-looking "weak fit" for a comparison that never happened. A
+    # brand-new organization hits this on every tender that arrives before its
+    # first profile embedding, so the whole feed would read as rejections.
+    # Store nothing instead; the match appears once both sides have vectors.
+    if not facet_vectors or not chunk_vectors:
+        logger.info(
+            "match_not_scorable",
+            org_id=str(org.id),
+            tender_id=str(tender.id),
+            profile_facets=len(facet_vectors),
+            tender_chunks=len(chunk_vectors),
+        )
+        return MatchOutcome(match_id=existing.id if existing else None, not_scorable=True)
+
     score = score_facets(
         facet_vectors=facet_vectors, chunk_vectors=chunk_vectors, thresholds=config
     )

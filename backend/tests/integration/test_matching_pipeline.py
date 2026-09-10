@@ -164,6 +164,58 @@ class TestProcessTender:
         assert match.explanation_text
         assert match.inputs_fingerprint
 
+    async def test_a_brand_new_profile_is_embedded_before_matching(
+        self,
+        ctx: dict[str, object],
+        org: Organization,
+        profile: CompanyProfile,
+        source: TenderSource,
+    ) -> None:
+        """The bug this caught: a profile that had never been embedded scored
+        0.0 against everything, so a new customer's entire first feed read as
+        C-grade "weak fit" — a confident rejection of a comparison that never
+        happened. `process_tender` now embeds the profile before scoring."""
+        tender = await make_tender(
+            source,
+            title="Supply of enterprise network switches",
+            summary="Core switches, routers and structured cabling for a data centre.",
+        )
+
+        # No `rematch_org` first: this is the very first thing the org sees.
+        await process_tender(ctx, str(tender.id))
+
+        match = await match_for(org.id, tender.id)
+        assert match is not None
+        assert match.similarity > 0.0
+
+    async def test_a_match_is_not_stored_when_there_is_nothing_to_compare(
+        self,
+        ctx: dict[str, object],
+        org: Organization,
+        profile: CompanyProfile,
+        source: TenderSource,
+    ) -> None:
+        """An empty profile has no facets, so there is no comparison to make.
+        Storing 0.0 would look like a considered verdict."""
+        async with session_scope() as session:
+            empty = await session.get(CompanyProfile, profile.id)
+            assert empty is not None
+            empty.overview = None
+            empty.sectors = []
+            empty.geographies = []
+            empty.keywords = []
+            await session.execute(
+                delete(ProfileService).where(ProfileService.profile_id == profile.id)
+            )
+
+        tender = await make_tender(
+            source, title="Supply of network switches", summary="Switches and cabling."
+        )
+        result = await process_tender(ctx, str(tender.id))
+
+        assert result["not_scorable"] >= 1
+        assert await match_for(org.id, tender.id) is None
+
     async def test_a_relevant_notice_outgrades_an_irrelevant_one(
         self,
         ctx: dict[str, object],
@@ -258,14 +310,15 @@ class TestProcessTender:
         profile: CompanyProfile,
         source: TenderSource,
     ) -> None:
-        """A notice the model cannot read must still be scored, not vanish."""
-        working = {"ai_client": FakeAIClient(dims=768)}
-        await rematch_org(working, str(org.id))
+        """A notice the model cannot read must still be scored, not vanish.
+
+        Extraction and embedding are separate endpoints and fail
+        independently, so only generation is broken here.
+        """
         tender = await make_tender(
             source, title="Supply of network switches", summary="Switches and cabling."
         )
-        # Embeddings already exist for the profile; only this run fails.
-        broken = {"ai_client": FakeAIClient(dims=768, fail=True)}
+        broken = {"ai_client": FakeAIClient(dims=768, fail_generation=True)}
 
         result = await process_tender(broken, str(tender.id))
 

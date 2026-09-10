@@ -108,7 +108,13 @@ async def _run_extraction(
 async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
     """Extract, embed and match one notice across every tenant."""
     client = _client(ctx)
-    result: dict[str, Any] = {"tender_id": tender_id, "matched": 0, "skipped": 0, "failed": 0}
+    result: dict[str, Any] = {
+        "tender_id": tender_id,
+        "matched": 0,
+        "skipped": 0,
+        "not_scorable": 0,
+        "failed": 0,
+    }
 
     async with session_scope() as session:
         tender = await session.get(Tender, UUID(tender_id))
@@ -137,6 +143,13 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
                 if not (fresh_tender and fresh_org and fresh_profile):
                     continue
 
+                # A profile edited since its last re-match — or never embedded
+                # at all, which is every organization's first tender — has no
+                # vectors to score against. Embedding here is cheap when
+                # nothing changed, and skipping it would leave the tenant's
+                # whole feed unscored until their debounced re-match fires.
+                await sync_profile_embeddings(session, fresh_profile, client=client)
+
                 outcome = await match_tender_for_org(
                     session,
                     tender=fresh_tender,
@@ -146,7 +159,9 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
                     thresholds=thresholds,
                     reason="tender_processed",
                 )
-            if outcome.skipped:
+            if outcome.not_scorable:
+                result["not_scorable"] += 1
+            elif outcome.skipped:
                 result["skipped"] += 1
             else:
                 result["matched"] += 1
@@ -167,7 +182,13 @@ async def rematch_org(
     what anyone does about it, and the pool grows without bound.
     """
     client = _client(ctx)
-    result: dict[str, Any] = {"org_id": org_id, "matched": 0, "skipped": 0, "failed": 0}
+    result: dict[str, Any] = {
+        "org_id": org_id,
+        "matched": 0,
+        "skipped": 0,
+        "not_scorable": 0,
+        "failed": 0,
+    }
 
     async with session_scope() as session:
         org = await session.get(Organization, UUID(org_id))
@@ -221,7 +242,9 @@ async def rematch_org(
                     thresholds=thresholds,
                     reason=reason,
                 )
-            if outcome.skipped:
+            if outcome.not_scorable:
+                result["not_scorable"] += 1
+            elif outcome.skipped:
                 result["skipped"] += 1
             else:
                 result["matched"] += 1

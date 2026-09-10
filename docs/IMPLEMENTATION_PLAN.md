@@ -465,6 +465,37 @@ One bug found by a test: preset views build their filters with
 string reached `ORDER BY` and crashed on `.value`. The sort field is now coerced
 back through its enum before it is used.
 
+**Running the real pipeline exposed the worst bug so far.** Seeding the sample
+company and processing all 40 notices through live Gemini produced 40 matches
+with a similarity of exactly **0.000** — every one graded C, "weak fit".
+
+The cause: `process_tender` matched against a profile that had never been
+embedded. Only `rematch_org` synced profile facets, and that runs on a 30-second
+debounce after a profile edit. So every notice arriving before a customer's
+first re-match scored against nothing, and scoring against nothing returns 0.0,
+which stores cleanly as a confident C. A new customer's entire opening feed
+would have read as rejections of comparisons that never happened — with nothing
+failing and nothing logged.
+
+Two fixes, in the two places that each own half the problem:
+
+- `match_tender_for_org` refuses to store a verdict when either side has no
+  vectors, returning `not_scorable` instead. This is the correctness guard and
+  it covers both directions.
+- `process_tender` syncs the profile's embeddings before scoring. Cheap when
+  nothing changed — unchanged facets are skipped by hash — and it is what makes
+  a tenant's very first tender scorable.
+
+With the fix, the same 40 notices score sensibly against real Gemini
+embeddings: strong IT matches land at **0.79–0.81** and near misses at 0.68,
+so the default thresholds (S ≥ 0.78, A ≥ 0.70, B ≥ 0.62) turn out to be about
+right rather than guessed.
+
+The fake client also gained separate `fail_generation` and `fail_embedding`
+switches. They fail independently in reality — an extraction outage must not
+stop a notice being embedded and matched — and the old single `fail` flag broke
+both, which is why the degraded-path test had been passing for the wrong reason.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

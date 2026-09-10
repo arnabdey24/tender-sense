@@ -304,12 +304,23 @@ def fake_explanation(prompt: str) -> MatchExplanation:
 class FakeAIClient:
     """Implements :class:`~app.ai.base.AIClient` with no I/O."""
 
-    def __init__(self, dims: int = 768, *, fail: bool = False) -> None:
+    def __init__(
+        self,
+        dims: int = 768,
+        *,
+        fail: bool = False,
+        fail_generation: bool = False,
+        fail_embedding: bool = False,
+    ) -> None:
         self.embedding_model = FAKE_EMBEDDING_MODEL
         self.generation_model = FAKE_GENERATION_MODEL
         self.dims = dims
-        #: Flips every call into an error, for exercising degraded paths.
-        self.fail = fail
+        #: Embedding and generation are separate endpoints and fail
+        #: independently in practice — an extraction outage does not stop a
+        #: notice being embedded and matched. `fail` breaks both; the narrower
+        #: flags exercise one degraded path at a time.
+        self.fail_generation = fail or fail_generation
+        self.fail_embedding = fail or fail_embedding
         #: Every prompt seen, so tests can assert on what was asked.
         self.calls: list[dict[str, Any]] = []
 
@@ -324,8 +335,8 @@ class FakeAIClient:
     def _embed(self, texts: list[str], *, kind: str) -> EmbeddingResult:
         started = time.perf_counter()
         self.calls.append({"op": "embed", "kind": kind, "count": len(texts)})
-        if self.fail:
-            raise AIError("FakeAIClient is configured to fail.")
+        if self.fail_embedding:
+            raise AIError("FakeAIClient is configured to fail embedding.")
         vectors = [deterministic_embedding(text, self.dims) for text in texts]
         return EmbeddingResult(
             vectors=vectors,
@@ -348,8 +359,8 @@ class FakeAIClient:
         max_output_tokens: int | None = None,
     ) -> GenerationResult[M]:
         self.calls.append({"op": "generate", "schema": schema.__name__, "prompt": prompt})
-        if self.fail:
-            raise AIError("FakeAIClient is configured to fail.")
+        if self.fail_generation:
+            raise AIError("FakeAIClient is configured to fail generation.")
 
         if schema is TenderAttributes:
             parsed: BaseModel = fake_attributes(prompt)
@@ -370,4 +381,4 @@ class FakeAIClient:
         )
 
     async def healthcheck(self) -> bool:
-        return not self.fail
+        return not (self.fail_generation or self.fail_embedding)

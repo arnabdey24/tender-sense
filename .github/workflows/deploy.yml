@@ -20,6 +20,17 @@ name: Deploy
 # is exactly what `scripts/deploy.sh` does when run by hand.
 
 on:
+  # Called by the Release workflow once it has published its images. A release
+  # created with GITHUB_TOKEN does not raise a `release` event that can start
+  # another workflow — GitHub suppresses that to stop workflows looping — so
+  # the `release` trigger below only ever fires when a person publishes one by
+  # hand. Being called directly is what makes the automated path work.
+  workflow_call:
+    inputs:
+      tag:
+        description: "Version to deploy, e.g. v1.0.0"
+        required: true
+        type: string
   release:
     types: [published]
   workflow_dispatch:

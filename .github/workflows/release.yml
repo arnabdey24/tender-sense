@@ -150,3 +150,13 @@ jobs:
             printf '%s\n' "$NOTES" | gh release create "$TAG" \
               --title "$TAG" --notes-file - --verify-tag
           fi
+
+  # Rolling the VM forward is part of publishing a release, not a separate act
+  # someone has to remember. `needs: release` keeps the order honest: images
+  # first, then the GitHub Release, then the deploy.
+  deploy:
+    needs: release
+    uses: ./.github/workflows/deploy.yml
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}
+    secrets: inherit

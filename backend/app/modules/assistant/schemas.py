@@ -49,14 +49,44 @@ class AnalyzeInput(BaseModel):
     adjustment_percent: float = Field(default=0, ge=-100, le=500, allow_inf_nan=False)
 
 
+#: Pages the assistant is allowed to open. An allow-list, not a free path, so a
+#: model can never be talked into navigating somewhere by quoted notice text.
+AppPage = Literal[
+    "dashboard",
+    "today",
+    "matches",
+    "tenders",
+    "pipeline",
+    "notifications",
+    "settings",
+    "settings/profile",
+    "settings/rules",
+    "settings/members",
+    "settings/organization",
+    "settings/notifications",
+    "settings/sources",
+    "account",
+]
+
+
+class NavigateInput(BaseModel):
+    """Ask the client to move the workspace. Never changes business data."""
+
+    model_config = ConfigDict(extra="forbid")
+    page: AppPage | None = None
+    tender_id: UUID | None = None
+    reason: str = Field(default="", max_length=200)
+
+
 class ConversationCreate(BaseModel):
-    tender_id: UUID
+    #: Absent for a workspace conversation — see the 0011 migration.
+    tender_id: UUID | None = None
 
 
 class ConversationRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
-    tender_id: UUID
+    tender_id: UUID | None
     title: str
     created_at: datetime
     updated_at: datetime

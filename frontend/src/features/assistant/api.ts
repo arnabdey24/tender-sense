@@ -53,7 +53,8 @@ export const getConversation = async (id: string) =>
   detailSchema.parse(
     await (await assistantFetch(`/conversations/${id}`)).json()
   )
-export const createConversation = async (id: string) =>
+/** `null` opens a workspace conversation: the shortlist rather than one notice. */
+export const createConversation = async (id: string | null) =>
   conversationSchema.parse(
     await (
       await assistantFetch("/conversations", {

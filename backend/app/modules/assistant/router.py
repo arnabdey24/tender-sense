@@ -76,9 +76,15 @@ async def create_conversation(
     data: ConversationCreate, ctx: CurrentOrg, db: DbSession
 ) -> Conversation:
     enabled()
-    tender = await get_tender_detail(db, data.tender_id)
+    # No tender is a workspace conversation: the assistant answers from the
+    # graded shortlist and can open a notice from it.
+    if data.tender_id is None:
+        title = "Workspace"
+    else:
+        tender = await get_tender_detail(db, data.tender_id)
+        title = tender.title[:500]
     conversation = Conversation(
-        org_id=ctx.org_id, user_id=ctx.user.id, tender_id=data.tender_id, title=tender.title[:500]
+        org_id=ctx.org_id, user_id=ctx.user.id, tender_id=data.tender_id, title=title
     )
     db.add(conversation)
     await db.flush()

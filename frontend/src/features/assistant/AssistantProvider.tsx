@@ -7,9 +7,11 @@ import {
   type ReactNode,
 } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 import {
   ArrowUpIcon,
   ArrowUpRightIcon,
+  BellIcon,
   AudioLinesIcon,
   ChartColumnIcon,
   CheckCheckIcon,
@@ -108,12 +110,55 @@ import { VoiceControls, VoiceOrb } from "./VoiceControls"
 import type { VoiceSession, VoiceState } from "./voice"
 
 const ArtifactView = lazy(() => import("./ArtifactView"))
-const STARTERS: {
+
+/** Pages `open_in_app` may open, mirroring the server's allow-list exactly. */
+const PAGE_ROUTES = {
+  dashboard: "/app/dashboard",
+  today: "/app/today",
+  matches: "/app/matches",
+  tenders: "/app/tenders",
+  pipeline: "/app/pipeline",
+  notifications: "/app/notifications",
+  settings: "/app/settings",
+  "settings/profile": "/app/settings/profile",
+  "settings/rules": "/app/settings/rules",
+  "settings/members": "/app/settings/members",
+  "settings/organization": "/app/settings/organization",
+  "settings/notifications": "/app/settings/notifications",
+  "settings/sources": "/app/settings/sources",
+  account: "/account",
+} as const
+type Starter = {
   label: string
   text: string
   kind?: AnalysisRequest["kind"]
   icon: typeof ChartColumnIcon
-}[] = [
+}
+
+const WORKSPACE_STARTERS: Starter[] = [
+  {
+    label: "What should I look at today?",
+    text: "Which of my matches are worth looking at today, and why?",
+    icon: ListChecksIcon,
+  },
+  {
+    label: "What is closing soonest?",
+    text: "Which of my matches have the nearest deadlines?",
+    icon: MessageCircleQuestionIcon,
+  },
+  {
+    label: "Open my strongest match",
+    text: "Open the tender with the strongest match for my company.",
+    icon: ArrowUpRightIcon,
+  },
+  {
+    label: "Take me to notification settings",
+    text: "Take me to my notification settings.",
+    icon: BellIcon,
+  },
+]
+
+const STARTERS: Starter[] = [
   {
     label: "Explain the recommendation",
     text: "Explain why this tender received its recommendation, including the evidence.",
@@ -202,8 +247,8 @@ function TenderPicker({ onSelect }: { onSelect: (id: string) => void }) {
       <div>
         <h3 className="font-medium">Choose a tender to explore</h3>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Your assistant will use its notice, your company profile, and the
-          recorded assessment.
+          Answers use its notice, your company profile and the recorded
+          assessment.
         </p>
       </div>
       <Input
@@ -259,6 +304,7 @@ function AssistantSession({
     staleTime: 60_000,
     retry: false,
   })
+  const navigate = useNavigate()
   const mobile = useIsMobile()
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<"compact" | "expanded" | "workspace">(
@@ -333,8 +379,28 @@ function AssistantSession({
     setMessages((old) => applyEvent(old, event))
     if (event.type === "artifact")
       showArtifact(artifactSchema.parse(event.data))
+    if (event.type === "navigate") openTarget(event.data)
     if (event.type === "error")
       setError(String(event.data.message ?? "The assistant could not finish."))
+  }
+  /**
+   * Move the workspace behind the panel. The panel stays where it is and the
+   * conversation keeps going — being taken somewhere should not cost you the
+   * thread you were in the middle of, and on a phone the sheet shrinks to the
+   * compact panel so the page it just opened is actually visible.
+   */
+  function openTarget(data: Record<string, unknown>) {
+    const tenderId = data.tender_id ? String(data.tender_id) : null
+    const page = data.page ? String(data.page) : ""
+    const route = PAGE_ROUTES[page as keyof typeof PAGE_ROUTES]
+    if (!tenderId && !route) return
+    if (mobile) setOpen(false)
+    else if (mode === "workspace") setMode("expanded")
+    if (tenderId) {
+      void navigate({ to: "/app/tenders/$tenderId", params: { tenderId } })
+      return
+    }
+    void navigate({ to: route })
   }
   async function restore(id: string, selectionEpoch: number) {
     const result = await getConversation(id)
@@ -374,8 +440,8 @@ function AssistantSession({
   }
   async function ensureConversation() {
     if (conversation) return conversation
-    if (!selected) throw new Error("Choose a tender first.")
     const selectionEpoch = epoch.current
+    // `null` is a workspace conversation — about the shortlist, not one notice.
     const value = await createConversation(selected)
     if (selectionEpoch === epoch.current) setConversation(value)
     return value
@@ -542,10 +608,10 @@ function AssistantSession({
       )}
       {capabilities.data?.mode === "demo" && (
         <Marker className="px-4 py-2">
-          <MarkerContent>Demo responses · no model calls</MarkerContent>
+          <MarkerContent>Demo mode · sample replies, not your data</MarkerContent>
         </Marker>
       )}
-      {picking || !selected ? (
+      {picking ? (
         <div className="min-h-0 flex-1 overflow-y-auto">
           <TenderPicker onSelect={(id) => void selectTender(id)} />
         </div>
@@ -611,7 +677,7 @@ function AssistantSession({
                         </div>
                       </div>
                       <div className="flex flex-col gap-2">
-                        {STARTERS.map((item) => (
+                        {(selected ? STARTERS : WORKSPACE_STARTERS).map((item) => (
                           <Button
                             key={item.label}
                             variant="outline"
@@ -788,7 +854,7 @@ function AssistantSession({
               <p>
                 {capabilities.data?.mode === "demo"
                   ? "Preview the voice animation. This demo does not activate your microphone."
-                  : "Audio is sent to our AI service for this conversation. Transcripts are saved; microphone recordings are not stored by TenderSense."}
+                  : "Your microphone is sent to the speech service that powers this conversation. Transcripts are saved; recordings are not stored by TenderSense."}
               </p>
               <div className="mt-2 flex gap-2">
                 <Button size="sm" onClick={() => void startVoice()}>
@@ -819,12 +885,12 @@ function AssistantSession({
               placeholder={
                 selected
                   ? "Ask about this tender…"
-                  : "Choose a tender to begin…"
+                  : "Ask about your shortlist, or where to go…"
               }
               className="min-h-16"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              disabled={!selected || picking || loading}
+              disabled={picking || loading}
               onKeyDown={(e) => {
                 if (
                   e.key === "Enter" &&
@@ -870,7 +936,6 @@ function AssistantSession({
                       : "Live voice needs server configuration"
                   }
                   disabled={
-                    !selected ||
                     busy ||
                     live ||
                     loading ||
@@ -895,7 +960,7 @@ function AssistantSession({
                     variant="default"
                     type="submit"
                     aria-label="Send message"
-                    disabled={!draft.trim() || !selected || loading || picking}
+                    disabled={!draft.trim() || loading || picking}
                   >
                     <ArrowUpIcon />
                   </InputGroupButton>
@@ -904,9 +969,6 @@ function AssistantSession({
             </InputGroupAddon>
           </InputGroup>
         </form>
-        <p className="text-center text-[11px] text-muted-foreground">
-          Grounded in your tender. Verify important details against the notice.
-        </p>
       </div>
     </div>
   )
@@ -1022,7 +1084,7 @@ function AssistantSession({
                   variant="ghost"
                   size="icon-sm"
                   aria-label="New conversation"
-                  disabled={!selected || busy || live || loading}
+                  disabled={busy || live || loading}
                   onClick={() => selected && void selectTender(selected, true)}
                 >
                   <PlusIcon />
@@ -1113,7 +1175,7 @@ function AssistantSession({
                 <Button
                   variant="ghost"
                   size="sm"
-                  disabled={!selected}
+                  disabled={false}
                   onClick={() => {
                     setMode("workspace")
                     setMobileTab("analysis")

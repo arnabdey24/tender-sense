@@ -55,7 +55,7 @@ export const messageSchema = z.object({
 export type ChatMessage = z.infer<typeof messageSchema>
 export const conversationSchema = z.object({
   id: z.string(),
-  tender_id: z.string(),
+  tender_id: z.string().nullable(),
   title: z.string(),
   created_at: z.string(),
   updated_at: z.string(),

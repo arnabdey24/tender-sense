@@ -9,11 +9,11 @@ from google import genai
 from google.genai import types
 
 from app.core.config import settings
-from app.modules.assistant.schemas import AnalyzeInput, Event, TurnInput
+from app.modules.assistant.schemas import AnalyzeInput, Event, NavigateInput, TurnInput
 from app.modules.assistant.tools import analyze
 
-SYSTEM = """You are the TenderSense tender assistant. Discuss ONLY the selected tender and
-the company's supplied context. Support English, Bangla, and mixed conversation.
+SYSTEM = """You are the TenderSense tender assistant. Discuss ONLY the supplied context:
+the selected tender when there is one, otherwise the company's graded shortlist. Support English, Bangla, and mixed conversation.
 Explain evidence, applicable rules, calculation steps and uncertainty concisely.
 Do not expose private deliberations. Do not invent requirements, numbers, quotes,
 win probabilities, or sources. Similarity is not a probability of winning.
@@ -28,6 +28,15 @@ checklists and scenarios. Tool data is authoritative. Explain the returned artif
 For turnover scenarios require an explicit user percentage; ask if ambiguous.
 Never invent a tool result or say you displayed an artifact without a successful tool.
 Use short paragraphs and plain text. Match the user's language unless instructed.
+When no tender is selected the context holds the graded shortlist instead of one
+notice; help the user decide what to look at, and cite [source:shortlist].
+Use open_in_app ONLY when the user asks to be taken somewhere, or when the thing
+they asked for genuinely lives on another page and they cannot act on it where
+they are. Answering a question is not a reason to move them; never navigate to
+illustrate a point, to "show" something you have already described, or twice in
+one turn. When you do move them, say in one short sentence what you opened and
+why. Pass tender_id only for a notice present in the supplied context, never one
+you recall or infer. It navigates only: it records no decision and changes no data.
 """
 
 
@@ -40,6 +49,40 @@ def declaration() -> types.FunctionDeclaration:
         ),
         parameters_json_schema=AnalyzeInput.model_json_schema(),
     )
+
+
+def navigate_declaration() -> types.FunctionDeclaration:
+    return types.FunctionDeclaration(
+        name="open_in_app",
+        description=(
+            "Move the user's workspace: open one of the application's pages, or "
+            "open a tender that appears in the supplied context. Navigation only "
+            "-- it records no decision and changes no data."
+        ),
+        parameters_json_schema=NavigateInput.model_json_schema(),
+    )
+
+
+def resolve_navigation(context: dict[str, Any], args: dict[str, Any]) -> dict[str, Any]:
+    """Validate a navigation request against the context actually supplied.
+
+    A tender id is only honoured when it is one this turn was given — the
+    selected notice, or a row of the shortlist. That keeps a model (or text
+    quoted out of a notice) from steering the user at an arbitrary record.
+    """
+    request = NavigateInput.model_validate(args or {})
+    if request.tender_id is None:
+        if request.page is None:
+            raise ValueError("Nothing to open")
+        return {"page": request.page, "tender_id": None}
+
+    wanted = str(request.tender_id)
+    allowed = {str((context.get("tender") or {}).get("id") or "")}
+    allowed |= {str(m.get("tender_id")) for m in context.get("matches") or []}
+    allowed.discard("")
+    if wanted not in allowed:
+        raise ValueError("That tender is not in this conversation's context")
+    return {"page": request.page, "tender_id": wanted}
 
 
 def instruction(context: dict[str, Any], language: str) -> str:
@@ -125,7 +168,11 @@ async def generate(
                 contents=contents,
                 config=types.GenerateContentConfig(
                     system_instruction=instruction(context, turn.language),
-                    tools=[types.Tool(function_declarations=[declaration()])],
+                    tools=[
+                        types.Tool(
+                            function_declarations=[declaration(), navigate_declaration()]
+                        )
+                    ],
                     max_output_tokens=3000,
                     temperature=0.2,
                 ),
@@ -147,6 +194,19 @@ async def generate(
                         if part.function_call:
                             call = part.function_call
                             try:
+                                if call.name == "open_in_app":
+                                    target = resolve_navigation(context, call.args or {})
+                                    yield Event(type="navigate", data=target)
+                                    responses.append(
+                                        types.Part(
+                                            function_response=types.FunctionResponse(
+                                                name=call.name,
+                                                id=call.id,
+                                                response={"opened": target},
+                                            )
+                                        )
+                                    )
+                                    continue
                                 if call.name != "analyze_tender":
                                     raise ValueError("Unsupported tool")
                                 artifact = analyze(

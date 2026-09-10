@@ -15,7 +15,11 @@ class Conversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     org_id: Mapped[UUID] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"))
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    tender_id: Mapped[UUID] = mapped_column(ForeignKey("tenders.id", ondelete="CASCADE"))
+    #: Null for a workspace conversation — one not pinned to a single notice,
+    #: where the assistant answers about the shortlist and can open a tender.
+    tender_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("tenders.id", ondelete="CASCADE"), nullable=True
+    )
     title: Mapped[str] = mapped_column(String(500))
 
 

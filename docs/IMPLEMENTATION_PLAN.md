@@ -684,6 +684,39 @@ Thirty-one tests replay `normalize` over the captured payloads, which is exactly
 how a parser fix will be validated when the portal changes: fix, replay, deploy
 — no re-scraping.
 
+**e-GP Bangladesh adapter — probed live, then built against what came back.**
+The servlet still behaves exactly as the plan recorded: `POST
+/TenderDetailsServlet` returns **bare `<tr>` fragments** with no table or
+document wrapper, plus a hidden `totalPages` input. At the time of writing it
+reports 361 pages of live notices. The detail page is a label/value table of
+about 40 fields. Both are captured as fixtures.
+
+Choices the markup forced:
+
+- **The tender id comes from a hidden `<input name="id">` inside each row's own
+  form**, not from parsing visible text. The portal reorders its columns; it has
+  not moved that field.
+- **Detail labels are matched by prefix, not position.** The row order differs
+  between notice types, and long labels are truncated inconsistently
+  ("Tender/Proposal Closing Date and Time" against "…Closing Date").
+- **A leading reference code is stripped from the title.** A package
+  description usually repeats the reference —
+  `PD/CCDIDP/2026-2027/e-GP/Works-43.36 Construction of…` — and a code shares no
+  vocabulary with anything a company says about itself, so leaving it in is pure
+  noise in the embedding. It is identified by shape (one whitespace-free token
+  carrying both a slash and a digit) rather than a per-portal pattern, so
+  "Supply and/or installation of pumps" keeps its "and/or".
+- **An unrecognised status stays `unknown` rather than defaulting to open**, and
+  an unrecognised nature stays `unknown` rather than being guessed. Showing a
+  withdrawn notice as biddable wastes a bidder's week.
+- **A failed detail fetch does not lose the notice.** The listing row alone
+  carries title, entity, dates and nature, which is enough to match on; the
+  detail can be fetched again later.
+
+Forty-six tests replay the parser over the captured HTML, including a
+deliberately malformed row that must be skipped without costing the other
+ninety-nine.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

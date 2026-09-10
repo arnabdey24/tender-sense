@@ -5,17 +5,10 @@ import * as React from "react"
 import { z } from "zod"
 
 import { PageHeader } from "@/components/layout/PageHeader"
+import { PageBody, PageSection } from "@/components/layout/PageSection"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { FieldDescription, FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -76,9 +69,7 @@ export function ChangePasswordForm({
       })
     } catch (err) {
       if (!isApiError(err)) throw err
-      if (
-        !applyFieldErrors(form, err, ["current_password", "new_password"])
-      ) {
+      if (!applyFieldErrors(form, err, ["current_password", "new_password"])) {
         setError(err)
       }
     }
@@ -231,87 +222,79 @@ function AccountPage() {
         description="Your profile and sign-in settings."
       />
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>
-            Details from your TenderSense account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="size-12 shrink-0">
-              {user?.avatar_url ? (
-                <AvatarImage src={user.avatar_url} alt="" />
-              ) : null}
-              <AvatarFallback>
-                {initials(user?.full_name, user?.email)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="font-medium">{user?.full_name}</span>
-              <span className="truncate text-sm text-muted-foreground">
-                {user?.email}
-              </span>
-              <div className="flex flex-wrap gap-2">
-                <Badge variant={user?.email_verified ? "success" : "warning"}>
-                  {user?.email_verified ? "Email verified" : "Email unverified"}
-                </Badge>
-                <Badge variant="outline">
-                  {memberships.length} organization
-                  {memberships.length === 1 ? "" : "s"}
-                </Badge>
+      <PageBody>
+        <PageSection
+          title="Profile"
+          caption="Details from your TenderSense account."
+        >
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="size-12 shrink-0">
+                {user?.avatar_url ? (
+                  <AvatarImage src={user.avatar_url} alt="" />
+                ) : null}
+                <AvatarFallback>
+                  {initials(user?.full_name, user?.email)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-col gap-1">
+                <span className="font-medium">{user?.full_name}</span>
+                <span className="truncate text-sm text-muted-foreground">
+                  {user?.email}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={user?.email_verified ? "success" : "warning"}>
+                    {user?.email_verified
+                      ? "Email verified"
+                      : "Email unverified"}
+                  </Badge>
+                  <Badge variant="outline">
+                    {memberships.length} organization
+                    {memberships.length === 1 ? "" : "s"}
+                  </Badge>
+                </div>
               </div>
             </div>
+
+            {/* Keyed so the defaults follow the store after a save or a reload. */}
+            {user ? <ProfileForm key={user.full_name} user={user} /> : null}
           </div>
+        </PageSection>
 
-          {/* Keyed so the defaults follow the store after a save or a reload. */}
-          {user ? <ProfileForm key={user.full_name} user={user} /> : null}
-        </CardContent>
-      </Card>
-
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Password</CardTitle>
-          <CardDescription>
-            Choose a password you do not use anywhere else.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <PageSection
+          title="Password"
+          caption="Choose a password you do not use anywhere else."
+        >
           <ChangePasswordForm hasPassword={user?.has_password ?? true} />
-        </CardContent>
-      </Card>
+        </PageSection>
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>Sessions</CardTitle>
-          <CardDescription>
-            Signing out everywhere revokes every refresh token, including this
-            browser.
-          </CardDescription>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-2">
-          <Button
-            variant="destructive"
-            disabled={signingOut}
-            onClick={async () => {
-              setSigningOut(true)
-              await signOut({ everywhere: true, queryClient })
-              await navigate({ to: "/login" })
-            }}
-          >
-            {signingOut ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <LogOutIcon data-icon="inline-start" />
-            )}
-            Sign out of all devices
-          </Button>
-          <FieldDescription>
-            You will need to sign in again on every device.
-          </FieldDescription>
-        </CardFooter>
-      </Card>
+        <PageSection
+          title="Sessions"
+          caption="Signing out everywhere revokes every refresh token, including this browser."
+        >
+          <div className="flex flex-col items-start gap-2">
+            <Button
+              variant="destructive"
+              disabled={signingOut}
+              onClick={async () => {
+                setSigningOut(true)
+                await signOut({ everywhere: true, queryClient })
+                await navigate({ to: "/login" })
+              }}
+            >
+              {signingOut ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <LogOutIcon data-icon="inline-start" />
+              )}
+              Sign out of all devices
+            </Button>
+            <FieldDescription>
+              You will need to sign in again on every device.
+            </FieldDescription>
+          </div>
+        </PageSection>
+      </PageBody>
     </>
   )
 }

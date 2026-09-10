@@ -17,10 +17,13 @@ const PRESENTATION: Record<
   pass: { icon: CheckCircle2Icon, className: "text-success", label: "Met" },
   fail: { icon: XCircleIcon, className: "text-destructive", label: "Not met" },
   // Never "failed": the engine could not determine this, which is a question
-  // for a person rather than a rejection.
+  // for a person rather than a rejection — and a question is not a warning, so
+  // it stays neutral. Amber is reserved for the clock and for an actual
+  // advisory; spending it on "we do not know" made three unrelated things on a
+  // tender look like the same kind of problem.
   unknown: {
     icon: HelpCircleIcon,
-    className: "text-warning",
+    className: "text-muted-foreground",
     label: "Needs checking",
   },
   warn: {

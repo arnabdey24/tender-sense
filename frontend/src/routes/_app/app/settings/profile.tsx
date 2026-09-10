@@ -4,15 +4,9 @@ import * as React from "react"
 import { z } from "zod"
 
 import { PageHeader } from "@/components/layout/PageHeader"
+import { PageBody, PageSection } from "@/components/layout/PageSection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { FieldGroup } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
@@ -172,15 +166,11 @@ function ServicesCard({ profile }: { profile: Profile }) {
   const [name, setName] = React.useState("")
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Services</CardTitle>
-        <CardDescription>
-          Each service is matched separately, so a tender only has to fit one of
-          them.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <PageSection
+      title="Services"
+      caption="Each service is matched separately, so a tender only has to fit one of them."
+    >
+      <div className="flex flex-col gap-4">
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -228,8 +218,8 @@ function ServicesCard({ profile }: { profile: Profile }) {
             ))}
           </ul>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </PageSection>
   )
 }
 
@@ -240,14 +230,11 @@ function CertificationsCard({ profile }: { profile: Profile }) {
   const [label, setLabel] = React.useState("")
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Certifications</CardTitle>
-        <CardDescription>
-          Used by eligibility rules. Spelling and punctuation do not matter.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <PageSection
+      title="Certifications"
+      caption="Used by eligibility rules. Spelling and punctuation do not matter."
+    >
+      <div className="flex flex-col gap-4">
         <form
           className="flex gap-2"
           onSubmit={(e) => {
@@ -280,7 +267,11 @@ function CertificationsCard({ profile }: { profile: Profile }) {
             <p className="text-sm text-muted-foreground">None recorded.</p>
           ) : (
             (profile.certifications ?? []).map((certification) => (
-              <Badge key={certification.id} variant="secondary" className="gap-1">
+              <Badge
+                key={certification.id}
+                variant="secondary"
+                className="gap-1"
+              >
                 {certification.label}
                 <button
                   type="button"
@@ -294,8 +285,8 @@ function CertificationsCard({ profile }: { profile: Profile }) {
             ))
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </PageSection>
   )
 }
 
@@ -342,38 +333,34 @@ function ProfilePage() {
         }
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Completeness</CardTitle>
-          <CardDescription>
-            {completeness.data?.next_step ?? "Your profile is complete."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          <Progress value={completeness.data?.score ?? 0} />
-          <div className="flex flex-wrap gap-2">
-            {(completeness.data?.sections ?? []).map((section) => (
-              <Badge
-                key={section.key}
-                variant={section.complete ? "success" : "outline"}
-              >
-                {section.label}
-              </Badge>
-            ))}
+      <PageBody>
+        <PageSection
+          title="Completeness"
+          caption={completeness.data?.next_step ?? "Your profile is complete."}
+        >
+          <div className="flex flex-col gap-3">
+            <Progress value={completeness.data?.score ?? 0} />
+            <div className="flex flex-wrap gap-2">
+              {(completeness.data?.sections ?? []).map((section) => (
+                <Badge
+                  key={section.key}
+                  variant={section.complete ? "success" : "outline"}
+                >
+                  {section.label}
+                </Badge>
+              ))}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </PageSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Capabilities</CardTitle>
-          <CardDescription>
-            {isAdmin
+        <PageSection
+          title="Capabilities"
+          caption={
+            isAdmin
               ? "Saving re-scores every open tender against the new profile."
-              : "Ask an admin to change these."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+              : "Ask an admin to change these."
+          }
+        >
           {isAdmin ? (
             <CapabilityForm key={profile.data.version} profile={profile.data} />
           ) : (
@@ -381,15 +368,15 @@ function ProfilePage() {
               {profile.data.overview || "No overview yet."}
             </p>
           )}
-        </CardContent>
-      </Card>
+        </PageSection>
 
-      {isAdmin ? (
-        <>
-          <ServicesCard profile={profile.data} />
-          <CertificationsCard profile={profile.data} />
-        </>
-      ) : null}
+        {isAdmin ? (
+          <>
+            <ServicesCard profile={profile.data} />
+            <CertificationsCard profile={profile.data} />
+          </>
+        ) : null}
+      </PageBody>
     </>
   )
 }

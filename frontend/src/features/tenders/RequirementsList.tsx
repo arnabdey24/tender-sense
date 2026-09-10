@@ -98,9 +98,11 @@ export function RequirementsList({
               <dt className="text-sm text-muted-foreground">{row.label}</dt>
               <dd className="text-sm font-medium tabular-nums">
                 {row.value}
+                {/* Uncertainty is not urgency: four amber flags on one notice
+                    competed with the deadline for the same meaning. */}
                 {row.confidence !== undefined && row.confidence < 0.6 ? (
-                  <span className="ml-2 align-middle text-xs font-normal text-warning">
-                    read with low confidence
+                  <span className="ml-2 align-middle text-xs font-normal text-muted-foreground">
+                    · read with low confidence
                   </span>
                 ) : null}
               </dd>

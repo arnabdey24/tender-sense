@@ -198,7 +198,7 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | M1 Identity (4–5 d) | **done** | users + profile endpoint, register/login/verify/reset, refresh rotation, Google OIDC, orgs, memberships, invites, outbox + auth/invite templates, RBAC; frontend auth pages, account + profile form, organization settings, members/invites, invite accept | Register → verify via Mailpit → create org → invite → Google sign-in |
 | M2 Tender pool (3 d) | **done** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API, superuser source CRUD + manual/bulk tender entry; frontend tenders list + detail (shared pool) | Browse/search 40 seeded tenders |
 | M3 AI core + matching (5–6 d) | **done** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
-| M4 Rules + explanations + decisions + eval (4–5 d) | **planned** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
+| M4 Rules + explanations + decisions + eval (4–5 d) | **in progress** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
 | M5 Ingestion (5 d) | **planned** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
 | M6 Notifications (4 d) | **planned** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
 | M7 Hardening (3–4 d) | **planned** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
@@ -520,6 +520,35 @@ Also worth recording: running two seed processes concurrently collided on
 `tender_extractions (tender_id, version)`, because the version is read then
 written without a lock. ARQ's `_job_id` dedupe prevents this in production, but
 the constraint is what makes the race visible rather than silently duplicating.
+
+**M4 in progress — the eligibility engine.** The attribute catalogue is the
+contract shared by the engine, the API and the builder UI, so adding an
+attribute makes it available everywhere at once and the builder cannot offer a
+combination the engine would reject. Each attribute declares its source, because
+that decides how far it can be trusted: a scraped field is a fact, an extracted
+one is a claim carrying a confidence and an evidence quote.
+
+The engine is pure — no database, no network — which is what lets the preview
+endpoint run a draft rule set over thousands of tenders with no side effects,
+and what makes exhaustive per-operator testing cheap. Fifty-four tests cover
+every operator and every undecidable path.
+
+Three decisions worth recording:
+
+- **`UNKNOWN` is not `None`.** `None` is a real answer — "this notice places no
+  country restriction" — while unknown means "we could not find out".
+  Collapsing them is how a rule ends up confidently rejecting a tender nobody
+  checked.
+- **A low-confidence extraction is not evidence.** Below the confidence floor an
+  attribute becomes unknown, so a rule cannot reject a tender on a guess.
+- **An empty list on the tender side means unrestricted.** A notice naming no
+  eligible countries excludes nobody; reading that as "no overlap" would hide
+  every unrestricted tender in the pool.
+
+One bug found by a test: the profile stored certifications folded at the colon
+("ISO 9001:2015" → `ISO9001`) while the engine folded the whole string
+(`ISO90012015`), so a certification rule turned on how somebody had typed it.
+Both now use one `comparison_key`, in one place, so they cannot drift again.
 
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.

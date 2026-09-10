@@ -9,6 +9,7 @@ from uuid import UUID
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from app.ai.schemas import Sector
+from app.core.text import comparison_key
 
 
 def _upper_codes(values: list[str]) -> list[str]:
@@ -22,13 +23,13 @@ def _upper_codes(values: list[str]) -> list[str]:
 
 
 def canonical_certification(value: str) -> str:
-    """Fold a certification into a comparable code.
+    """Fold a certification into the code a rule will compare against.
 
-    "ISO 9001", "iso-9001" and "ISO9001:2015" all have to match the same rule,
-    so punctuation, spacing, case and any trailing revision are stripped.
+    Delegates to the shared key so the stored form and the engine's comparison
+    can never disagree — a mismatch there makes every certification rule turn
+    on how somebody typed it.
     """
-    head = value.split(":")[0]
-    return "".join(character for character in head if character.isalnum()).upper()
+    return comparison_key(value)
 
 
 CountryCodes = Annotated[list[str], AfterValidator(_upper_codes)]

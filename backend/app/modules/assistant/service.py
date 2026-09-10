@@ -68,7 +68,15 @@ def message_read(message: AssistantMessage) -> MessageRead:
 
 
 async def reserve(org_id: UUID, kind: str, amount: int, limit: int) -> None:
-    """Fail closed for new paid work if Redis is unavailable."""
+    """Fail closed for new paid work if Redis is unavailable.
+
+    ``limit <= 0`` disables the cap. These budgets exist to stop a runaway loop
+    spending someone's quota — they are this application's own guard rail, not
+    the provider's, and a deployment on a paid key with its own billing controls
+    may not want a second one here.
+    """
+    if limit <= 0:
+        return
     redis = await get_queue()
     key = f"assistant:budget:{org_id}:{utcnow().date()}:{kind}"
     used = await redis.incrby(key, amount)

@@ -103,6 +103,9 @@ class Settings(BaseSettings):
     assistant_voice_languages: Annotated[list[str], NoDecode] = ["bn-BD", "en-US"]
     assistant_turn_timeout_seconds: int = 90
     assistant_voice_max_seconds: int = 600
+    #: This application's own guard rails against a runaway loop — not the
+    #: provider's quota. Set either to 0 to disable it and rely on the
+    #: billing controls on the API key instead.
     assistant_daily_turn_limit: int = 100
     assistant_daily_voice_seconds: int = 3600
     assistant_retention_days: int = 90

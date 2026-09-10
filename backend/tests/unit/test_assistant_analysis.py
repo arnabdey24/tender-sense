@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from uuid import uuid4
+
 import pytest
 from pydantic import ValidationError
 
@@ -61,3 +63,20 @@ def test_missing_turnover_is_not_zero(context: dict[str, Any]) -> None:
 def test_invalid_scenarios_are_rejected(value: float) -> None:
     with pytest.raises(ValidationError):
         AnalyzeInput(kind="scenario", adjustment_percent=value)
+
+
+@pytest.mark.asyncio
+async def test_reserve_is_disabled_by_a_zero_limit(monkeypatch) -> None:
+    """A zero limit must not touch Redis at all, let alone raise.
+
+    The daily budgets are this application's own guard rails, not the provider's
+    quota, so a deployment on a paid key with its own billing controls has to be
+    able to turn them off.
+    """
+    from app.modules.assistant import service
+
+    async def explode() -> None:  # pragma: no cover - must never run
+        raise AssertionError("reserve consulted Redis despite a disabled limit")
+
+    monkeypatch.setattr(service, "get_queue", explode)
+    await service.reserve(uuid4(), "voice seconds", 600, 0)

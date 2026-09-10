@@ -102,6 +102,7 @@ import {
   type Conversation,
   type Language,
 } from "./schemas"
+import { RichText } from "./RichText"
 import { VoiceControls, VoiceOrb } from "./VoiceControls"
 import type { VoiceSession, VoiceState } from "./voice"
 
@@ -649,15 +650,18 @@ function AssistantSession({
                           align={message.role === "user" ? "end" : "start"}
                         >
                           <BubbleContent>
-                            <div className="text-sm leading-7 whitespace-pre-wrap">
-                              {message.content.replace(
-                                /\[source:[^\]]+\]/g,
-                                ""
-                              ) ||
-                                (message.status === "streaming"
+                            {message.content ? (
+                              <RichText
+                                text={message.content}
+                                sources={message.sources}
+                              />
+                            ) : (
+                              <div className="text-sm leading-relaxed">
+                                {message.status === "streaming"
                                   ? "Checking the evidence…"
-                                  : "Response interrupted")}
-                            </div>
+                                  : "Response interrupted"}
+                              </div>
+                            )}
                           </BubbleContent>
                         </Bubble>
                         {message.artifacts.map((value, i) => (

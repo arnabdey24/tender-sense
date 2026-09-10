@@ -251,10 +251,12 @@ def fake_attributes(text: str) -> TenderAttributes:
     )
     years = _pick([None, 3, 5, 10], f"{seed}:years")
 
+    body = _notice_body(text)
+
     attributes = TenderAttributes(
         sectors=sectors,
-        scope_summary=text.strip()[:280] or None,
-        key_deliverables=[line.strip() for line in text.splitlines() if line.strip()][:3],
+        scope_summary=body[:280] or None,
+        key_deliverables=[line.strip() for line in body.splitlines() if line.strip()][:3],
         required_qualifications_text=None,
         min_annual_turnover=(
             Money(amount=turnover, currency="BDT") if turnover is not None else None
@@ -284,11 +286,51 @@ def fake_attributes(text: str) -> TenderAttributes:
         FieldEvidence(
             field=field,
             confidence=score,
-            quote=text.strip()[:120] if score >= 0.5 else None,
+            quote=body[:120] if score >= 0.5 else None,
         )
         for field, score in stated.items()
     ]
     return attributes
+
+
+#: Field labels the extraction prompt adds around the notice. They are prompt
+#: scaffolding, not something the buyer wrote.
+_PROMPT_LABELS = (
+    "Title:",
+    "Procuring entity:",
+    "Country:",
+    "Category:",
+    "Procurement method:",
+)
+
+
+def _notice_body(prompt: str) -> str:
+    """The notice itself, with the instruction line and field labels removed.
+
+    ``fake_attributes`` is handed the whole prompt, so deriving a scope summary,
+    key deliverables or an evidence quote from it verbatim used to echo
+    "Extract the structured attributes of this procurement notice." back out as
+    though the notice had said it — and that text was then stored on the
+    extraction and rendered to bidders as a requirement.
+    """
+    for marker in ("\nNotice text:\n", "\nSummary:\n"):
+        _, separator, tail = prompt.partition(marker)
+        if separator and tail.strip():
+            return tail.strip()
+
+    lines = [line.strip() for line in prompt.splitlines() if line.strip()]
+    kept = [
+        line
+        for line in lines
+        if not line.startswith("Extract the structured attributes")
+    ]
+    # Nothing but labelled fields left: prefer the title's value over its label.
+    for line in kept:
+        if line.startswith("Title:"):
+            return line[len("Title:") :].strip()
+    return "\n".join(
+        line for line in kept if not line.startswith(_PROMPT_LABELS)
+    ).strip()
 
 
 def fake_explanation(prompt: str) -> MatchExplanation:

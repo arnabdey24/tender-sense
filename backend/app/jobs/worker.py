@@ -52,7 +52,11 @@ from app.jobs.tasks.notifications import (
     send_daily_digest,
 )
 from app.jobs.tasks.reprocessing import reparse_source, reprocess_tender
-from app.jobs.tasks.scraping import scrape_due_sources, scrape_source
+from app.jobs.tasks.scraping import (
+    scrape_all_sources,
+    scrape_due_sources,
+    scrape_source,
+)
 
 logger = get_logger(__name__)
 
@@ -74,6 +78,9 @@ DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
     rematch_org,
     reprocess_tender,
     generate_explanations,
+    scrape_all_sources,
+    # Registered only so a job queued under the old name before the rename
+    # still resolves. Drop it once the queue has drained.
     scrape_due_sources,
     close_expired_tenders,
     age_match_urgency,
@@ -109,7 +116,7 @@ class WorkerSettings:
     cron_jobs: list[Any] = [
         cron(pump_email_outbox, second=set(PUMP_CRON_SECOND), run_at_startup=False),
         # Four passes a day, off-peak in Dhaka, to stay polite to an old portal.
-        cron(scrape_due_sources, hour={2, 8, 14, 20}, minute=0, run_at_startup=False),
+        cron(scrape_all_sources, hour={2, 8, 14, 20}, minute=0, run_at_startup=False),
         # Housekeeping in the quiet hour, each a few minutes apart so a slow
         # one does not delay the next.
         cron(close_expired_tenders, hour={2}, minute=10, run_at_startup=False),

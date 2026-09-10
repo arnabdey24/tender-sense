@@ -259,11 +259,19 @@ async def _enqueue_update_notice(tender_id: str) -> None:
 
 
 @tracked_job
-async def scrape_due_sources(ctx: dict[str, Any]) -> dict[str, Any]:
+async def scrape_all_sources(ctx: dict[str, Any]) -> dict[str, Any]:
     """Queue a scrape for every enabled source.
 
     Each source is a separate job on the scrape queue, which is capped at one
     at a time — so portals are visited in series rather than all at once.
+
+    Named for what it does. It was ``scrape_due_sources``, which reads as
+    though it consults a schedule and skips portals that are not yet due — it
+    never has. That mattered on the operator's job list, where someone wanting
+    a first pull, or the newest notices before the next cron tick, would fairly
+    read "due" as "this will do nothing right now" and go looking for a control
+    that does not exist. Nothing else changes: this is the same dispatch the
+    cron has always called four times a day.
     """
     async with session_scope() as session:
         sources = list(
@@ -290,3 +298,9 @@ async def scrape_due_sources(ctx: dict[str, Any]) -> dict[str, Any]:
 
     logger.info("scrape_dispatch", sources=len(sources), queued=queued)
     return {"sources": len(sources), "queued": queued}
+
+
+async def scrape_due_sources(ctx: dict[str, Any]) -> dict[str, Any]:
+    """Deprecated alias, kept so a job already queued under the old name still
+    runs after a deploy that renames it. Remove once the queue has drained."""
+    return await scrape_all_sources(ctx)

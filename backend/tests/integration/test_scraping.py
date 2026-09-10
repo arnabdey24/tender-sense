@@ -24,7 +24,11 @@ from app.ingestion.adapters.worldbank import WorldBankAdapter
 from app.ingestion.blobstore import LocalFileBlobStore
 from app.ingestion.service import upsert_tender
 from app.jobs.runs import RunStatus, ScraperRun
-from app.jobs.tasks.scraping import scrape_due_sources, scrape_source
+from app.jobs.tasks.scraping import (
+    scrape_all_sources,
+    scrape_due_sources,
+    scrape_source,
+)
 from app.modules.tenders.models import SourceHealth, Tender, TenderDocument, TenderSource
 
 FIXTURE = Path(__file__).parent.parent / "fixtures" / "worldbank" / "listing.json"
@@ -313,10 +317,22 @@ class TestDispatch:
     async def test_it_queues_only_enabled_sources_with_real_adapters(
         self, fake_portal: type[FakeAdapter], fake_source: TenderSource
     ) -> None:
-        result = await scrape_due_sources({})
+        result = await scrape_all_sources({})
 
         assert result["queued"] >= 1
         assert result["queued"] <= result["sources"]
+
+    async def test_the_old_job_name_still_runs(
+        self, fake_portal: type[FakeAdapter], fake_source: TenderSource
+    ) -> None:
+        """A deploy that renames a job must not strand what is already queued.
+
+        arq resolves a queued job by the name it was enqueued under, so the
+        old name stays registered until the queue has drained.
+        """
+        result = await scrape_due_sources({})
+
+        assert result["queued"] >= 1
 
 
 class TestStoredPayloads:

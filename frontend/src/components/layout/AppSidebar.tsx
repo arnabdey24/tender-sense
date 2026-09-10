@@ -15,6 +15,7 @@ import {
   UsersIcon,
 } from "lucide-react"
 
+import { LogoMark } from "@/components/brand/Logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -88,11 +89,17 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" render={<Link to="/app/dashboard" />}>
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <FileTextIcon />
-              </div>
+              {/* The parent forces every descendant svg to size-4, which is
+                  right for nav icons and too small for the mark — hence the
+                  explicit sizes, one per collapse state. */}
+              <LogoMark
+                size={26}
+                className="size-6.5! text-primary group-data-[collapsible=icon]:size-5!"
+              />
               <div className="flex min-w-0 flex-col gap-0.5 leading-none">
-                <span className="font-semibold">TenderSense</span>
+                <span className="font-semibold tracking-[-0.012em]">
+                  Tender<span className="text-primary">Sense</span>
+                </span>
                 <span className="truncate text-xs text-muted-foreground">
                   {activeOrg?.org_name ?? "No organization"}
                 </span>

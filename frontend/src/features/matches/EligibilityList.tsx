@@ -20,12 +20,12 @@ const PRESENTATION: Record<
   // for a person rather than a rejection.
   unknown: {
     icon: HelpCircleIcon,
-    className: "text-warning-foreground",
+    className: "text-warning",
     label: "Needs checking",
   },
   warn: {
     icon: AlertTriangleIcon,
-    className: "text-warning-foreground",
+    className: "text-warning",
     label: "Worth a look",
   },
 }

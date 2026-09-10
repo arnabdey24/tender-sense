@@ -1,0 +1,109 @@
+{
+  "northStar": "Evidence beside verdict. A grade is never shown without the reason it can be checked against. Apple's clarity, deference and depth, applied to a tool people use under deadline pressure.",
+  "colorStrategy": "restrained",
+  "ramps": {
+    "brand": {
+      "hue": 245,
+      "50": "oklch(0.972 0.013 245)",
+      "100": "oklch(0.938 0.028 245)",
+      "200": "oklch(0.884 0.052 245)",
+      "300": "oklch(0.808 0.082 245)",
+      "400": "oklch(0.702 0.117 245)",
+      "500": "oklch(0.588 0.132 245)",
+      "600": "oklch(0.48 0.13 245)",
+      "700": "oklch(0.412 0.114 245)",
+      "800": "oklch(0.348 0.092 245)",
+      "900": "oklch(0.292 0.07 245)"
+    },
+    "chartLight": [
+      "oklch(0.52 0.15 245)",
+      "oklch(0.63 0.15 65)",
+      "oklch(0.64 0.12 190)",
+      "oklch(0.57 0.18 15)",
+      "oklch(0.56 0.15 310)"
+    ],
+    "chartDark": [
+      "oklch(0.64 0.14 245)",
+      "oklch(0.66 0.15 65)",
+      "oklch(0.66 0.13 190)",
+      "oklch(0.6 0.19 15)",
+      "oklch(0.58 0.17 310)"
+    ]
+  },
+  "surfaces": {
+    "light": {
+      "background": "oklch(0.994 0.002 245)",
+      "sidebar": "oklch(0.978 0.004 245)",
+      "card": "oklch(1 0 0)",
+      "popover": "oklch(1 0 0)",
+      "muted": "oklch(0.968 0.005 245)"
+    },
+    "dark": {
+      "background": "oklch(0.178 0.012 250)",
+      "sidebar": "oklch(0.198 0.013 250)",
+      "card": "oklch(0.216 0.014 250)",
+      "popover": "oklch(0.232 0.014 250)",
+      "muted": "oklch(0.268 0.013 250)"
+    }
+  },
+  "elevation": {
+    "light": {
+      "xs": "0 1px 2px -1px oklch(0.185 0.012 250 / 0.09)",
+      "sm": "0 1px 3px -1px oklch(0.185 0.012 250 / 0.1), 0 1px 2px -1px oklch(0.185 0.012 250 / 0.06)",
+      "md": "0 4px 12px -3px oklch(0.185 0.012 250 / 0.11), 0 2px 5px -2px oklch(0.185 0.012 250 / 0.07)",
+      "lg": "0 14px 32px -8px oklch(0.185 0.012 250 / 0.15), 0 4px 10px -4px oklch(0.185 0.012 250 / 0.08)",
+      "xl": "0 28px 60px -14px oklch(0.185 0.012 250 / 0.2), 0 10px 20px -10px oklch(0.185 0.012 250 / 0.1)"
+    },
+    "dark": {
+      "xs": "0 1px 2px -1px oklch(0 0 0 / 0.5)",
+      "sm": "0 1px 3px -1px oklch(0 0 0 / 0.55), 0 1px 2px -1px oklch(0 0 0 / 0.4)",
+      "md": "0 4px 14px -3px oklch(0 0 0 / 0.6), 0 2px 6px -2px oklch(0 0 0 / 0.45)",
+      "lg": "0 16px 38px -10px oklch(0 0 0 / 0.7), 0 5px 12px -5px oklch(0 0 0 / 0.5)",
+      "xl": "0 32px 70px -16px oklch(0 0 0 / 0.78), 0 12px 24px -12px oklch(0 0 0 / 0.55)"
+    }
+  },
+  "materials": {
+    "chromeLight": "oklch(0.994 0.002 245 / 0.72)",
+    "chromeDark": "oklch(0.178 0.012 250 / 0.72)",
+    "panelLight": "oklch(1 0 0 / 0.86)",
+    "panelDark": "oklch(0.216 0.014 250 / 0.88)",
+    "blur": "20px",
+    "saturate": "180%",
+    "rule": "Applied only where content genuinely scrolls underneath; degrades to an opaque token without backdrop-filter support."
+  },
+  "motion": {
+    "fast": "130ms",
+    "base": "190ms",
+    "slow": "260ms",
+    "ease": "cubic-bezier(0.22, 1, 0.36, 1)",
+    "rule": "State only — change, feedback, loading, reveal. No orchestrated page-load sequence in the app; the marketing page's one authored moment plays once and rests. Bounce and elastic easing are not in the system."
+  },
+  "breakpoints": {
+    "sm": "640px",
+    "md": "768px",
+    "lg": "1024px",
+    "xl": "1280px",
+    "rule": "Responsive behaviour is structural (collapse, restack, truncate), never fluid type."
+  },
+  "browserSurfaces": {
+    "selection": "color-mix(in oklch, var(--primary) 26%, transparent)",
+    "caret": "var(--primary)",
+    "scrollbarThumb": "color-mix(in oklch, var(--foreground) 18%, transparent)",
+    "accentColor": "var(--primary)",
+    "colorScheme": "light on :root, dark on .dark",
+    "underlineOffset": "0.2em",
+    "rule": "The surfaces the browser draws still belong to the design system."
+  },
+  "accessibility": {
+    "standard": "WCAG 2.1 AA, held in both themes",
+    "verified": "Every foreground/background pair checked against its own surface per theme; grade fills checked against their ink; chart ramps validated for lightness band, chroma floor, adjacent-pair CVD separation and surface contrast, per theme.",
+    "knownLimit": "Light chart ramp: blue vs purple is close under protanopia when all five series render simultaneously and unlabelled. Legend plus direct labels required beyond four simultaneous unordered series; otherwise facet.",
+    "colorNeverAlone": "Grades carry a letter; rule results carry a label and icon; voice states carry readable text.",
+    "reducedMotion": "Honoured, including the assistant voice orb."
+  },
+  "notCanonized": [
+    "The dashboard's four-across stat-tile row is the incumbent composition, retained because this pass was scoped to the visual layer. It is not a pattern to reproduce on new surfaces; it is the hero-metric template the craft floor warns about.",
+    "`--warning-foreground` used as a text colour on the page ground was a shipped defect (near-black in both themes, invisible on dark). It was repaired in EligibilityList and the warning badge, and the rule is now recorded — but the token pattern is not a system rule to copy.",
+    "The bare `d` keypress that toggles the theme is an incumbent behaviour with no discoverability; it is now surfaced in the theme control's tooltip, but a global single-letter hotkey is not a pattern the system endorses."
+  ]
+}

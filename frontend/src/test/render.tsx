@@ -4,6 +4,7 @@ import { render, waitFor, type RenderOptions } from "@testing-library/react"
 import { http, HttpResponse } from "msw"
 import type { ReactElement, ReactNode } from "react"
 
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toast"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { resetAuthBootstrap } from "@/lib/auth/bootstrap"
@@ -28,11 +29,13 @@ export function renderWithProviders(
 
   function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster>{children}</Toaster>
-        </TooltipProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <Toaster>{children}</Toaster>
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     )
   }
 
@@ -83,14 +86,18 @@ export async function renderRoute(
     createMemoryHistory({ initialEntries: [path] })
   )
 
+  // Provider order mirrors main.tsx: the theme wraps everything, because the
+  // header's theme control reads it during the very first render.
   const result = render(
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster>
-          <RouterProvider router={router} />
-        </Toaster>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster>
+            <RouterProvider router={router} />
+          </Toaster>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 
   await waitFor(() => {

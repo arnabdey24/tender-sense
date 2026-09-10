@@ -33,3 +33,8 @@ backend/data/blobs/
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/shelf/
+
+# Impeccable design skill — local state and transient review evidence
+.impeccable/hook.cache.json
+.impeccable/config.local.json
+.impeccable/review/

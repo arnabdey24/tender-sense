@@ -25,12 +25,14 @@ export function PageHeader({
       )}
       {...props}
     >
-      <div className="flex min-w-0 flex-col gap-1">
-        <h1 className="truncate text-2xl font-semibold tracking-tight">
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <h1 className="truncate font-heading text-2xl leading-tight font-semibold tracking-[-0.019em]">
           {title}
         </h1>
         {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="max-w-prose text-pretty text-sm leading-relaxed text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
       {actions ? (

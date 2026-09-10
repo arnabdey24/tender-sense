@@ -23,9 +23,9 @@ export function AuthCard({
   footer,
 }: AuthCardProps) {
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm shadow-lg [--card-spacing:--spacing(5)]">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="text-xl tracking-[-0.014em]">{title}</CardTitle>
         {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
       <CardContent>{children}</CardContent>

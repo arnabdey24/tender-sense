@@ -2,12 +2,27 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "@fontsource/noto-sans-bengali/400.css";
+@import "@fontsource/noto-sans-bengali/500.css";
+@import "@fontsource/noto-sans-bengali/600.css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", sans-serif;
+  --font-sans: "Geist Variable", "Noto Sans Bengali", system-ui, sans-serif;
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
   --color-grade-s: var(--grade-s);
   --color-grade-s-foreground: var(--grade-s-foreground);
   --color-grade-a: var(--grade-a);
@@ -39,6 +54,7 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -53,6 +69,7 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -60,115 +77,480 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
+  --shadow-xl: var(--elevation-xl);
+
+  --ease-out-quint: var(--motion-ease-out);
 }
 
+/*
+ * Light and dark are designed against their own surfaces, not derived from one
+ * another. Every foreground/background pair below was checked to WCAG AA, and
+ * the chart ramps were validated for colour-blind separation in each mode
+ * separately — the dark steps sit in their own lightness band (L 0.48–0.67)
+ * rather than being lightened copies of the light ones.
+ */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  /* TenderSense semantic tokens */
-  --grade-s: oklch(0.55 0.2 300);
-  --grade-s-foreground: oklch(0.985 0 0);
-  --grade-a: oklch(0.62 0.17 150);
-  --grade-a-foreground: oklch(0.985 0 0);
-  --grade-b: oklch(0.72 0.16 75);
-  --grade-b-foreground: oklch(0.2 0 0);
-  --grade-c: oklch(0.6 0.02 260);
-  --grade-c-foreground: oklch(0.985 0 0);
-  --success: oklch(0.62 0.17 150);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.75 0.16 75);
-  --warning-foreground: oklch(0.2 0 0);
-  --info: oklch(0.6 0.15 250);
-  --info-foreground: oklch(0.985 0 0);
+
+  /* Brand — deep ocean blue, hue 245 */
+  --brand-50: oklch(0.972 0.013 245);
+  --brand-100: oklch(0.938 0.028 245);
+  --brand-200: oklch(0.884 0.052 245);
+  --brand-300: oklch(0.808 0.082 245);
+  --brand-400: oklch(0.702 0.117 245);
+  --brand-500: oklch(0.588 0.132 245);
+  --brand-600: oklch(0.48 0.13 245);
+  --brand-700: oklch(0.412 0.114 245);
+  --brand-800: oklch(0.348 0.092 245);
+  --brand-900: oklch(0.292 0.07 245);
+
+  --background: oklch(0.994 0.002 245);
+  --foreground: oklch(0.185 0.012 250);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.185 0.012 250);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.185 0.012 250);
+  --primary: oklch(0.48 0.13 245);
+  --primary-foreground: oklch(0.99 0.005 245);
+  --secondary: oklch(0.968 0.005 245);
+  --secondary-foreground: oklch(0.24 0.015 250);
+  --muted: oklch(0.968 0.005 245);
+  --muted-foreground: oklch(0.505 0.015 250);
+  --accent: oklch(0.957 0.012 245);
+  --accent-foreground: oklch(0.33 0.1 245);
+  --destructive: oklch(0.55 0.2 27);
+  --destructive-foreground: oklch(0.99 0.01 27);
+  --border: oklch(0.917 0.006 245);
+  --input: oklch(0.917 0.006 245);
+  --ring: oklch(0.48 0.13 245);
+
+  --sidebar: oklch(0.978 0.004 245);
+  --sidebar-foreground: oklch(0.185 0.012 250);
+  --sidebar-primary: oklch(0.48 0.13 245);
+  --sidebar-primary-foreground: oklch(0.99 0.005 245);
+  --sidebar-accent: oklch(0.945 0.012 245);
+  --sidebar-accent-foreground: oklch(0.33 0.1 245);
+  --sidebar-border: oklch(0.917 0.006 245);
+  --sidebar-ring: oklch(0.48 0.13 245);
+
+  /* Categorical series — validated: CVD-separated, in-band, ≥3:1 on paper */
+  --chart-1: oklch(0.52 0.15 245);
+  --chart-2: oklch(0.63 0.15 65);
+  --chart-3: oklch(0.64 0.12 190);
+  --chart-4: oklch(0.57 0.18 15);
+  --chart-5: oklch(0.56 0.15 310);
+
+  /* Grades are data. They keep their shipped hues; only the steps are tuned. */
+  --grade-s: oklch(0.52 0.19 300);
+  --grade-s-foreground: oklch(0.99 0.005 300);
+  --grade-a: oklch(0.53 0.14 150);
+  --grade-a-foreground: oklch(0.99 0.005 150);
+  --grade-b: oklch(0.72 0.15 70);
+  --grade-b-foreground: oklch(0.25 0.05 70);
+  --grade-c: oklch(0.55 0.02 260);
+  --grade-c-foreground: oklch(0.99 0 260);
+
+  /* Status. Each is legible as text on the page ground, not only as a fill. */
+  --success: oklch(0.52 0.13 150);
+  --success-foreground: oklch(0.99 0.005 150);
+  --warning: oklch(0.52 0.12 70);
+  --warning-foreground: oklch(0.99 0.005 70);
+  --info: oklch(0.52 0.1 200);
+  --info-foreground: oklch(0.99 0.005 200);
+
+  /* Depth: every level carries an offset and a blur. No zero-offset halos. */
+  --elevation-xs: 0 1px 2px -1px oklch(0.185 0.012 250 / 0.09);
+  --elevation-sm:
+    0 1px 3px -1px oklch(0.185 0.012 250 / 0.1),
+    0 1px 2px -1px oklch(0.185 0.012 250 / 0.06);
+  --elevation-md:
+    0 4px 12px -3px oklch(0.185 0.012 250 / 0.11),
+    0 2px 5px -2px oklch(0.185 0.012 250 / 0.07);
+  --elevation-lg:
+    0 14px 32px -8px oklch(0.185 0.012 250 / 0.15),
+    0 4px 10px -4px oklch(0.185 0.012 250 / 0.08);
+  --elevation-xl:
+    0 28px 60px -14px oklch(0.185 0.012 250 / 0.2),
+    0 10px 20px -10px oklch(0.185 0.012 250 / 0.1);
+
+  /* Translucent chrome. A material, used where content passes underneath. */
+  --material-chrome: oklch(0.994 0.002 245 / 0.72);
+  --material-panel: oklch(1 0 0 / 0.86);
+  --material-blur: 20px;
+  --material-saturate: 180%;
+
+  --motion-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast: 130ms;
+  --motion-base: 190ms;
+  --motion-slow: 260ms;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
+  --background: oklch(0.178 0.012 250);
+  --foreground: oklch(0.972 0.004 245);
+  --card: oklch(0.216 0.014 250);
+  --card-foreground: oklch(0.972 0.004 245);
+  --popover: oklch(0.232 0.014 250);
+  --popover-foreground: oklch(0.972 0.004 245);
+  --primary: oklch(0.7 0.12 245);
+  --primary-foreground: oklch(0.16 0.02 250);
+  --secondary: oklch(0.268 0.013 250);
+  --secondary-foreground: oklch(0.972 0.004 245);
+  --muted: oklch(0.268 0.013 250);
+  --muted-foreground: oklch(0.715 0.014 250);
+  --accent: oklch(0.3 0.035 245);
+  --accent-foreground: oklch(0.88 0.05 245);
+  --destructive: oklch(0.68 0.19 25);
+  --destructive-foreground: oklch(0.16 0.02 25);
+  --border: oklch(1 0 0 / 11%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
-  /* TenderSense semantic tokens */
-  --grade-s: oklch(0.7 0.18 300);
-  --grade-s-foreground: oklch(0.145 0 0);
-  --grade-a: oklch(0.75 0.16 150);
-  --grade-a-foreground: oklch(0.145 0 0);
-  --grade-b: oklch(0.82 0.15 75);
-  --grade-b-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.7 0.12 245);
+
+  --sidebar: oklch(0.198 0.013 250);
+  --sidebar-foreground: oklch(0.972 0.004 245);
+  --sidebar-primary: oklch(0.7 0.12 245);
+  --sidebar-primary-foreground: oklch(0.16 0.02 250);
+  --sidebar-accent: oklch(0.285 0.035 245);
+  --sidebar-accent-foreground: oklch(0.9 0.045 245);
+  --sidebar-border: oklch(1 0 0 / 11%);
+  --sidebar-ring: oklch(0.7 0.12 245);
+
+  /* Re-stepped for the dark band, not lightened copies of the light ramp. */
+  --chart-1: oklch(0.64 0.14 245);
+  --chart-2: oklch(0.66 0.15 65);
+  --chart-3: oklch(0.66 0.13 190);
+  --chart-4: oklch(0.6 0.19 15);
+  --chart-5: oklch(0.58 0.17 310);
+
+  --grade-s: oklch(0.7 0.16 300);
+  --grade-s-foreground: oklch(0.17 0.03 300);
+  --grade-a: oklch(0.74 0.13 150);
+  --grade-a-foreground: oklch(0.17 0.03 150);
+  --grade-b: oklch(0.82 0.13 70);
+  --grade-b-foreground: oklch(0.19 0.03 70);
   --grade-c: oklch(0.7 0.02 260);
-  --grade-c-foreground: oklch(0.145 0 0);
-  --success: oklch(0.75 0.16 150);
-  --success-foreground: oklch(0.145 0 0);
-  --warning: oklch(0.82 0.15 75);
-  --warning-foreground: oklch(0.145 0 0);
-  --info: oklch(0.72 0.14 250);
-  --info-foreground: oklch(0.145 0 0);
+  --grade-c-foreground: oklch(0.17 0.01 260);
+
+  --success: oklch(0.74 0.14 150);
+  --success-foreground: oklch(0.17 0.03 150);
+  --warning: oklch(0.8 0.13 70);
+  --warning-foreground: oklch(0.19 0.03 70);
+  --info: oklch(0.74 0.11 200);
+  --info-foreground: oklch(0.17 0.03 200);
+
+  /* Dark needs deeper, wider shadows to read at all, plus a lit top edge. */
+  --elevation-xs: 0 1px 2px -1px oklch(0 0 0 / 0.5);
+  --elevation-sm:
+    0 1px 3px -1px oklch(0 0 0 / 0.55), 0 1px 2px -1px oklch(0 0 0 / 0.4);
+  --elevation-md:
+    0 4px 14px -3px oklch(0 0 0 / 0.6), 0 2px 6px -2px oklch(0 0 0 / 0.45);
+  --elevation-lg:
+    0 16px 38px -10px oklch(0 0 0 / 0.7), 0 5px 12px -5px oklch(0 0 0 / 0.5);
+  --elevation-xl:
+    0 32px 70px -16px oklch(0 0 0 / 0.78), 0 12px 24px -12px oklch(0 0 0 / 0.55);
+
+  --material-chrome: oklch(0.178 0.012 250 / 0.72);
+  --material-panel: oklch(0.216 0.014 250 / 0.88);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Geist ships contextual alternates that muddy small UI labels. */
+    font-feature-settings: "calt" 0;
+    text-rendering: optimizeLegibility;
+  }
+
+  /*
+   * The surfaces the browser draws for us still belong to the design system.
+   * Left alone they ship Chrome's blue and Safari's grey into a themed page.
+   */
+  :root {
+    color-scheme: light;
+    accent-color: var(--primary);
+    scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent)
+      transparent;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 26%, transparent);
+    color: var(--foreground);
+  }
+
+  :where(input, textarea, [contenteditable]) {
+    caret-color: var(--primary);
+  }
+
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in oklch, var(--foreground) 18%, transparent);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklch, var(--foreground) 30%, transparent);
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: from-font;
+  }
+
+  /* A figure that can change should never reflow the row it sits in. */
+  :where(td, th, time, [data-slot="badge"], .tabular) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Bengali content sits a touch large against Geist at the same px size. */
+  :where([lang="bn"]) {
+    font-family: "Noto Sans Bengali", "Geist Variable", sans-serif;
+    font-size: 0.96em;
+    line-height: 1.7;
+  }
+}
+
+@layer utilities {
+  /* Translucency as a specific effect: chrome that content scrolls beneath. */
+  .material-chrome {
+    background-color: var(--material-chrome);
+  }
+
+  .material-panel {
+    background-color: var(--material-panel);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .material-chrome,
+    .material-panel {
+      -webkit-backdrop-filter: blur(var(--material-blur))
+        saturate(var(--material-saturate));
+      backdrop-filter: blur(var(--material-blur))
+        saturate(var(--material-saturate));
+    }
+  }
+}
+
+/*
+ * The one authored moment on the marketing page: the mark picks up its signal
+ * once, as the page arrives, then rests. Not a loop — a loop is decoration.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .logo-signal [data-signal] path {
+    opacity: 0;
+    animation: logo-arc-in 620ms var(--motion-ease-out) forwards;
+  }
+  .logo-signal [data-signal] path:nth-child(2) {
+    animation-delay: 130ms;
+  }
+  .logo-signal [data-signal] path:nth-child(3) {
+    animation-delay: 260ms;
+  }
+}
+
+@keyframes logo-arc-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Tender assistant
+   Surfaces share the semantic palette; nothing here hardcodes a colour.
+   --------------------------------------------------------------------------- */
+
+.assistant-launcher {
+  position: fixed;
+  right: 1.5rem;
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.assistant-panel {
+  top: auto;
+  left: auto;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  transform: none;
+  translate: none;
+  max-width: calc(100vw - 3rem);
+  max-height: calc(100dvh - 3rem);
+  border-radius: 1.25rem;
+  box-shadow: var(--elevation-xl);
+  outline: 1px solid color-mix(in oklch, var(--foreground) 9%, transparent);
+  outline-offset: -1px;
+}
+
+.assistant-panel-compact {
+  width: 420px;
+  height: min(740px, calc(100dvh - 3rem));
+}
+
+.assistant-panel-expanded {
+  width: 580px;
+  height: calc(100dvh - 3rem);
+}
+
+.assistant-panel-workspace {
+  width: min(1240px, calc(100vw - 3rem));
+  height: calc(100dvh - 3rem);
+}
+
+/*
+ * The orb reads amplitude as scale and state as motion, so it still says
+ * something with colour removed or animation suppressed.
+ */
+.assistant-orb {
+  --voice-level: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+.assistant-orb-core {
+  width: 70%;
+  height: 70%;
+  border-radius: 44% 56% 60% 40%;
+  background:
+    radial-gradient(
+      circle at 32% 26%,
+      color-mix(in oklch, var(--background) 70%, transparent),
+      transparent 54%
+    ),
+    conic-gradient(
+      from 50deg,
+      var(--brand-400),
+      var(--info),
+      var(--brand-500),
+      var(--brand-400)
+    );
+  box-shadow:
+    inset -4px -5px 14px color-mix(in oklch, var(--foreground) 14%, transparent),
+    0 4px 18px color-mix(in oklch, var(--primary) 26%, transparent);
+  transform: scale(calc(0.9 + var(--voice-level) * 0.18));
+  transition:
+    transform var(--motion-fast) var(--motion-ease-out),
+    filter var(--motion-base) var(--motion-ease-out);
+}
+
+.assistant-orb-ring {
+  position: absolute;
+  inset: 2px;
+  border: 1px solid color-mix(in oklch, var(--primary) 24%, transparent);
+  border-radius: 50%;
+  transform: scale(calc(0.9 + var(--voice-level) * 0.35));
+  transition: transform 160ms var(--motion-ease-out);
+}
+
+.assistant-orb-ring-second {
+  inset: 8px;
+  border-color: color-mix(in oklch, var(--info) 26%, transparent);
+}
+
+.assistant-orb[data-small="true"] {
+  width: 38px;
+  height: 38px;
+}
+
+.assistant-orb[data-state="listening"] .assistant-orb-core,
+.assistant-orb[data-state="speaking"] .assistant-orb-core {
+  animation: assistant-voice-morph 3s ease-in-out infinite alternate;
+}
+
+.assistant-orb[data-state="processing"] .assistant-orb-core,
+.assistant-orb[data-state="connecting"] .assistant-orb-core {
+  animation: assistant-voice-rotate 4s linear infinite;
+}
+
+.assistant-orb[data-state="muted"] {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.assistant-orb[data-state="error"] .assistant-orb-core {
+  background: color-mix(in oklch, var(--destructive) 55%, var(--muted));
+}
+
+@keyframes assistant-voice-morph {
+  from {
+    border-radius: 44% 56% 60% 40%;
+  }
+  to {
+    border-radius: 60% 40% 44% 56%;
+  }
+}
+
+@keyframes assistant-voice-rotate {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@media (max-width: 767px) {
+  .assistant-panel {
+    inset: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border-radius: 0;
+    outline: none;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .assistant-launcher {
+    right: 1rem;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-orb *,
+  .assistant-panel {
+    animation: none !important;
+    transition: none !important;
   }
 }

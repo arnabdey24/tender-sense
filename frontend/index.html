@@ -2,9 +2,54 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
     <title>TenderSense</title>
+    <meta
+      name="description"
+      content="Find, grade and win the public tenders that matter to your business. TenderSense watches procurement portals, matches every notice against your capability profile, and explains the grade against the evidence."
+    />
+
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Both themes are designed, so declare both and let the OS pick. -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fcfdfe" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d1216" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-title" content="TenderSense" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="TenderSense" />
+    <meta
+      property="og:description"
+      content="Find, grade and win the public tenders that matter to your business."
+    />
+    <meta property="og:image" content="/icon-512.png" />
+
+    <script>
+      /*
+       * Resolve the theme before first paint. Without this a dark-mode user
+       * gets a full white frame while the bundle loads. Mirrors the contract in
+       * src/components/theme-provider.tsx: key "theme", values light|dark|system.
+       */
+      ;(function () {
+        try {
+          var stored = localStorage.getItem("theme")
+          var theme =
+            stored === "light" || stored === "dark"
+              ? stored
+              : window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light"
+          document.documentElement.classList.add(theme)
+        } catch (e) {
+          /* Private mode or blocked storage: the provider settles it on mount. */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -23,8 +23,7 @@ const badgeVariants = cva(
         gradeB: "bg-grade-b text-grade-b-foreground [a]:hover:bg-grade-b/80",
         gradeC: "bg-grade-c text-grade-c-foreground [a]:hover:bg-grade-c/80",
         success: "bg-success/15 text-success [a]:hover:bg-success/25",
-        warning:
-          "bg-warning/20 text-warning-foreground [a]:hover:bg-warning/30",
+        warning: "bg-warning/15 text-warning [a]:hover:bg-warning/25",
         info: "bg-info/15 text-info [a]:hover:bg-info/25",
       },
     },

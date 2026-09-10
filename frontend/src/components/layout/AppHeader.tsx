@@ -17,6 +17,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { humanizeSegment } from "@/components/layout/breadcrumb-labels"
+import { ThemeToggle } from "@/components/layout/ThemeToggle"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -46,18 +47,24 @@ function AutoBreadcrumb() {
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      {/* Wrapping put a second line inside a fixed 56px header on a phone. */}
+      <BreadcrumbList className="flex-nowrap overflow-hidden">
         {segments.map((segment, index) => {
           const href = "/" + segments.slice(0, index + 1).join("/")
           const isLast = index === segments.length - 1
           return (
             <React.Fragment key={href}>
               {index > 0 ? <BreadcrumbSeparator /> : null}
-              <BreadcrumbItem>
+              <BreadcrumbItem className="min-w-0 shrink">
                 {isLast ? (
-                  <BreadcrumbPage>{humanizeSegment(segment)}</BreadcrumbPage>
+                  <BreadcrumbPage className="truncate">
+                    {humanizeSegment(segment)}
+                  </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink render={<Link to={href} />}>
+                  <BreadcrumbLink
+                    className="truncate"
+                    render={<Link to={href} />}
+                  >
                     {humanizeSegment(segment)}
                   </BreadcrumbLink>
                 )}
@@ -89,7 +96,7 @@ function OrgSwitcher() {
         aria-label="Active organization"
       >
         <Building2Icon data-icon="inline-start" />
-        <span className="max-w-40 truncate">{label}</span>
+        <span className="hidden max-w-40 truncate sm:inline">{label}</span>
       </Button>
     )
   }
@@ -129,7 +136,7 @@ function OrgSwitcher() {
         ) : (
           <Building2Icon data-icon="inline-start" />
         )}
-        <span className="max-w-40 truncate">{label}</span>
+        <span className="hidden max-w-40 truncate sm:inline">{label}</span>
         <ChevronsUpDownIcon data-icon="inline-end" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-56">
@@ -180,9 +187,12 @@ function NotificationBell() {
       >
         <BellIcon />
         {count > 0 && (
+          // Sat over the middle of the bell before, hiding the glyph it was
+          // meant to annotate. Pushed out to the corner, with a ring so it
+          // still separates from the icon behind it.
           <span
             aria-hidden
-            className="absolute top-1 right-1 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-4 font-medium text-primary-foreground"
+            className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] leading-none font-semibold text-primary-foreground ring-2 ring-background tabular-nums"
           >
             {count > 9 ? "9+" : count}
           </span>
@@ -195,12 +205,16 @@ function NotificationBell() {
 
 export function AppHeader({ breadcrumb }: { breadcrumb?: React.ReactNode }) {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+    // Sticky and translucent: the breadcrumb and org context stay reachable
+    // while a long tender scrolls beneath them.
+    <header className="material-chrome sticky top-0 z-20 flex h-14 shrink-0 items-center gap-2 border-b px-4">
       <SidebarTrigger className="-ml-1" />
       <Separator orientation="vertical" className="mr-2 h-4" />
       <div className="min-w-0 flex-1">{breadcrumb ?? <AutoBreadcrumb />}</div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <OrgSwitcher />
+        <Separator orientation="vertical" className="mx-1 h-4" />
+        <ThemeToggle />
         <NotificationBell />
       </div>
     </header>

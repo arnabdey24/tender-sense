@@ -199,7 +199,7 @@ Status legend: **done** verified working · **in progress** · **next** · **pla
 | M2 Tender pool (3 d) | **done** | sources, tenders, documents, blobstore, importer + admin add, synthetic dataset + labels, tenders API, superuser source CRUD + manual/bulk tender entry; frontend tenders list + detail (shared pool) | Browse/search 40 seeded tenders |
 | M3 AI core + matching (5–6 d) | **done** | Gemini client + fake, extraction, tender + profile embeddings, scoring/grading/urgency, templated explanations, `process_tender` / `rematch_org`; frontend profile pages + onboarding steps 1–4, 6, 8, matches feed, today shortlist, tender detail (overview) | Sample company sees graded feed; editing profile re-scores |
 | M4 Rules + explanations + decisions + eval (4–5 d) | **done** | catalogue, schema, engine, presets, versions, preview/test, recommendation matrix, LLM explanations + budget, decisions API, rule overrides, eval + calibration scripts; frontend rule builder, onboarding step 5, tender detail eligibility/requirements/activity, decision panel, pipeline, dashboard | Rule change flips eligibility with reasons; eval table vs keyword baseline |
-| M5 Ingestion (5 d) | **planned** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
+| M5 Ingestion (5 d) | **in progress** | adapter interface, World Bank adapter, e-GP httpx adapter (+ Playwright fallback skeleton), scrape worker, crons, scraper_runs, health, reprocess; frontend sources settings | Real notices flow in on schedule |
 | M6 Notifications (4 d) | **planned** | in-app centre, settings, recipients verify/unsubscribe, instant alerts, digest dispatcher, deadline sweep, ledger, templates; frontend notification centre + settings + onboarding step 7 | Instant email on S match; 08:00 Dhaka digest; 7/2-day reminders |
 | M7 Hardening (3–4 d) | **planned** | rate limits, metrics, Sentry, backups, prod compose + Caddy TLS, secrets, retention purge, runbook, bench < 60 s/tender, security review, `/admin` minimal UI, a11y pass | Production deploy on VM |
 
@@ -658,6 +658,31 @@ accumulate.
 
 Calibration is cheap by design: grading is arithmetic over similarities already
 stored, so a re-fit costs a `thresholds_version` bump and no AI calls at all.
+
+**M5 in progress — the World Bank adapter.** Verified against the live endpoint
+before writing a line of it: the documented shape still holds, and the golden
+fixture is six real notices captured from it rather than something invented.
+
+Confirmed while building:
+
+- The endpoint returns **418,260** notices, so a full crawl is never the plan —
+  the adapter polls newest-first and stops at the first identifier it already
+  holds. Server-side date filters remain untrusted.
+- **Absent fields are omitted, not nulled.** A notice with no deadline has no
+  `submission_deadline_date` key at all, so every read tolerates absence.
+- `sector` is a list of `{sector_code, sector_description}` objects, and
+  `notice_text` is a block of HTML that has to be flattened before embedding.
+
+Two decisions that keep bad data out of rules: an unrecognised procurement
+group stays `unknown` rather than being guessed into a category a rule might
+filter on, and a country name that is not in the mapping yields `None` rather
+than a plausible-looking wrong ISO code — a wrong code would silently fail a
+country-eligibility rule. A "Contract Award" notice is stored closed, because
+listing an already-decided contract as open wastes the reader's attention.
+
+Thirty-one tests replay `normalize` over the captured payloads, which is exactly
+how a parser fix will be validated when the portal changes: fix, replay, deploy
+— no re-scraping.
 
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.

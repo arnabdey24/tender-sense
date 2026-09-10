@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from app.db.base import Base
 from app.modules.auth.models import AuthToken, RefreshSession, TokenPurpose
+from app.modules.decisions.models import Decision, TenderDecision
 from app.modules.matching.models import (
     EligibilityStatus,
     ExplanationKind,
@@ -61,6 +62,7 @@ __all__ = [
     "AuthToken",
     "Base",
     "CompanyProfile",
+    "Decision",
     "DocumentKind",
     "EligibilityStatus",
     "EmailOutbox",
@@ -91,6 +93,7 @@ __all__ = [
     "RuleSetVersion",
     "SourceHealth",
     "Tender",
+    "TenderDecision",
     "TenderDocument",
     "TenderEmbedding",
     "TenderExtraction",

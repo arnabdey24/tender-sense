@@ -575,6 +575,28 @@ Money comparisons normalise through stored FX rates. Without a rate the rule is
 unknown rather than compared raw — a BDT requirement against a USD profile is a
 hundredfold error, not a rounding one.
 
+**Rules API and decisions.** The catalogue, JSON Schema, per-rule validation,
+versioned rule sets with rollback, preview and per-tender test are all live,
+plus bid/hold/skip with a full trail. Migration `0006_decisions` verified
+through apply, downgrade and re-apply.
+
+Two things shape the design:
+
+- **Preview reports per rule, not just in total.** "42 tenders became
+  ineligible" is alarming and useless; "the certification rule rejected 42"
+  names the line to relax. The samples returned are the tenders the draft would
+  *exclude*, because those are the ones a customer wants to argue with.
+- **Decisions are append-only.** A partial unique index keeps exactly one live
+  decision per tender per tenant, and superseded rows pile up behind it. The
+  interesting question months later is not "what did we decide" but "when did
+  we change our mind, and why" — and the note on a reversal is usually the most
+  valuable text in the system.
+
+Validation errors come back keyed to the offending rule id, so the builder can
+mark that row rather than showing one message for the whole form. Any member may
+record a decision — the person who spots a tender is often not the admin — but
+only admins change the rules, because a rule decides what everyone is shown.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

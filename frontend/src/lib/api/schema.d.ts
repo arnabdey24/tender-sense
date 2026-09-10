@@ -949,6 +949,239 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rules/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What rules can say
+         * @description Everything the builder needs to render itself.
+         *
+         *     Served from the backend so the UI cannot offer an attribute or operator the
+         *     engine would reject.
+         */
+        get: operations["read_catalogue_api_v1_rules_catalogue_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rules/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * JSON Schema for a rule set
+         * @description Generated from the same models the engine validates with, so the builder
+         *     can check a draft client-side and get the same answer.
+         */
+        get: operations["read_schema_api_v1_rules_schema_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rules/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check a draft
+         * @description Validate without saving. Errors come back per rule so the builder can
+         *     mark the offending row rather than the whole form.
+         */
+        post: operations["validate_api_v1_rules_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-sets/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The active rule set */
+        get: operations["read_current_api_v1_rule_sets_current_get"];
+        /**
+         * Save new criteria
+         * @description Write a new version, make it active, and re-score the open pool.
+         *
+         *     The previous version is kept: every match records the version that graded
+         *     it, so the reasoning behind an old verdict stays reconstructable.
+         */
+        put: operations["save_current_api_v1_rule_sets_current_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-sets/current/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Version history */
+        get: operations["list_versions_api_v1_rule_sets_current_versions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-sets/current/versions/{version_id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Roll back to a version
+         * @description Point the rule set at an earlier version and re-score.
+         */
+        post: operations["activate_api_v1_rule_sets_current_versions__version_id__activate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-sets/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try a draft
+         * @description Run a draft over the open pool without saving it.
+         *
+         *     Per-rule counts are the useful part: "42 became ineligible" is alarming but
+         *     useless, while "the certification rule rejected 42" names the line to relax.
+         */
+        post: operations["preview_draft_api_v1_rule_sets_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-sets/test/{tender_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Try a draft against one tender
+         * @description Answers "why did this particular tender fail?" rule by rule.
+         */
+        post: operations["test_draft_api_v1_rule_sets_test__tender_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenders/{tender_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Record a decision
+         * @description Set bid, hold or skip. The previous decision is kept, not overwritten.
+         */
+        put: operations["put_decision_api_v1_tenders__tender_id__decision_put"];
+        post?: never;
+        /**
+         * Withdraw the decision
+         * @description Withdraw the current decision. The history stays.
+         */
+        delete: operations["delete_decision_api_v1_tenders__tender_id__decision_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tenders/{tender_id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Decision history
+         * @description Every decision ever recorded for this tender, newest first.
+         */
+        get: operations["list_history_api_v1_tenders__tender_id__decisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live decisions
+         * @description Current decisions with their notices, soonest deadline first.
+         */
+        get: operations["list_decisions_api_v1_decisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/sources": {
         parameters: {
             query?: never;
@@ -1044,6 +1277,56 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AttributeType
+         * @enum {string}
+         */
+        AttributeType: "money" | "list" | "enum" | "integer" | "boolean" | "text" | "datetime";
+        /** CatalogueAttribute */
+        CatalogueAttribute: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            type: components["schemas"]["AttributeType"];
+            /** Source */
+            source: string;
+            /** Description */
+            description: string;
+            /** Profile Field */
+            profile_field?: string | null;
+            /** Operators */
+            operators: components["schemas"]["Operator"][];
+        };
+        /** CatalogueOperator */
+        CatalogueOperator: {
+            key: components["schemas"]["Operator"];
+            /** Label */
+            label: string;
+            /**
+             * Value Shape
+             * @enum {string}
+             */
+            value_shape: "scalar" | "list" | "range" | "boolean" | "days";
+        };
+        /** CataloguePreset */
+        CataloguePreset: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description: string;
+            /** Attribute */
+            attribute: string;
+            operator: components["schemas"]["Operator"];
+            severity: components["schemas"]["Severity"];
+            on_missing: components["schemas"]["OnMissing"];
+            /** Value */
+            value: {
+                [key: string]: unknown;
+            };
+        };
         /** CertificationIn */
         CertificationIn: {
             /** Label */
@@ -1098,6 +1381,71 @@ export interface components {
             complete: boolean;
             /** Weight */
             weight: number;
+        };
+        /**
+         * Decision
+         * @enum {string}
+         */
+        Decision: "bid" | "hold" | "skip";
+        /** DecisionRead */
+        DecisionRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            decision: components["schemas"]["Decision"];
+            /** Note */
+            note?: string | null;
+            /** Is Current */
+            is_current: boolean;
+            /** Decided By Id */
+            decided_by_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * DecisionWithTender
+         * @description A decision plus enough of the notice to render a pipeline row.
+         */
+        DecisionWithTender: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            decision: components["schemas"]["Decision"];
+            /** Note */
+            note?: string | null;
+            /** Is Current */
+            is_current: boolean;
+            /** Decided By Id */
+            decided_by_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            tender: components["schemas"]["TenderSummary"];
+        };
+        /** DecisionWrite */
+        DecisionWrite: {
+            decision: components["schemas"]["Decision"];
+            /** Note */
+            note?: string | null;
         };
         /**
          * EligibilityStatus
@@ -1202,6 +1550,19 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "accepted" | "revoked" | "expired";
+        };
+        /**
+         * LiteralValue
+         * @description Compare against a value typed into the rule.
+         */
+        LiteralValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            source: "literal";
+            /** Data */
+            data?: unknown;
         };
         /** LivenessResponse */
         LivenessResponse: {
@@ -1412,6 +1773,21 @@ export interface components {
             message: string;
         };
         /**
+         * OnMissing
+         * @description What to do when the attribute cannot be determined.
+         *
+         *     The default is ``verify`` for a reason: silently passing hides a
+         *     disqualification until bid day, and silently failing buries a tender the
+         *     company could have won. Both are worse than asking.
+         * @enum {string}
+         */
+        OnMissing: "verify" | "pass" | "fail";
+        /**
+         * Operator
+         * @enum {string}
+         */
+        Operator: "lte" | "gte" | "between" | "in" | "not_in" | "intersects" | "subset_of" | "eq" | "contains_any" | "not_contains_any" | "within_days" | "after";
+        /**
          * OrgRole
          * @enum {string}
          */
@@ -1474,6 +1850,17 @@ export interface components {
             description?: string | null;
             /** Timezone */
             timezone?: string | null;
+        };
+        /** Page[DecisionWithTender] */
+        Page_DecisionWithTender_: {
+            /** Items */
+            items?: components["schemas"]["DecisionWithTender"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
         };
         /** Page[MatchRead] */
         Page_MatchRead_: {
@@ -1552,6 +1939,45 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /** PreviewCounts */
+        PreviewCounts: {
+            /**
+             * Evaluated
+             * @default 0
+             */
+            evaluated: number;
+            /**
+             * Eligible
+             * @default 0
+             */
+            eligible: number;
+            /**
+             * Needs Verification
+             * @default 0
+             */
+            needs_verification: number;
+            /**
+             * Ineligible
+             * @default 0
+             */
+            ineligible: number;
+        };
+        /** PreviewSample */
+        PreviewSample: {
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            /** Title */
+            title: string;
+            /** Status */
+            status: string;
+            /** Failing Rules */
+            failing_rules?: string[];
+            /** Unknown Rules */
+            unknown_rules?: string[];
         };
         /**
          * ProcurementCategory
@@ -1641,6 +2067,23 @@ export interface components {
             /** Accepts Jv */
             accepts_jv?: boolean | null;
         };
+        /**
+         * ProfileValue
+         * @description Compare against something in our own profile.
+         *
+         *     Kept as a reference rather than a copied number so a rule stays true after
+         *     the profile changes: "turnover we can show" should follow the profile, not
+         *     freeze whatever it was the day the rule was written.
+         */
+        ProfileValue: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            source: "profile";
+            /** Field */
+            field: string;
+        };
         /** ReadinessResponse */
         ReadinessResponse: {
             /**
@@ -1700,6 +2143,201 @@ export interface components {
             token: string;
             /** Password */
             password: string;
+        };
+        /**
+         * RuleCatalogue
+         * @description Everything the builder needs to render itself.
+         */
+        RuleCatalogue: {
+            /** Attributes */
+            attributes: components["schemas"]["CatalogueAttribute"][];
+            /** Operators */
+            operators: components["schemas"]["CatalogueOperator"][];
+            /** Presets */
+            presets: components["schemas"]["CataloguePreset"][];
+            /** Severities */
+            severities: string[];
+            /** On Missing Options */
+            on_missing_options: string[];
+        };
+        /** RuleDefinition */
+        RuleDefinition: {
+            /** Id */
+            id: string;
+            /** Attribute */
+            attribute: string;
+            operator: components["schemas"]["Operator"];
+            /** Value */
+            value: components["schemas"]["ProfileValue"] | components["schemas"]["LiteralValue"];
+            /** @default hard */
+            severity: components["schemas"]["Severity"];
+            /** @default verify */
+            on_missing: components["schemas"]["OnMissing"];
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Template */
+            template?: string | null;
+        };
+        /**
+         * RulePreview
+         * @description What a draft rule set would do to the pool, before saving it.
+         */
+        RulePreview: {
+            counts: components["schemas"]["PreviewCounts"];
+            /** Per Rule */
+            per_rule?: {
+                [key: string]: components["schemas"]["PreviewCounts"];
+            };
+            /** Samples */
+            samples?: components["schemas"]["PreviewSample"][];
+        };
+        /** RuleSetDefinition */
+        RuleSetDefinition: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version: number;
+            /**
+             * Combinator
+             * @default all
+             * @constant
+             */
+            combinator: "all";
+            /** Rules */
+            rules?: components["schemas"]["RuleDefinition"][];
+        };
+        /** RuleSetRead */
+        RuleSetRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Version Number */
+            version_number: number;
+            definition: components["schemas"]["RuleSetDefinition"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** RuleSetVersionRead */
+        RuleSetVersionRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Version Number */
+            version_number: number;
+            definition: components["schemas"]["RuleSetDefinition"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** RuleSetWrite */
+        RuleSetWrite: {
+            /**
+             * Name
+             * @default Bidding criteria
+             */
+            name: string;
+            definition: components["schemas"]["RuleSetDefinition"];
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * RuleStatus
+         * @description The outcome of one rule against one tender.
+         */
+        RuleStatus: {
+            /** Rule Id */
+            rule_id: string;
+            /** Label */
+            label: string;
+            /** Attribute */
+            attribute: string;
+            operator: components["schemas"]["Operator"];
+            severity: components["schemas"]["Severity"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pass" | "fail" | "unknown" | "warn";
+            /** Tender Value */
+            tender_value?: string | null;
+            /** Expected */
+            expected?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Source
+             * @default
+             */
+            source: string;
+            /** Confidence */
+            confidence?: number | null;
+            /** Evidence */
+            evidence?: string | null;
+        };
+        /**
+         * RuleTestResult
+         * @description A draft rule set evaluated against one named tender.
+         */
+        RuleTestResult: {
+            /**
+             * Tender Id
+             * Format: uuid
+             */
+            tender_id: string;
+            /** Title */
+            title: string;
+            /** Eligibility Status */
+            eligibility_status: string;
+            /** Results */
+            results: components["schemas"]["RuleStatus"][];
+        };
+        /** RuleValidationError */
+        RuleValidationError: {
+            /** Rule Id */
+            rule_id?: string | null;
+            /** Field */
+            field?: string | null;
+            /** Message */
+            message: string;
+        };
+        /** RuleValidationResult */
+        RuleValidationResult: {
+            /** Valid */
+            valid: boolean;
+            /** Errors */
+            errors?: components["schemas"]["RuleValidationError"][];
         };
         /**
          * Sector
@@ -1763,6 +2401,11 @@ export interface components {
             /** Active Org Id */
             active_org_id?: string | null;
         };
+        /**
+         * Severity
+         * @enum {string}
+         */
+        Severity: "hard" | "soft";
         /** SourceAdminRead */
         SourceAdminRead: {
             /**
@@ -3721,6 +4364,391 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page_MatchRead_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_catalogue_api_v1_rules_catalogue_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleCatalogue"];
+                };
+            };
+        };
+    };
+    read_schema_api_v1_rules_schema_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    validate_api_v1_rules_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleValidationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_current_api_v1_rule_sets_current_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetRead"];
+                };
+            };
+        };
+    };
+    save_current_api_v1_rule_sets_current_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleSetWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_versions_api_v1_rule_sets_current_versions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersionRead"][];
+                };
+            };
+        };
+    };
+    activate_api_v1_rule_sets_current_versions__version_id__activate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Rule set version identifier */
+                version_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleSetVersionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_draft_api_v1_rule_sets_preview_post: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleSetWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_draft_api_v1_rule_sets_test__tender_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tender identifier */
+                tender_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleSetWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleTestResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_decision_api_v1_tenders__tender_id__decision_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tender identifier */
+                tender_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_decision_api_v1_tenders__tender_id__decision_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tender identifier */
+                tender_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_history_api_v1_tenders__tender_id__decisions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Tender identifier */
+                tender_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_decisions_api_v1_decisions_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by outcome */
+                decision?: components["schemas"]["Decision"] | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page_DecisionWithTender_"];
                 };
             };
             /** @description Validation Error */

@@ -69,6 +69,9 @@ export const capabilitiesSchema = z.object({
   voice_enabled: z.boolean(),
   mode: z.enum(["gemini", "demo", "unavailable"]),
   voice_max_seconds: z.number(),
+  voice_unavailable_reason: z
+    .enum(["assistant_off", "voice_off", "no_key", "provider_not_gemini"])
+    .nullish(),
 })
 export const eventSchema = z.object({
   schema_version: z.literal(1),

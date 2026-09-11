@@ -1964,6 +1964,8 @@ export interface components {
             mode: "gemini" | "demo" | "unavailable";
             /** Voice Max Seconds */
             voice_max_seconds: number;
+            /** Voice Unavailable Reason */
+            voice_unavailable_reason?: ("assistant_off" | "voice_off" | "no_key" | "provider_not_gemini") | null;
         };
         /** CatalogueAttribute */
         CatalogueAttribute: {

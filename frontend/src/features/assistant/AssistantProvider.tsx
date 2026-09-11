@@ -79,7 +79,7 @@ import {
 } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Marker, MarkerContent } from "@/components/ui/marker"
-import { useAuthStore } from "@/lib/auth/store"
+import { useAuthStore, useIsSuperuser } from "@/lib/auth/store"
 import { qk } from "@/lib/api/query-keys"
 import { useTender, useTenders } from "@/features/tenders/api"
 import { useMatch } from "@/features/matches/api"
@@ -118,6 +118,32 @@ const ArtifactView = lazy(() => import("./ArtifactView"))
  * a disclosure, not a consent record — the browser still asks for the
  * microphone itself every time it needs to.
  */
+/**
+ * Why live voice is off, in a sentence the reader can act on.
+ *
+ * The control used to be greyed with a `title` explaining nothing — a tooltip
+ * no touch screen shows, on a button that could not be pressed to ask. Every
+ * one of these ends the same way on purpose: whatever is missing, text analysis
+ * is not, and that is the thing the reader most needs to know.
+ */
+const VOICE_UNAVAILABLE: Record<string, string> = {
+  assistant_off: "The assistant is switched off for this deployment.",
+  voice_off:
+    "Live voice is switched off for this deployment. Everything else in the assistant works as usual.",
+  no_key:
+    "Live voice needs a speech key this deployment does not have. Everything else in the assistant works as usual.",
+  provider_not_gemini:
+    "This deployment runs the offline model, which has no live voice. Everything else in the assistant works as usual.",
+}
+
+/** The setting an operator would change. Shown only to platform staff. */
+const VOICE_SETTING: Record<string, string> = {
+  assistant_off: "ASSISTANT_ENABLED",
+  voice_off: "ASSISTANT_VOICE_ENABLED",
+  no_key: "GEMINI_API_KEY",
+  provider_not_gemini: "AI_PROVIDER",
+}
+
 const VOICE_NOTICE_SEEN = "tendersense.assistant.voiceNoticeSeen"
 
 function voiceNoticeSeen() {
@@ -415,6 +441,13 @@ function AssistantSession({
   const [speakerMuted, setSpeakerMuted] = useState(false)
   const [preview, setPreview] = useState(false)
   const [voiceNotice, setVoiceNotice] = useState(false)
+  const isSuperuser = useIsSuperuser()
+
+  // Demo mode has no microphone but does have the animation to preview, so it
+  // is a working control rather than an unavailable one.
+  const voiceReason = capabilities.data?.voice_unavailable_reason ?? null
+  const voiceUnavailable =
+    !capabilities.data?.voice_enabled && capabilities.data?.mode !== "demo"
   const voice = useRef<VoiceSession | null>(null)
   const controller = useRef<AbortController | null>(null)
   const epoch = useRef(0)
@@ -764,17 +797,26 @@ function AssistantSession({
           </div>
         </div>
       ) : (
-        <MessageScrollerProvider autoScroll>
+        /*
+          Auto-scroll pins the viewport to the bottom — which, on an empty
+          conversation, means pinning it past the greeting. On a short window
+          the orb, the welcome and the "বাংলা বা English" line all sat above
+          the fold, so the panel opened on a half-cut sentence and four
+          suggestion buttons with no visible reason for being there. There is
+          nothing to follow until something has been said, so following starts
+          when it has.
+        */
+        <MessageScrollerProvider autoScroll={messages.length > 0}>
           <MessageScroller className="flex-1">
             <MessageScrollerViewport>
               <MessageScrollerContent className="p-5">
                 {messages.length === 0 && (
                   <MessageScrollerItem messageId="welcome">
-                    <div className="flex flex-col gap-6 pt-5 pb-3">
+                    <div className="assistant-welcome flex flex-col gap-6 pt-5 pb-3">
                       <div className="flex flex-col items-start gap-4">
                         <VoiceOrb key={chatEpoch} intro />
                         <div>
-                          <h2 className="text-2xl leading-tight font-medium tracking-[-0.02em]">
+                          <h2 className="assistant-welcome-title text-2xl leading-tight font-medium tracking-[-0.02em]">
                             Let’s talk it through.
                           </h2>
                           <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground">
@@ -965,22 +1007,38 @@ function AssistantSession({
           <Alert>
             <AlertDescription>
               <p>
-                {capabilities.data?.mode === "demo"
-                  ? "Preview the voice animation. This demo does not activate your microphone."
-                  : "Your microphone is sent to the speech service that powers this conversation. Transcripts are saved; recordings are not stored by TenderSense."}
+                {voiceUnavailable
+                  ? (VOICE_UNAVAILABLE[voiceReason ?? ""] ??
+                    "Live voice is not configured for this deployment. Everything else in the assistant works as usual.")
+                  : capabilities.data?.mode === "demo"
+                    ? "Preview the voice animation. This demo does not activate your microphone."
+                    : "Your microphone is sent to the speech service that powers this conversation. Transcripts are saved; recordings are not stored by TenderSense."}
               </p>
+              {/*
+                The setting, for the one reader who can change it. A member
+                being handed an environment variable name would be handed
+                somebody else's job.
+              */}
+              {voiceUnavailable && isSuperuser && voiceReason && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Set <code>{VOICE_SETTING[voiceReason]}</code> on the API and
+                  restart it.
+                </p>
+              )}
               <div className="mt-2 flex gap-2">
-                <Button size="sm" onClick={() => void startVoice()}>
-                  {capabilities.data?.mode === "demo"
-                    ? "Preview animation"
-                    : "Start live voice"}
-                </Button>
+                {!voiceUnavailable && (
+                  <Button size="sm" onClick={() => void startVoice()}>
+                    {capabilities.data?.mode === "demo"
+                      ? "Preview animation"
+                      : "Start live voice"}
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => setVoiceNotice(false)}
                 >
-                  Cancel
+                  {voiceUnavailable ? "Close" : "Cancel"}
                 </Button>
               </div>
             </AlertDescription>
@@ -1045,24 +1103,20 @@ function AssistantSession({
                   // the same grey a disabled control uses — so an enabled
                   // microphone looked switched off. Ink weight, brand on hover.
                   className="text-foreground hover:text-primary disabled:text-muted-foreground"
-                  aria-label="Start live voice"
-                  title={
-                    capabilities.data?.voice_enabled ||
-                    capabilities.data?.mode === "demo"
-                      ? "Start live voice"
-                      : "Live voice needs server configuration"
+                  aria-label={
+                    voiceUnavailable
+                      ? "Why live voice is unavailable"
+                      : "Start live voice"
                   }
-                  disabled={
-                    busy ||
-                    live ||
-                    loading ||
-                    (!capabilities.data?.voice_enabled &&
-                      capabilities.data?.mode !== "demo")
-                  }
+                  // Not disabled when voice is off, deliberately. A control
+                  // that does nothing and will not say why is the whole
+                  // complaint; this one answers the press with the reason, in
+                  // the panel rather than in a tooltip no phone will show.
+                  disabled={busy || live || loading}
                   onClick={() =>
-                    voiceNoticeSeen()
-                      ? void startVoice()
-                      : setVoiceNotice((value) => !value)
+                    voiceUnavailable || !voiceNoticeSeen()
+                      ? setVoiceNotice((value) => !value)
+                      : void startVoice()
                   }
                 >
                   <AudioLinesIcon />

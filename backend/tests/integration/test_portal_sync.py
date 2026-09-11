@@ -74,13 +74,24 @@ async def sources() -> AsyncIterator[None]:
 
 @pytest.fixture(autouse=True)
 async def drain_queued_scrapes() -> AsyncIterator[None]:
-    """Remove the jobs these tests queue, so no worker actually visits a portal."""
+    """Clear the scrape queue around each test, in both directions.
+
+    Before, because a scrape is deduplicated on a job id derived from the
+    source, and a developer running the stack has a worker that will have left
+    one behind — the endpoint would then correctly queue nothing, and the test
+    would read that as a broken endpoint. After, so these tests do not leave
+    real portal visits sitting on a real queue.
+    """
+    await _clear_scrape_jobs()
     yield
+    await _clear_scrape_jobs()
+
+
+async def _clear_scrape_jobs() -> None:
     redis = await get_queue()
-    async with session_scope() as session:
-        ids = (await session.scalars(select(TenderSource.id))).all()
-    for source_id in ids:
-        await redis.delete(f"arq:job:scrape:{source_id}")
+    keys = [key async for key in redis.scan_iter("arq:*scrape:*")]
+    if keys:
+        await redis.delete(*keys)
     await redis.delete("arq:queue:scrape")
 
 

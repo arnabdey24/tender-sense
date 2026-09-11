@@ -51,6 +51,21 @@ proxy at it with `VITE_API_PROXY_TARGET` in `frontend/.env.local`.
 stubs, so no Gemini key is needed for development. Set `AI_PROVIDER=gemini` and
 `GEMINI_API_KEY` for real matching.
 
+The assistant's **live voice** needs four settings agreeing, and `.env.example`
+ships the second one off, so a deployment copied from it has voice disabled:
+
+| Setting | Needs to be |
+|---|---|
+| `ASSISTANT_ENABLED` | `true` |
+| `ASSISTANT_VOICE_ENABLED` | `true` |
+| `AI_PROVIDER` | `gemini` — the offline stub has no live voice |
+| `GEMINI_API_KEY` | set |
+
+`APP_URL` must also be the origin people actually open, because the voice socket
+refuses any other. When voice is off the panel now says which of the four is
+missing, and names the setting if you are signed in as platform staff, so this
+table is a confirmation rather than the only way to find out.
+
 One thing to expect from the stub: it *ranks* correctly — the seeded IT tenders
 come out on top for the sample integrator — but its similarities sit well below
 the grade thresholds, which are fitted for real embeddings. So an offline demo

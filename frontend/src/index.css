@@ -501,6 +501,41 @@
 }
 
 /*
+ * A short window is the panel's hardest case, and the one it was losing.
+ *
+ * The compact panel is `min(740px, 100dvh - 3rem)`, so under about 760px of
+ * viewport its height is the window's, and the header, composer and footer take
+ * a fixed 200px of it whatever is left. On a 520px-tall window that leaves the
+ * conversation 225px — while the opening greeting alone, orb included, asks for
+ * roughly 270px. The result was an opening view with no whole sentence in it.
+ *
+ * So the greeting spends less where there is less: the orb goes (the header
+ * carries the mark, and it is decoration here), the title drops a step, and the
+ * gaps tighten. That buys back around 150px — enough for the welcome to be read
+ * in full and for the first suggestions to show beneath it, which is what tells
+ * the reader there is more.
+ *
+ * Keyed to the viewport rather than the panel because the panel's height is the
+ * viewport's at exactly these sizes; a container query would be measuring the
+ * same number one step further away.
+ */
+@media (max-height: 760px) {
+  .assistant-welcome {
+    gap: 1rem;
+    padding-top: 0;
+  }
+
+  .assistant-welcome .assistant-orb {
+    display: none;
+  }
+
+  .assistant-welcome-title {
+    font-size: 1.25rem;
+    letter-spacing: -0.014em;
+  }
+}
+
+/*
  * The orb reads amplitude as scale and state as motion, so it still says
  * something with colour removed or animation suppressed.
  */

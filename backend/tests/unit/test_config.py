@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.core.config import Settings
+from app.core.config import Settings, settings
 
 
 @pytest.fixture(autouse=True)
@@ -121,3 +121,43 @@ class TestSecretKeyPolicy:
         monkeypatch.setenv("SECRET_KEY", "short")
 
         assert Settings(_env_file=None).environment == "local"
+
+
+class TestVoiceUnavailableReason:
+    """Which of the four conditions live voice failed, and in which order.
+
+    The order is the message: a deployment that has switched voice off should be
+    told that, not told about a key it never meant to set.
+    """
+
+    def test_a_deployment_that_switched_voice_off_says_so(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.modules.assistant.router import _voice_unavailable_reason
+
+        monkeypatch.setattr(settings, "assistant_enabled", True)
+        monkeypatch.setattr(settings, "assistant_voice_enabled", False)
+        monkeypatch.setattr(settings, "gemini_api_key", "")
+
+        assert _voice_unavailable_reason() == "voice_off"
+
+    def test_voice_on_without_a_key_names_the_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.modules.assistant.router import _voice_unavailable_reason
+
+        monkeypatch.setattr(settings, "assistant_enabled", True)
+        monkeypatch.setattr(settings, "assistant_voice_enabled", True)
+        monkeypatch.setattr(settings, "gemini_api_key", "")
+
+        assert _voice_unavailable_reason() == "no_key"
+
+    def test_nothing_is_reported_when_voice_can_actually_run(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.modules.assistant.router import _voice_unavailable_reason
+
+        monkeypatch.setattr(settings, "assistant_enabled", True)
+        monkeypatch.setattr(settings, "assistant_voice_enabled", True)
+        monkeypatch.setattr(settings, "gemini_api_key", "a-key")
+        monkeypatch.setattr(settings, "ai_provider", "gemini")
+
+        assert _voice_unavailable_reason() is None

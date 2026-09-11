@@ -32,21 +32,39 @@ def enabled() -> None:
         raise NotFoundError("Assistant is disabled.")
 
 
+def _voice_unavailable_reason() -> str | None:
+    """The first condition live voice fails, in the order worth reporting.
+
+    Deployment intent first: a deployment that has switched voice off should say
+    so, rather than reporting a missing key it never wanted. The provider check
+    comes last because the offline stub is a development state, and the panel
+    already marks itself as demo when it is in one.
+    """
+    if not settings.assistant_enabled:
+        return "assistant_off"
+    if not settings.assistant_voice_enabled:
+        return "voice_off"
+    if not settings.gemini_api_key:
+        return "no_key"
+    if settings.ai_provider != "gemini":
+        return "provider_not_gemini"
+    return None
+
+
 @router.get("/capabilities", response_model=Capabilities)
 async def capabilities(_: CurrentOrg) -> Capabilities:
     configured = settings.ai_provider == "fake" or bool(settings.gemini_api_key)
+    reason = _voice_unavailable_reason()
     return Capabilities(
         enabled=settings.assistant_enabled,
-        voice_enabled=settings.assistant_enabled
-        and settings.assistant_voice_enabled
-        and bool(settings.gemini_api_key)
-        and settings.ai_provider == "gemini",
+        voice_enabled=reason is None,
         mode="demo"
         if settings.ai_provider == "fake"
         else "gemini"
         if configured
         else "unavailable",
         voice_max_seconds=settings.assistant_voice_max_seconds,
+        voice_unavailable_reason=reason,
     )
 
 

@@ -164,6 +164,19 @@ class Capabilities(BaseModel):
     voice_enabled: bool
     mode: Literal["gemini", "demo", "unavailable"]
     voice_max_seconds: int
+    voice_unavailable_reason: (
+        Literal["assistant_off", "voice_off", "no_key", "provider_not_gemini"] | None
+    ) = None
+    """Why live voice is off, when it is.
+
+    The interface had only the fact, and rendered it as a greyed button with a
+    tooltip — invisible on a touch screen, and silent about whether this is a
+    deployment that has voice switched off, one missing a key, or one running
+    the offline stub. Those want different sentences, and one of them wants an
+    operator rather than the person reading it.
+
+    Names a setting, never a value, so it stays safe to hand to any member.
+    """
 
 
 class VoiceTicket(BaseModel):

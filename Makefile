@@ -57,6 +57,11 @@ psql: ## Open a psql shell
 seed: ## Load the synthetic demo dataset
 	$(COMPOSE) run --rm api python -m scripts.seed_demo
 
+.PHONY: superuser
+superuser: ## Create or promote platform staff: make superuser EMAIL=you@example.com
+	@test -n "$(EMAIL)" || { echo 'Set EMAIL, e.g. make superuser EMAIL=you@example.com'; exit 1; }
+	$(COMPOSE) run --rm api python -m scripts.create_superuser --email "$(EMAIL)" $(ARGS)
+
 # --- backend quality ---
 .PHONY: install
 install: ## Install backend dependencies locally

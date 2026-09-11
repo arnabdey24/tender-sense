@@ -92,6 +92,25 @@ The `last_error` on a row names the cause. In order of likelihood:
 Retry a specific failed message with
 `POST /admin/email-outbox/{id}/retry`. The pump runs twice a minute.
 
+### Nobody can reach /admin
+
+The console refuses to let an operator revoke their own staff access or suspend
+their own account, so the usual way into this is a deployment that never had a
+superuser, or one whose only operator has left. Make another from the box:
+
+```bash
+docker compose run --rm api python -m scripts.create_superuser --email you@example.com
+```
+
+On an address that already exists this promotes it and leaves its password
+alone; add `--reset-password` if the password is what was lost. The generated
+password is printed once and is not recoverable afterwards.
+
+```bash
+docker compose exec db psql -U tendersense -d tendersense \
+  -c "select email, is_superuser, is_active from users where is_superuser;"
+```
+
 ### Live voice will not start
 
 Open the assistant and press the waveform button in the composer. It answers

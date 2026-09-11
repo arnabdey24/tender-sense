@@ -86,6 +86,32 @@ operator to undo it. That is what the command line above is for.
 Ordinary members need none of this. They see portal health and can pull the
 portals by hand under Settings → Sources.
 
+## Portals
+
+Three ship enabled, registered by migration rather than by a seed script, so a
+fresh deployment ingests something without anyone running anything.
+
+| Code | Source | How it is read |
+|---|---|---|
+| `egp_bd` | e-GP Bangladesh | HTML listing and detail pages, with a Playwright fallback for the pages that need a browser |
+| `wb` | World Bank procurement notices | Public JSON API |
+| `adb` | ADB procurement notices | The public SearchStax index the portal's own tenders page queries |
+
+`manual` is a fourth, disabled: it is the bucket that hand-added and imported
+notices attach to, not a portal.
+
+**ADB needs a token, and it is not ours.** Scraping `adb.org` does not work —
+the tenders page is behind Cloudflare and renders client-side — so the adapter
+queries the same search index the page does, with the read-only token that page
+ships to every visitor. ADB may rotate it. If the portal goes degraded with a
+401 or 403, open the tenders page, copy the `Authorization` token from its
+network tab, and paste it into the portal's `token` config under **Operations →
+Portals**. No deploy needed; that is why it lives in the source row.
+
+Adding a portal is an adapter in `backend/app/ingestion/adapters/`, an entry in
+`DEFAULT_PORTALS` (`backend/app/ingestion/portals.py`), and a migration that
+installs it for deployments which already ran the earlier one.
+
 If any of those ports is already taken on your machine, change `API_PORT_HOST`,
 `HTTP_PORT` or `HTTPS_PORT` in `.env`. When you move the API, point the Vite dev
 proxy at it with `VITE_API_PROXY_TARGET` in `frontend/.env.local`.

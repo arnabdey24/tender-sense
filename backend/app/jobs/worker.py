@@ -47,6 +47,7 @@ from app.jobs.tasks.matching import (
     process_tender,
     process_unprocessed_tenders,
     rematch_org,
+    sweep_unanalysed_tenders,
 )
 from app.jobs.tasks.notifications import (
     alert_sources_down,
@@ -123,6 +124,10 @@ class WorkerSettings:
         cron(pump_email_outbox, second=set(PUMP_CRON_SECOND), run_at_startup=False),
         # Four passes a day, off-peak in Dhaka, to stay polite to an old portal.
         cron(scrape_all_sources, hour={2, 8, 14, 20}, minute=0, run_at_startup=False),
+        # Twenty minutes behind the scrape, so a pass that is still fetching is
+        # not swept mid-flight — and on the same six-hourly rhythm, because
+        # what it collects is what the manual syncs left for everyone else.
+        cron(sweep_unanalysed_tenders, hour={2, 8, 14, 20}, minute=20, run_at_startup=False),
         # Housekeeping in the quiet hour, each a few minutes apart so a slow
         # one does not delay the next.
         cron(close_expired_tenders, hour={2}, minute=10, run_at_startup=False),

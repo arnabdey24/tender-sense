@@ -26,8 +26,9 @@ test("an unauthenticated visitor is redirected from /app to /login", async ({
 
 /**
  * Full identity journey. Skipped by default: it needs a live backend plus a way
- * to read the verification token out of the outbound mail (MailHog/Mailpit or a
- * test-only endpoint). Unskip once the harness exposes that, and run with
+ * to read the verification token out of the outbound mail (a test-only
+ * endpoint, now that there is no local inbox). Unskip once the harness exposes
+ * that, and run with
  * `VITE_API_PROXY_TARGET` pointed at the API.
  */
 test.skip("register → verify → create org → dashboard", async ({ page }) => {

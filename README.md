@@ -37,7 +37,6 @@ Once the stack is up:
 | API docs | http://localhost:8000/docs |
 | Health probe | http://localhost:8000/api/v1/health/ready |
 | Prometheus metrics | http://localhost:8000/metrics |
-| Mailpit inbox | http://localhost:8025 |
 | Vite dev server | http://localhost:5173 after `make fe-dev` |
 
 ### Platform staff
@@ -210,6 +209,33 @@ VM is reachable from the internet the moment it exists.
 make backup               # database dump + blob archive into ./backups
 ```
 
+Also you can use cli:
+
+For dependencies
+```bash
+docker compose up -d db redis 
+```
+
+Run backend
+```bash
+cd backend
+source .venv/bin/activate
+uvicorn app.main:app --reload --port 8020 
+
+uv run arq app.jobs.worker.ScrapeWorkerSettings   # fetches notices from the portals
+uv run arq app.jobs.worker.WorkerSettings         # extraction, matching, grades, email
+```
+
+For migrations
+```bash
+uv run alembic upgrade head
+```
+
+Run frontend
+```bash
+npm run dev
+```
+
 Back both up: the database holds the accounts and decisions, and the blob volume
 holds raw portal payloads, which for many closed notices is the only copy left
 anywhere — and the only thing that makes a broken parser fixable after the fact.
@@ -240,8 +266,12 @@ it needs are listed at the top of `.github/workflows/deploy.yml`.
 portal goes quiet, why mail is not arriving, how to restore a backup, which
 metrics are worth alerting on, and what is safe to restart.
 
-Caddy terminates TLS for `DOMAIN` automatically. Outbound email needs SPF and
-DKIM configured for the sending domain.
+Caddy terminates TLS for `DOMAIN` automatically. Outbound email goes through
+Gmail SMTP: `SMTP_USER` is the mailbox and `SMTP_PASSWORD` is a 16-character
+App Password, not the account password. Google rewrites `From` to that mailbox
+unless `EMAIL_FROM` is an address the account is verified to send as, and caps
+sending at roughly 500 messages a day on a consumer account or 2,000 on
+Workspace. SPF and DKIM still have to list Google for the sending domain.
 
 ## Documentation
 

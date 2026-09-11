@@ -12,7 +12,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Path
 
-from app.core.deps import CurrentUser, DbSession
+from app.core.deps import CurrentUser, DbSession, OptionalOrg
 from app.core.pagination import Page, PageParams, page_params
 from app.modules.tenders import repository as repo
 from app.modules.tenders import service
@@ -67,7 +67,7 @@ async def sync_status(_: CurrentUser, db: DbSession) -> SyncState:
 
 
 @router.post("/sources/sync", response_model=SyncState)
-async def sync_sources(_: CurrentUser, db: DbSession) -> SyncState:
+async def sync_sources(ctx: OptionalOrg, db: DbSession) -> SyncState:
     """Pull every portal now.
 
     Any signed-in member, deliberately, rather than platform staff only. A
@@ -82,4 +82,4 @@ async def sync_sources(_: CurrentUser, db: DbSession) -> SyncState:
     running since 2011. Pressing inside that window is answered with the wait,
     not an error — see ``service.sync_sources``.
     """
-    return await service.sync_sources(db)
+    return await service.sync_sources(db, org_id=ctx.org_id if ctx else None)

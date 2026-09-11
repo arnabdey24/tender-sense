@@ -1021,6 +1021,66 @@ retyping nine fields. `useUpdateProject` ships, and the dialog now serves both
 paths — they differ only in which mutation they end with — with a pencil on
 each row and a form that opens on what is stored.
 
+**Separating the manual sync from the scheduled one.** *(shipped)*
+
+Requested after an organization pressed Sync now, watched 44 notices arrive,
+and saw nothing graded. The pull and the grading are one job today, so
+"nothing happened" and "nothing could be graded for you" look identical.
+
+What already exists and does not need building: `cron(scrape_all_sources,
+hour={2, 8, 14, 20})` is the six-hourly pass, and `process_tender` already ends
+in `notify_instant`, so a new match already raises an alert.
+
+What changes: a manual sync should analyse only for the organization that
+pressed it, while still storing what it scraped for everyone. So
+`sync_sources` takes the requesting org, `scrape_source` carries it, and
+`process_tender` gains an `only_org_id` that narrows `orgs_with_profiles` to
+one tenant.
+
+**The trap that makes this more than a parameter.** `needs_processing` is
+decided at upsert: new or amended. A notice stored by an org-scoped manual sync
+is, on the next scheduled pass, neither — so nothing would ever enqueue it for
+the other tenants and it would stay ungraded for them permanently. Passing the
+org through without closing this converts a transient stranding into a
+designed one. The fix is a marker on the tender — `analysed_at`, null until a
+pass has matched it for every tenant — which the six-hourly cron sweeps:
+`process_tender` for anything still null. Migration `0014_tender_analysed_at`
+adds it, backfilled to `now()` so the first sweep after deploying does not
+re-run the whole pool and the model spend with it.
+
+`sweep_unanalysed_tenders` runs at `hour={2, 8, 14, 20}, minute=20` — twenty
+past the scrape, so a pass still fetching is not swept mid-flight — and takes
+200 rows at a time, because a sweep that enqueued the whole backlog at once
+would spend a day's model budget in one tick. It is deliberately distinct from
+`process_unprocessed_tenders`, which looks for notices with *no extraction*: a
+pipeline that never ran, rather than one that ran for a single tenant.
+
+Two details worth keeping. A scoped run and a full one carry different arq job
+ids (`process:{id}` vs `process:{id}:{org}`) — sharing one would let whichever
+arrived first cancel the other, and the sweep being dropped is the expensive
+direction. And the endpoint takes `OptionalOrg` rather than `CurrentOrg`:
+platform staff created from the command line have no membership, and refusing
+them a deployment-wide control is how the operations console once ended up
+unreachable by the account most likely to need it. No org means no scoping —
+a tenant-wide pass, which is the safe default.
+
+Notifications needed no work: `process_tender` already ends in `notify_instant`
+whenever anything matched, and a scoped pass matches for the presser, so a
+manual sync raises alerts exactly as the schedule does.
+
+**The threshold, shipped.** `PROFILE_SYNC_THRESHOLD = 50` in
+`features/sources/use-portal-sync.ts`. Under it, the sync panel carries a
+warning naming the score and linking to the profile; the button still works,
+because the pool is shared and the notices are worth pulling for every other
+tenant. Blocking it would let one empty profile deny a whole deployment its
+notices, including the auto-sync that fills an empty pool on a fresh install.
+
+Worth recording: completeness and *scorability* are not the same. Only
+overview, services, sectors+geographies and past projects produce embeddings;
+turnover and certifications are worth 20 points between them and produce none.
+A profile can score 20 and match nothing, which is why the warning names a
+score rather than claiming the profile is empty.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

@@ -38,3 +38,4 @@ backend/data/blobs/
 .impeccable/hook.cache.json
 .impeccable/config.local.json
 .impeccable/review/
+backend/.local/

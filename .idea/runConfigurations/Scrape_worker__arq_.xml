@@ -1,0 +1,30 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Scrape worker (arq)" type="PythonConfigurationType" factoryName="Python">
+    <module name="TenderSence" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="PARENT_ENVS" value="true" />
+    <envs>
+      <env name="PYTHONUNBUFFERED" value="1" />
+      <!-- Compose points these at the service names `db` and `redis`; from the
+           host the same containers answer on localhost. -->
+      <env name="POSTGRES_HOST" value="localhost" />
+      <env name="REDIS_HOST" value="localhost" />
+      <!-- The container writes blobs to /var/lib; that path is not writable here. -->
+      <env name="BLOB_STORAGE_DIR" value="$PROJECT_DIR$/backend/.local/blobs" />
+    </envs>
+    <option name="SDK_HOME" value="$PROJECT_DIR$/backend/.venv/bin/python" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backend" />
+    <option name="IS_MODULE_SDK" value="false" />
+    <option name="ADD_CONTENT_ROOTS" value="true" />
+    <option name="ADD_SOURCE_ROOTS" value="true" />
+    <option name="SCRIPT_NAME" value="" />
+    <option name="PARAMETERS" value="app.jobs.worker.ScrapeWorkerSettings" />
+    <option name="MODULE_MODE" value="true" />
+    <option name="MODULE_NAME" value="arq" />
+    <option name="REDIRECT_INPUT" value="false" />
+    <option name="EMULATE_TERMINAL" value="false" />
+    <option name="SHOW_COMMAND_LINE" value="false" />
+    <option name="RUN_WITH_PTY" value="true" />
+    <method v="2" />
+  </configuration>
+</component>

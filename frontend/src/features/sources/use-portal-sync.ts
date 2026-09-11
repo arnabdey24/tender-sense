@@ -1,11 +1,20 @@
 import * as React from "react"
 
 import { countdown } from "@/lib/data/time"
+import { useCompleteness } from "@/features/profile/api"
 import {
   useSyncSources,
   useSyncState,
   type SyncState,
 } from "@/features/sources/api"
+
+/**
+ * Below this, a sync is still worth running — the pool is shared, and the
+ * notices arrive for everyone — but the organization that pressed the button
+ * will not see a grade against any of them, which is not what pressing it
+ * looks like it promises.
+ */
+export const PROFILE_SYNC_THRESHOLD = 50
 
 /**
  * Tick a server-issued wait down locally.
@@ -46,6 +55,10 @@ type SyncControl = {
   disabled: boolean
   label: string
   press: () => void
+  /** The profile is too thin for anything this pulls to be graded. */
+  profileThin: boolean
+  /** What the profile scores now, or undefined until it is known. */
+  completeness: number | undefined
 }
 
 /**
@@ -55,13 +68,21 @@ type SyncControl = {
 export function usePortalSync(): SyncControl {
   const state = useSyncState()
   const sync = useSyncSources()
+  const completeness = useCompleteness()
   const waiting = useCountdown(state.data?.retry_after_seconds ?? 0)
   const running = state.data?.running ?? false
+
+  // Unknown is not thin: a warning shown while the score is still loading
+  // would flash on every page that carries the button.
+  const score = completeness.data?.score
+  const profileThin = score !== undefined && score < PROFILE_SYNC_THRESHOLD
 
   return {
     state: state.data,
     running,
     waiting,
+    profileThin,
+    completeness: score,
     disabled: sync.isPending || running || waiting > 0 || state.isPending,
     label: running
       ? "Syncing…"

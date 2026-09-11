@@ -126,6 +126,26 @@ async def get_current_org(
 CurrentOrg = Annotated[OrgContext, Depends(get_current_org)]
 
 
+async def get_optional_org(
+    request: Request, session: DbSession, user: CurrentUser, credentials: BearerToken
+) -> OrgContext | None:
+    """The active organization, or ``None`` when there isn't one.
+
+    For endpoints a signed-in user may call whether or not they belong to an
+    organization — platform staff created from the command line have no
+    membership at all, and refusing them a control the whole deployment shares
+    is how the operations console ended up unreachable by the one account most
+    likely to need it.
+    """
+    try:
+        return await get_current_org(request, session, user, credentials)
+    except PermissionDeniedError:
+        return None
+
+
+OptionalOrg = Annotated[OrgContext | None, Depends(get_optional_org)]
+
+
 async def require_org_admin(context: CurrentOrg) -> OrgContext:
     if not context.is_admin:
         raise PermissionDeniedError(

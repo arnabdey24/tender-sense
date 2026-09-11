@@ -68,11 +68,14 @@ class Settings(BaseSettings):
     google_client_secret: SecretStr | None = None
 
     # --- email ---
-    smtp_host: str = "mailpit"
-    smtp_port: int = 1025
+    #: Gmail on 587. The password is a 16-character App Password, never the
+    #: account password, and Google rewrites ``From`` to ``smtp_user`` unless
+    #: ``email_from`` is an address that account is verified to send as.
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
     smtp_user: str | None = None
     smtp_password: SecretStr | None = None
-    smtp_starttls: bool = False
+    smtp_starttls: bool = True
     smtp_ssl: bool = False
     email_from: str = "TenderSense <no-reply@tendersense.local>"
     email_reply_to: str | None = None

@@ -100,6 +100,7 @@ async def _store_one(
     data: Any,
     documents: list[Any],
     result: dict[str, Any],
+    only_org_id: str | None = None,
 ) -> None:
     """Commit one notice and queue whatever it earns.
 
@@ -130,7 +131,7 @@ async def _store_one(
             result["unchanged"] += 1
 
         if outcome.needs_processing:
-            await enqueue_processing(str(outcome.tender_id))
+            await enqueue_processing(str(outcome.tender_id), only_org_id=only_org_id)
             result["queued"] += 1
     except Exception as exc:
         result["failed"] += 1
@@ -144,9 +145,18 @@ async def _store_one(
 
 @tracked_job
 async def scrape_source(
-    ctx: dict[str, Any], source_id: str, limit_pages: int | None = None
+    ctx: dict[str, Any],
+    source_id: str,
+    limit_pages: int | None = None,
+    only_org_id: str | None = None,
 ) -> dict[str, Any]:
-    """Fetch, store and upsert one portal's recent notices."""
+    """Fetch, store and upsert one portal's recent notices.
+
+    ``only_org_id`` scopes the analysis that follows to one tenant — what a
+    manual sync does. The person who pressed the button gets their grades now;
+    everyone else is served by the six-hourly sweep, which is what keeps a
+    scoped pass from hiding notices from the rest of the deployment.
+    """
     started = utcnow()
     result: dict[str, Any] = {
         "source_id": source_id,
@@ -253,6 +263,7 @@ async def scrape_source(
                     data=data,
                     documents=documents,
                     result=result,
+                    only_org_id=only_org_id,
                 )
                 consecutive_failures = 0
             if fatal:
@@ -332,7 +343,9 @@ async def _finish(
     await session.flush()
 
 
-async def enqueue_scrape_source(source_id: UUID, code: str) -> str | None:
+async def enqueue_scrape_source(
+    source_id: UUID, code: str, *, only_org_id: str | None = None
+) -> str | None:
     """Put one portal on the scrape queue, and say whether it went.
 
     Deduplicated on the source, so a second request while a pass is queued or
@@ -343,12 +356,18 @@ async def enqueue_scrape_source(source_id: UUID, code: str) -> str | None:
 
     Returns the job id, or ``None`` when the job was already queued or Redis is
     unreachable; a caller that reports "queued" must only do so if it was.
+
+    ``only_org_id`` narrows the *analysis* to one tenant, which is what a
+    hand-pressed sync wants. Fetching and storing are unchanged: the notices
+    land in the shared pool either way.
     """
     try:
         queue = await get_queue()
         job = await queue.enqueue_job(
             "scrape_source",
             str(source_id),
+            None,
+            only_org_id,
             _queue_name=QUEUE_SCRAPE,
             _job_id=f"scrape:{source_id}",
         )

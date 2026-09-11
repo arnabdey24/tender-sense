@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Frontend (vite)" type="js.build_tools.npm">
+    <package-json value="$PROJECT_DIR$/frontend/package.json" />
+    <command value="run" />
+    <scripts>
+      <script value="dev" />
+    </scripts>
+    <node-interpreter value="project" />
+    <envs>
+      <!-- Vite proxies /api and /openapi.json here. Defaults to :8000, which
+           another project's gateway owns on this machine. -->
+      <env name="VITE_API_PROXY_TARGET" value="http://localhost:8020" />
+    </envs>
+    <method v="2" />
+  </configuration>
+</component>

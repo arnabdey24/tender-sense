@@ -1,4 +1,4 @@
-# Local development: exposed ports, hot reload, Mailpit.
+# Local development: exposed ports and hot reload.
 services:
   db:
     ports:
@@ -46,15 +46,3 @@ services:
     volumes:
       - ./backend/app:/app/app
       - ./backend/data:/app/data
-
-  mailpit:
-    image: axllent/mailpit:latest
-    environment:
-      MP_MAX_MESSAGES: "500"
-      MP_SMTP_AUTH_ACCEPT_ANY: "1"
-      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
-    ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"
-      # Published so tests and scripts running on the host can send mail.
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"
-    restart: unless-stopped

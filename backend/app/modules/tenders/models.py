@@ -164,6 +164,14 @@ class Tender(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     portal_metadata: Mapped[dict[str, Any]] = mapped_column(default=dict, server_default="{}")
     first_seen_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
     last_seen_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
+    #: When a pass last matched this notice for *every* tenant.
+    #:
+    #: A manual sync scores only for the organization that asked, so what it
+    #: stores would otherwise be invisible to everyone else forever — the next
+    #: scheduled pass sees the notice as neither new nor amended and enqueues
+    #: nothing. Null means "no tenant-wide pass has reached this yet", and the
+    #: six-hourly sweep exists to find exactly those rows.
+    analysed_at: Mapped[datetime | None] = mapped_column(default=None, index=True)
     search_tsv: Mapped[str | None] = mapped_column(
         TSVECTOR,
         Computed(

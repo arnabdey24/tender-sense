@@ -83,8 +83,3 @@ services:
       - "80:80"
       - "443:443"
     restart: always
-
-  # Mailpit is a development inbox. Leaving it running in production would
-  # publish a web UI showing every message the system has ever sent.
-  mailpit:
-    profiles: ["donotstart"]

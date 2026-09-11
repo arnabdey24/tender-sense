@@ -143,7 +143,13 @@ function TendersPage() {
   )
 
   // A view preference, not a filter: it belongs to the reader, not the URL.
-  const [pageSize, setPageSize] = usePersistentState("tenders:page-size", 10)
+  const [pageSize, setPageSize] = usePersistentState(
+    // The key moves with the default. A reader who never chose a size has 10
+    // stored from the old default, and silently keeping it would mean the new
+    // one never reaches anybody who had already visited the page.
+    "tenders:page-size:v2",
+    15
+  )
 
   const sortField: TenderSort = search.sort ?? "published_at"
   const descending = search.desc ?? DEFAULT_DESC[sortField]

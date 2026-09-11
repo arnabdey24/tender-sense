@@ -10,8 +10,14 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 
-/** How many rows a reader can ask for at once. */
-const PAGE_SIZES = [10, 25, 50, 100] as const
+/**
+ * How many rows a reader can ask for at once.
+ *
+ * 15 joins the set and leads it: ten filled about half the height of a desk
+ * monitor, which spends a scan on a page that could have shown half again as
+ * much. The larger steps stay for someone working through a backlog.
+ */
+const PAGE_SIZES = [15, 25, 50, 100] as const
 
 /**
  * Where you are in a result set, and how to move.

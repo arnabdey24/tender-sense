@@ -170,3 +170,55 @@ export function useSyncSources() {
     onError: (error) => reportFailure(error, "Could not start the sync"),
   })
 }
+
+/** Adapter keys this build knows, so registering a portal is a choice. */
+export function useAdapters() {
+  return useQuery<string[], ApiError>({
+    queryKey: qk.admin.adapters(),
+    queryFn: () => unwrap(api.GET("/api/v1/admin/adapters")),
+    staleTime: Infinity,
+  })
+}
+
+export function useCreateSource() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    SourceAdminRead,
+    ApiError,
+    components["schemas"]["SourceCreate"]
+  >({
+    mutationFn: (body) => unwrap(api.POST("/api/v1/admin/sources", { body })),
+    onSuccess: (source) => {
+      toast.add({
+        type: "success",
+        title: `${source.name} registered`,
+        description: "It joins the schedule, and can be pulled now from Sources.",
+      })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.all() })
+      void queryClient.invalidateQueries({ queryKey: qk.tenders.sources() })
+    },
+    onError: (error) => reportFailure(error, "Could not register the portal"),
+  })
+}
+
+export function useUpdateSource() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    SourceAdminRead,
+    ApiError,
+    { id: string } & components["schemas"]["SourceUpdate"]
+  >({
+    mutationFn: ({ id, ...body }) =>
+      unwrap(
+        api.PATCH("/api/v1/admin/sources/{source_id}", {
+          params: { path: { source_id: id } },
+          body,
+        })
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.admin.all() })
+      void queryClient.invalidateQueries({ queryKey: qk.tenders.sources() })
+    },
+    onError: (error) => reportFailure(error, "Could not update the portal"),
+  })
+}

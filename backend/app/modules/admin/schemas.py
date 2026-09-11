@@ -175,3 +175,80 @@ class AiUsageSummary(BaseModel):
     daily_token_budget: int
     spent_today: int
     rows: list[AiUsageRow] = Field(default_factory=list)
+
+
+class SourceHealthCount(BaseModel):
+    code: str
+    name: str
+    health: str
+    #: `manual` is a bucket for hand-entered notices and is disabled. Without
+    #: this the console listed it beside the portals as healthy and never
+    #: scraped, which reads as a portal that has been silent forever.
+    enabled: bool
+    last_success_at: datetime | None = None
+    tenders: int
+
+
+class Overview(BaseModel):
+    """What an operator opens the console to find out.
+
+    One request, because the question is "is anything wrong right now" and
+    answering it from six endpoints means six chances to show a page that is
+    half stale.
+    """
+
+    tenders: int
+    tenders_open: int
+    tenders_added_today: int
+    organizations: int
+    organizations_active: int
+    users: int
+    users_active: int
+    sources: list[SourceHealthCount] = Field(default_factory=list)
+    jobs_failed_24h: int
+    scrapes_failed_24h: int
+    email_queued: int
+    email_failed: int
+    ai_tokens_today: int
+    ai_daily_token_budget: int
+
+
+class OrganizationAdminRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    slug: str
+    country: str | None = None
+    plan: str
+    is_active: bool
+    created_at: datetime
+    members: int
+    #: Newest decision or match the organization has, so a dormant tenant is
+    #: visible without opening it.
+    last_activity_at: datetime | None = None
+
+
+class UserAdminRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    email: str
+    full_name: str
+    is_active: bool
+    is_superuser: bool
+    email_verified: bool
+    last_login_at: datetime | None = None
+    created_at: datetime
+    organizations: list[str] = Field(default_factory=list)
+
+
+class UserAdminUpdate(BaseModel):
+    """Only the two flags platform staff have any business changing here.
+
+    Names, emails and passwords belong to the person who owns the account; an
+    operator needing to suspend one does not need to be able to rewrite it.
+    """
+
+    is_active: bool | None = None
+    is_superuser: bool | None = None

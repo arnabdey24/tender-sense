@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as AppAccountRouteImport } from './routes/_app/account'
+import { Route as AppAdminRouteImport } from './routes/_app/admin'
 import { Route as AuthForgotPasswordRouteImport } from './routes/_auth/forgot-password'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
@@ -23,6 +24,10 @@ import { Route as InviteAcceptRouteImport } from './routes/invite/accept'
 import { Route as NotificationsUnsubscribeRouteImport } from './routes/notifications/unsubscribe'
 import { Route as NotificationsVerifyRouteImport } from './routes/notifications/verify'
 import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
+import { Route as AppAdminJobsRouteImport } from './routes/_app/admin/jobs'
+import { Route as AppAdminLimitsRouteImport } from './routes/_app/admin/limits'
+import { Route as AppAdminSourcesRouteImport } from './routes/_app/admin/sources'
+import { Route as AppAdminTenantsRouteImport } from './routes/_app/admin/tenants'
 import { Route as AppAppIndexRouteImport } from './routes/_app/app/index'
 import { Route as AppAppDashboardRouteImport } from './routes/_app/app/dashboard'
 import { Route as AppAppMatchesRouteImport } from './routes/_app/app/matches'
@@ -62,6 +67,11 @@ const HealthRoute = HealthRouteImport.update({
 const AppAccountRoute = AppAccountRouteImport.update({
   id: '/account',
   path: '/account',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => AppRoute,
 } as any)
 const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
@@ -106,9 +116,29 @@ const NotificationsVerifyRoute = NotificationsVerifyRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAdminIndexRoute = AppAdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
-  getParentRoute: () => AppRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminJobsRoute = AppAdminJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminLimitsRoute = AppAdminLimitsRouteImport.update({
+  id: '/limits',
+  path: '/limits',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminSourcesRoute = AppAdminSourcesRouteImport.update({
+  id: '/sources',
+  path: '/sources',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminTenantsRoute = AppAdminTenantsRouteImport.update({
+  id: '/tenants',
+  path: '/tenants',
+  getParentRoute: () => AppAdminRoute,
 } as any)
 const AppAppIndexRoute = AppAppIndexRouteImport.update({
   id: '/app/',
@@ -202,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/health': typeof HealthRoute
   '/account': typeof AppAccountRoute
+  '/admin': typeof AppAdminRouteWithChildren
   '/forgot-password': typeof AuthForgotPasswordRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
@@ -210,6 +241,10 @@ export interface FileRoutesByFullPath {
   '/invite/accept': typeof InviteAcceptRoute
   '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/notifications/verify': typeof NotificationsVerifyRoute
+  '/admin/jobs': typeof AppAdminJobsRoute
+  '/admin/limits': typeof AppAdminLimitsRoute
+  '/admin/sources': typeof AppAdminSourcesRoute
+  '/admin/tenants': typeof AppAdminTenantsRoute
   '/app/dashboard': typeof AppAppDashboardRoute
   '/app/matches': typeof AppAppMatchesRoute
   '/app/notifications': typeof AppAppNotificationsRoute
@@ -241,6 +276,10 @@ export interface FileRoutesByTo {
   '/invite/accept': typeof InviteAcceptRoute
   '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/notifications/verify': typeof NotificationsVerifyRoute
+  '/admin/jobs': typeof AppAdminJobsRoute
+  '/admin/limits': typeof AppAdminLimitsRoute
+  '/admin/sources': typeof AppAdminSourcesRoute
+  '/admin/tenants': typeof AppAdminTenantsRoute
   '/app/dashboard': typeof AppAppDashboardRoute
   '/app/matches': typeof AppAppMatchesRoute
   '/app/notifications': typeof AppAppNotificationsRoute
@@ -267,6 +306,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/health': typeof HealthRoute
   '/_app/account': typeof AppAccountRoute
+  '/_app/admin': typeof AppAdminRouteWithChildren
   '/_auth/forgot-password': typeof AuthForgotPasswordRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
@@ -275,6 +315,10 @@ export interface FileRoutesById {
   '/invite/accept': typeof InviteAcceptRoute
   '/notifications/unsubscribe': typeof NotificationsUnsubscribeRoute
   '/notifications/verify': typeof NotificationsVerifyRoute
+  '/_app/admin/jobs': typeof AppAdminJobsRoute
+  '/_app/admin/limits': typeof AppAdminLimitsRoute
+  '/_app/admin/sources': typeof AppAdminSourcesRoute
+  '/_app/admin/tenants': typeof AppAdminTenantsRoute
   '/_app/app/dashboard': typeof AppAppDashboardRoute
   '/_app/app/matches': typeof AppAppMatchesRoute
   '/_app/app/notifications': typeof AppAppNotificationsRoute
@@ -300,6 +344,7 @@ export interface FileRouteTypes {
     | '/'
     | '/health'
     | '/account'
+    | '/admin'
     | '/forgot-password'
     | '/login'
     | '/register'
@@ -308,6 +353,10 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/notifications/unsubscribe'
     | '/notifications/verify'
+    | '/admin/jobs'
+    | '/admin/limits'
+    | '/admin/sources'
+    | '/admin/tenants'
     | '/app/dashboard'
     | '/app/matches'
     | '/app/notifications'
@@ -339,6 +388,10 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/notifications/unsubscribe'
     | '/notifications/verify'
+    | '/admin/jobs'
+    | '/admin/limits'
+    | '/admin/sources'
+    | '/admin/tenants'
     | '/app/dashboard'
     | '/app/matches'
     | '/app/notifications'
@@ -364,6 +417,7 @@ export interface FileRouteTypes {
     | '/_auth'
     | '/health'
     | '/_app/account'
+    | '/_app/admin'
     | '/_auth/forgot-password'
     | '/_auth/login'
     | '/_auth/register'
@@ -372,6 +426,10 @@ export interface FileRouteTypes {
     | '/invite/accept'
     | '/notifications/unsubscribe'
     | '/notifications/verify'
+    | '/_app/admin/jobs'
+    | '/_app/admin/limits'
+    | '/_app/admin/sources'
+    | '/_app/admin/tenants'
     | '/_app/app/dashboard'
     | '/_app/app/matches'
     | '/_app/app/notifications'
@@ -440,6 +498,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAccountRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_auth/forgot-password': {
       id: '/_auth/forgot-password'
       path: '/forgot-password'
@@ -498,10 +563,38 @@ declare module '@tanstack/react-router' {
     }
     '/_app/admin/': {
       id: '/_app/admin/'
-      path: '/admin'
+      path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AppAdminIndexRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/jobs': {
+      id: '/_app/admin/jobs'
+      path: '/jobs'
+      fullPath: '/admin/jobs'
+      preLoaderRoute: typeof AppAdminJobsRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/limits': {
+      id: '/_app/admin/limits'
+      path: '/limits'
+      fullPath: '/admin/limits'
+      preLoaderRoute: typeof AppAdminLimitsRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/sources': {
+      id: '/_app/admin/sources'
+      path: '/sources'
+      fullPath: '/admin/sources'
+      preLoaderRoute: typeof AppAdminSourcesRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/tenants': {
+      id: '/_app/admin/tenants'
+      path: '/tenants'
+      fullPath: '/admin/tenants'
+      preLoaderRoute: typeof AppAdminTenantsRouteImport
+      parentRoute: typeof AppAdminRoute
     }
     '/_app/app/': {
       id: '/_app/app/'
@@ -625,14 +718,34 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppAdminRouteChildren {
+  AppAdminJobsRoute: typeof AppAdminJobsRoute
+  AppAdminLimitsRoute: typeof AppAdminLimitsRoute
+  AppAdminSourcesRoute: typeof AppAdminSourcesRoute
+  AppAdminTenantsRoute: typeof AppAdminTenantsRoute
+  AppAdminIndexRoute: typeof AppAdminIndexRoute
+}
+
+const AppAdminRouteChildren: AppAdminRouteChildren = {
+  AppAdminJobsRoute: AppAdminJobsRoute,
+  AppAdminLimitsRoute: AppAdminLimitsRoute,
+  AppAdminSourcesRoute: AppAdminSourcesRoute,
+  AppAdminTenantsRoute: AppAdminTenantsRoute,
+  AppAdminIndexRoute: AppAdminIndexRoute,
+}
+
+const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
+  AppAdminRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAccountRoute: typeof AppAccountRoute
+  AppAdminRoute: typeof AppAdminRouteWithChildren
   AppAppDashboardRoute: typeof AppAppDashboardRoute
   AppAppMatchesRoute: typeof AppAppMatchesRoute
   AppAppNotificationsRoute: typeof AppAppNotificationsRoute
   AppAppPipelineRoute: typeof AppAppPipelineRoute
   AppAppTodayRoute: typeof AppAppTodayRoute
-  AppAdminIndexRoute: typeof AppAdminIndexRoute
   AppAppIndexRoute: typeof AppAppIndexRoute
   AppOnboardingIndexRoute: typeof AppOnboardingIndexRoute
   AppAppSettingsMembersRoute: typeof AppAppSettingsMembersRoute
@@ -648,12 +761,12 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAccountRoute: AppAccountRoute,
+  AppAdminRoute: AppAdminRouteWithChildren,
   AppAppDashboardRoute: AppAppDashboardRoute,
   AppAppMatchesRoute: AppAppMatchesRoute,
   AppAppNotificationsRoute: AppAppNotificationsRoute,
   AppAppPipelineRoute: AppAppPipelineRoute,
   AppAppTodayRoute: AppAppTodayRoute,
-  AppAdminIndexRoute: AppAdminIndexRoute,
   AppAppIndexRoute: AppAppIndexRoute,
   AppOnboardingIndexRoute: AppOnboardingIndexRoute,
   AppAppSettingsMembersRoute: AppAppSettingsMembersRoute,

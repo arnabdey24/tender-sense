@@ -6,9 +6,9 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.core.exceptions import NotFoundError
 from app.core.pagination import Page, PageParams
+from app.core.platform_settings import get_limits
 from app.core.rate_limit import claim_cooldown, cooldown_remaining
 from app.core.time import days_between, utcnow
 from app.jobs.runs import RunStatus
@@ -121,6 +121,7 @@ SYNC_COOLDOWN_KEY = "portal-sync"
 
 async def _sync_state(session: AsyncSession, *, retry_after: int, queued: list[str]) -> SyncState:
     """Every portal's sync position, from the source rows and their newest run."""
+    cooldown = (await get_limits(session)).source_sync_cooldown_seconds
     sources = await repo.list_sources(session)
     latest = await repo.latest_scraper_runs(session, [source.id for source in sources])
 
@@ -152,7 +153,7 @@ async def _sync_state(session: AsyncSession, *, retry_after: int, queued: list[s
         portals=portals,
         running=any(portal.running for portal in portals),
         retry_after_seconds=retry_after,
-        cooldown_seconds=settings.source_sync_cooldown_seconds,
+        cooldown_seconds=cooldown,
         queued=queued,
     )
 
@@ -188,9 +189,8 @@ async def sync_sources(session: AsyncSession) -> SyncState:
         # spend the cooldown on a press that queued nothing.
         return state
 
-    retry_after = await claim_cooldown(
-        SYNC_COOLDOWN_KEY, seconds=settings.source_sync_cooldown_seconds
-    )
+    cooldown = (await get_limits(session)).source_sync_cooldown_seconds
+    retry_after = await claim_cooldown(SYNC_COOLDOWN_KEY, seconds=cooldown)
     if retry_after:
         # Someone else pressed it in the moment between the check and the claim.
         return await _sync_state(session, retry_after=retry_after, queued=[])
@@ -201,7 +201,7 @@ async def sync_sources(session: AsyncSession) -> SyncState:
             queued.append(portal.code)
 
     state.queued = queued
-    state.retry_after_seconds = settings.source_sync_cooldown_seconds
+    state.retry_after_seconds = cooldown
     state.running = True if queued else state.running
     for portal in state.portals:
         if portal.code in queued:

@@ -7,6 +7,7 @@ generated migrations.
 
 from __future__ import annotations
 
+from app.core.platform_settings import PlatformSetting
 from app.db.base import Base
 from app.jobs.runs import JobRun, RunStatus, ScraperRun
 from app.modules.assistant.models import AssistantMessage, Conversation
@@ -102,6 +103,7 @@ __all__ = [
     "OrgRole",
     "Organization",
     "OverrideVerdict",
+    "PlatformSetting",
     "ProcurementCategory",
     "ProfileCertification",
     "ProfileEmbedding",

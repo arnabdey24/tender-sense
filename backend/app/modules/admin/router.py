@@ -11,7 +11,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, Path, Query, Request, status
 
+from app.core import platform_settings
 from app.core.deps import DbSession, Superuser
+from app.core.platform_settings import Limits
 from app.modules.admin import service
 from app.modules.admin.schemas import (
     AiUsageRow,
@@ -22,6 +24,8 @@ from app.modules.admin.schemas import (
     JobRunRead,
     JobTriggerRequest,
     JobTriggerResponse,
+    OrganizationAdminRead,
+    Overview,
     ReparseResponse,
     ReprocessResponse,
     ScraperRunRead,
@@ -32,6 +36,8 @@ from app.modules.admin.schemas import (
     SourceUpdate,
     TenderCreate,
     TenderCreateResponse,
+    UserAdminRead,
+    UserAdminUpdate,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -44,6 +50,20 @@ TenderId = Annotated[UUID, Path(description="Tender identifier")]
 async def list_sources(_: Superuser, db: DbSession) -> list[SourceAdminRead]:
     """Every ingestion source with its full scraping configuration."""
     return [SourceAdminRead.model_validate(s) for s in await service.list_sources(db)]
+
+
+@router.get("/adapters", response_model=list[str], summary="Adapters this build knows")
+async def list_adapters(_: Superuser) -> list[str]:
+    """Keys a source may name.
+
+    Registering a portal means choosing one of these, and the list is decided by
+    what the deployment imported — so it is read from the registry rather than
+    written down twice. Without it the only way to learn the options was to
+    submit a wrong one and read the error.
+    """
+    from app.ingestion.adapters import ADAPTERS
+
+    return sorted(ADAPTERS)
 
 
 @router.post("/sources", response_model=SourceAdminRead, status_code=status.HTTP_201_CREATED)
@@ -253,3 +273,71 @@ async def ai_usage(
         spent_today=await spent_today(db),
         rows=[AiUsageRow.model_validate(row) for row in rows],
     )
+
+
+@router.get("/overview", response_model=Overview, summary="Is anything wrong right now")
+async def overview(_: Superuser, db: DbSession) -> Overview:
+    """The console's front page: pool size, portal health, failures, spend."""
+    return await service.overview(db)
+
+
+@router.get("/organizations", response_model=list[OrganizationAdminRead])
+async def list_organizations(
+    _: Superuser,
+    db: DbSession,
+    q: Annotated[str | None, Query(description="Match name or slug")] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+) -> list[OrganizationAdminRead]:
+    """Tenants, with member counts and when each last recorded a decision."""
+    return await service.list_organizations(db, q=q, limit=limit)
+
+
+@router.get("/users", response_model=list[UserAdminRead])
+async def list_users(
+    _: Superuser,
+    db: DbSession,
+    q: Annotated[str | None, Query(description="Match email or name")] = None,
+    limit: Annotated[int, Query(ge=1, le=500)] = 100,
+) -> list[UserAdminRead]:
+    return await service.list_users(db, q=q, limit=limit)
+
+
+@router.patch("/users/{user_id}", response_model=UserAdminRead)
+async def update_user(
+    user_id: Annotated[UUID, Path(description="User identifier")],
+    data: UserAdminUpdate,
+    staff: Superuser,
+    db: DbSession,
+) -> UserAdminRead:
+    """Suspend an account, or grant and revoke platform staff.
+
+    Not on yourself: revoking your own access, or deactivating the account you
+    are signed in as, is the one mistake here the console cannot undo
+    afterwards.
+    """
+    return await service.update_user(db, user_id, data, acting_user_id=staff.id)
+
+
+@router.get("/limits", response_model=Limits, summary="Rate limits in force")
+async def get_limits(_: Superuser, db: DbSession) -> Limits:
+    """What the limits are now — the deployment's configuration, with any
+    stored override applied."""
+    return await platform_settings.get_limits(db, fresh=True)
+
+
+@router.put("/limits", response_model=Limits, summary="Change a rate limit")
+async def put_limits(data: Limits, _: Superuser, db: DbSession) -> Limits:
+    """Store the limits, taking effect within seconds and without a redeploy.
+
+    The moments that call for moving one of these are the moments nobody wants
+    to deploy: a portal being hammered on a demo day, one tenant consuming the
+    model budget, a sign-in throttle tighter than a real office sharing a single
+    address.
+    """
+    return await platform_settings.set_limits(db, data)
+
+
+@router.delete("/limits", response_model=Limits, summary="Restore the configured limits")
+async def reset_limits(_: Superuser, db: DbSession) -> Limits:
+    """Drop the override, so the deployment's own configuration applies again."""
+    return await platform_settings.reset_limits(db)

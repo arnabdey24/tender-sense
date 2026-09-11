@@ -112,3 +112,111 @@ export const TRIGGERABLE_JOBS = [
 const JOB_LABELS: Record<string, string> = Object.fromEntries(
   TRIGGERABLE_JOBS.map((entry) => [entry.job, entry.label])
 )
+
+function reportFailure(error: ApiError, title: string): void {
+  toast.add({ type: "error", title, description: error.message })
+}
+
+export type Overview = components["schemas"]["Overview"]
+export type OrganizationAdminRead =
+  components["schemas"]["OrganizationAdminRead"]
+export type UserAdminRead = components["schemas"]["UserAdminRead"]
+export type Limits = components["schemas"]["Limits"]
+
+/**
+ * The console's front page in one request. Polled slowly: an operator leaves
+ * this open, and the questions it answers — is a portal down, is mail stuck —
+ * change on the scale of a cron pass, not a second.
+ */
+export function useOverview() {
+  return useQuery<Overview, ApiError>({
+    queryKey: qk.admin.overview(),
+    queryFn: () => unwrap(api.GET("/api/v1/admin/overview")),
+    refetchInterval: 60_000,
+  })
+}
+
+export function useAdminOrganizations(q?: string) {
+  return useQuery<OrganizationAdminRead[], ApiError>({
+    queryKey: qk.admin.organizations(q),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/v1/admin/organizations", {
+          params: { query: q ? { q } : {} },
+        })
+      ),
+  })
+}
+
+export function useAdminUsers(q?: string) {
+  return useQuery<UserAdminRead[], ApiError>({
+    queryKey: qk.admin.users(q),
+    queryFn: () =>
+      unwrap(
+        api.GET("/api/v1/admin/users", { params: { query: q ? { q } : {} } })
+      ),
+  })
+}
+
+export function useUpdateUser() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    UserAdminRead,
+    ApiError,
+    { userId: string; is_active?: boolean; is_superuser?: boolean }
+  >({
+    mutationFn: ({ userId, ...body }) =>
+      unwrap(
+        api.PATCH("/api/v1/admin/users/{user_id}", {
+          params: { path: { user_id: userId } },
+          body,
+        })
+      ),
+    onSuccess: (user) => {
+      toast.add({ type: "success", title: `${user.email} updated` })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.all() })
+    },
+    onError: (error) => reportFailure(error, "Could not update the account"),
+  })
+}
+
+/** The limits in force. Always fetched fresh — this page exists to edit them. */
+export function useLimits() {
+  return useQuery<Limits, ApiError>({
+    queryKey: qk.admin.limits(),
+    queryFn: () => unwrap(api.GET("/api/v1/admin/limits")),
+    staleTime: 0,
+  })
+}
+
+export function useSaveLimits() {
+  const queryClient = useQueryClient()
+  return useMutation<Limits, ApiError, Limits>({
+    mutationFn: (body) => unwrap(api.PUT("/api/v1/admin/limits", { body })),
+    onSuccess: (limits) => {
+      queryClient.setQueryData(qk.admin.limits(), limits)
+      toast.add({
+        type: "success",
+        title: "Limits saved",
+        description: "In force within a few seconds. No restart needed.",
+      })
+    },
+    onError: (error) => reportFailure(error, "Could not save the limits"),
+  })
+}
+
+export function useResetLimits() {
+  const queryClient = useQueryClient()
+  return useMutation<Limits, ApiError, void>({
+    mutationFn: () => unwrap(api.DELETE("/api/v1/admin/limits")),
+    onSuccess: (limits) => {
+      queryClient.setQueryData(qk.admin.limits(), limits)
+      toast.add({
+        type: "success",
+        title: "Restored the configured limits",
+        description: "The values this deployment was started with.",
+      })
+    },
+    onError: (error) => reportFailure(error, "Could not restore the limits"),
+  })
+}

@@ -1559,6 +1559,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/adapters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Adapters this build knows
+         * @description Keys a source may name.
+         *
+         *     Registering a portal means choosing one of these, and the list is decided by
+         *     what the deployment imported — so it is read from the registry rather than
+         *     written down twice. Without it the only way to learn the options was to
+         *     submit a wrong one and read the error.
+         */
+        get: operations["list_adapters_api_v1_admin_adapters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/sources/{source_id}": {
         parameters: {
             query?: never;
@@ -1827,6 +1852,121 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Is anything wrong right now
+         * @description The console's front page: pool size, portal health, failures, spend.
+         */
+        get: operations["overview_api_v1_admin_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Organizations
+         * @description Tenants, with member counts and when each last recorded a decision.
+         */
+        get: operations["list_organizations_api_v1_admin_organizations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["list_users_api_v1_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update User
+         * @description Suspend an account, or grant and revoke platform staff.
+         *
+         *     Not on yourself: revoking your own access, or deactivating the account you
+         *     are signed in as, is the one mistake here the console cannot undo
+         *     afterwards.
+         */
+        patch: operations["update_user_api_v1_admin_users__user_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rate limits in force
+         * @description What the limits are now — the deployment's configuration, with any
+         *     stored override applied.
+         */
+        get: operations["get_limits_api_v1_admin_limits_get"];
+        /**
+         * Change a rate limit
+         * @description Store the limits, taking effect within seconds and without a redeploy.
+         *
+         *     The moments that call for moving one of these are the moments nobody wants
+         *     to deploy: a portal being hammered on a demo day, one tenant consuming the
+         *     model budget, a sign-in throttle tighter than a real office sharing a single
+         *     address.
+         */
+        put: operations["put_limits_api_v1_admin_limits_put"];
+        post?: never;
+        /**
+         * Restore the configured limits
+         * @description Drop the override, so the deployment's own configuration applies again.
+         */
+        delete: operations["reset_limits_api_v1_admin_limits_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2371,6 +2511,47 @@ export interface components {
             enqueued: boolean;
         };
         /**
+         * Limits
+         * @description Every limit an operator can move, with the deployment's value as default.
+         */
+        Limits: {
+            /**
+             * Source Sync Cooldown Seconds
+             * @description Shortest gap between hand-started portal syncs, deployment-wide.
+             */
+            source_sync_cooldown_seconds: number;
+            /**
+             * Ai Daily Token Budget
+             * @description Model tokens per day across every tenant. 0 disables the cap.
+             */
+            ai_daily_token_budget: number;
+            /**
+             * Assistant Daily Turn Limit
+             * @description Assistant messages per organization per day. 0 is unlimited.
+             */
+            assistant_daily_turn_limit: number;
+            /**
+             * Assistant Daily Voice Seconds
+             * @description Live voice seconds per organization per day. 0 is unlimited.
+             */
+            assistant_daily_voice_seconds: number;
+            /**
+             * Login Attempts Per Ip
+             * @description Sign-in attempts allowed from one address per window.
+             */
+            login_attempts_per_ip: number;
+            /**
+             * Login Attempts Per Email
+             * @description Sign-in attempts allowed against one account per window.
+             */
+            login_attempts_per_email: number;
+            /**
+             * Login Window Seconds
+             * @description The window both sign-in limits are counted over.
+             */
+            login_window_seconds: number;
+        };
+        /**
          * LiteralValue
          * @description Compare against a value typed into the rule.
          */
@@ -2736,6 +2917,33 @@ export interface components {
          * @enum {string}
          */
         OrgRole: "admin" | "member";
+        /** OrganizationAdminRead */
+        OrganizationAdminRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Country */
+            country?: string | null;
+            /** Plan */
+            plan: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Members */
+            members: number;
+            /** Last Activity At */
+            last_activity_at?: string | null;
+        };
         /** OrganizationCreate */
         OrganizationCreate: {
             /** Name */
@@ -2794,6 +3002,44 @@ export interface components {
             description?: string | null;
             /** Timezone */
             timezone?: string | null;
+        };
+        /**
+         * Overview
+         * @description What an operator opens the console to find out.
+         *
+         *     One request, because the question is "is anything wrong right now" and
+         *     answering it from six endpoints means six chances to show a page that is
+         *     half stale.
+         */
+        Overview: {
+            /** Tenders */
+            tenders: number;
+            /** Tenders Open */
+            tenders_open: number;
+            /** Tenders Added Today */
+            tenders_added_today: number;
+            /** Organizations */
+            organizations: number;
+            /** Organizations Active */
+            organizations_active: number;
+            /** Users */
+            users: number;
+            /** Users Active */
+            users_active: number;
+            /** Sources */
+            sources?: components["schemas"]["SourceHealthCount"][];
+            /** Jobs Failed 24H */
+            jobs_failed_24h: number;
+            /** Scrapes Failed 24H */
+            scrapes_failed_24h: number;
+            /** Email Queued */
+            email_queued: number;
+            /** Email Failed */
+            email_failed: number;
+            /** Ai Tokens Today */
+            ai_tokens_today: number;
+            /** Ai Daily Token Budget */
+            ai_daily_token_budget: number;
         };
         /** Page[DecisionWithTender] */
         Page_DecisionWithTender_: {
@@ -3591,6 +3837,21 @@ export interface components {
             /** Detail */
             detail?: string | null;
         };
+        /** SourceHealthCount */
+        SourceHealthCount: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Health */
+            health: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Last Success At */
+            last_success_at?: string | null;
+            /** Tenders */
+            tenders: number;
+        };
         /** SourceRead */
         SourceRead: {
             /**
@@ -3933,6 +4194,46 @@ export interface components {
          * @enum {string}
          */
         Urgency: "expired" | "critical" | "high" | "normal" | "low" | "unknown";
+        /** UserAdminRead */
+        UserAdminRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Superuser */
+            is_superuser: boolean;
+            /** Email Verified */
+            email_verified: boolean;
+            /** Last Login At */
+            last_login_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Organizations */
+            organizations?: string[];
+        };
+        /**
+         * UserAdminUpdate
+         * @description Only the two flags platform staff have any business changing here.
+         *
+         *     Names, emails and passwords belong to the person who owns the account; an
+         *     operator needing to suspend one does not need to be able to rewrite it.
+         */
+        UserAdminUpdate: {
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Superuser */
+            is_superuser?: boolean | null;
+        };
         /** UserRead */
         UserRead: {
             /**
@@ -6670,6 +6971,26 @@ export interface operations {
             };
         };
     };
+    list_adapters_api_v1_admin_adapters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
     get_source_api_v1_admin_sources__source_id__get: {
         parameters: {
             query?: never;
@@ -7155,6 +7476,201 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_v1_admin_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+        };
+    };
+    list_organizations_api_v1_admin_organizations_get: {
+        parameters: {
+            query?: {
+                /** @description Match name or slug */
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAdminRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_admin_users_get: {
+        parameters: {
+            query?: {
+                /** @description Match email or name */
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdminRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_api_v1_admin_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User identifier */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserAdminUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdminRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_limits_api_v1_admin_limits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Limits"];
+                };
+            };
+        };
+    };
+    put_limits_api_v1_admin_limits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Limits"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Limits"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_limits_api_v1_admin_limits_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Limits"];
                 };
             };
         };

@@ -131,6 +131,17 @@ class Settings(BaseSettings):
     2011. Set to 0 to allow a sync on every press — development only.
     """
 
+    # --- rate limits ---
+    #
+    # Defaults, not the final word: an operator can move any of these from the
+    # admin console without a redeploy, and `app/core/platform_settings.py`
+    # resolves the stored override over whatever is configured here. An unset
+    # override means exactly this value, so a fresh database behaves as the
+    # deployment was configured to.
+    login_attempts_per_ip: int = 20
+    login_attempts_per_email: int = 10
+    login_window_seconds: int = 900
+
     # --- retention & housekeeping ---
     job_run_retention_days: int = 30
     """How long ``job_runs`` and ``scraper_runs`` are kept before the nightly purge."""

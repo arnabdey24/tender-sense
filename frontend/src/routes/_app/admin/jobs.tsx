@@ -1,14 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { ChevronDownIcon, PlayIcon } from "lucide-react"
+
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
+import { timeAgo } from "@/lib/data/time"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -43,58 +46,57 @@ const RUN_VARIANTS: Record<
   running: "secondary",
 }
 
-function when(iso: string | null | undefined): string {
-  if (!iso) return "—"
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return "—"
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
 
 function JobRunsCard() {
   const runs = useJobRuns()
   const trigger = useTriggerJob()
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Background jobs</CardTitle>
-        <CardDescription>
-          A job that quietly stops running looks exactly like a job with nothing
-          to do. These records are the difference.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap gap-2">
-          {TRIGGERABLE_JOBS.map((item) => (
-            <Button
-              key={item.job}
-              size="sm"
-              variant="outline"
-              onClick={() => trigger.mutate(item.job)}
-              disabled={trigger.isPending}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </div>
-
+    <ConsoleSection
+      title="Background jobs"
+      caption="A job that quietly stops running looks exactly like a job with nothing to do. These records are the difference."
+      action={
+        /*
+          Eight buttons wrapping across two rows gave every job equal weight
+          and none of it hierarchy — a soup of verbs at the top of the page an
+          operator came to read. They are occasional by nature, so they go
+          behind one control that says what they are.
+        */
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button size="sm" variant="outline" disabled={trigger.isPending}>
+                <PlayIcon /> Run a job
+                <ChevronDownIcon data-icon="inline-end" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" className="w-56">
+            {TRIGGERABLE_JOBS.map((item) => (
+              <DropdownMenuItem
+                key={item.job}
+                onClick={() => trigger.mutate(item.job)}
+              >
+                {item.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      }
+    >
+      <div className="flex flex-col gap-4">
         <ApiErrorAlert error={runs.error} />
         {runs.isPending ? (
           <Skeleton className="h-24 w-full" />
         ) : (
           <div className="overflow-x-auto">
-            <Table>
+            <Table density="compact">
               <TableHeader>
                 <TableRow>
                   <TableHead>Job</TableHead>
                   <TableHead>Started</TableHead>
                   <TableHead>Result</TableHead>
-                  <TableHead className="text-right">Took</TableHead>
+                  <TableHead numeric>Took</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,7 +104,7 @@ function JobRunsCard() {
                   <TableRow key={run.id}>
                     <TableCell className="font-medium">{run.name}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {when(run.started_at)}
+                      {timeAgo(run.started_at)}
                     </TableCell>
                     <TableCell>
                       <Badge variant={RUN_VARIANTS[run.status] ?? "outline"}>
@@ -114,7 +116,7 @@ function JobRunsCard() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell numeric>
                       {(run.duration_ms / 1000).toFixed(1)}s
                     </TableCell>
                   </TableRow>
@@ -123,8 +125,8 @@ function JobRunsCard() {
             </Table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ConsoleSection>
   )
 }
 
@@ -134,15 +136,11 @@ function MailCard() {
   const rows = outbox.data ?? []
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Mail queue</CardTitle>
-        <CardDescription>
-          Anything not yet delivered. A row that gave up names its own cause in
-          the last error — usually an SPF record rather than a bug.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <ConsoleSection
+      title="Mail queue"
+      caption="Anything not yet delivered. A row that gave up names its own cause in the last error — usually an SPF record rather than a bug."
+    >
+      <div>
         <ApiErrorAlert error={outbox.error} />
         {outbox.isPending ? (
           <Skeleton className="h-16 w-full" />
@@ -152,7 +150,7 @@ function MailCard() {
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <Table>
+            <Table density="compact">
               <TableHeader>
                 <TableRow>
                   <TableHead>To</TableHead>
@@ -185,7 +183,7 @@ function MailCard() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell numeric>
                       {row.attempts}
                     </TableCell>
                     <TableCell className="text-right">
@@ -206,8 +204,8 @@ function MailCard() {
             </Table>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ConsoleSection>
   )
 }
 
@@ -218,15 +216,11 @@ function SpendCard() {
   const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Model spend</CardTitle>
-        <CardDescription>
-          An exhausted budget explains missing explanations. Nothing else does —
-          matches still score, the prose just degrades to the templated one.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <ConsoleSection
+      title="Model spend"
+      caption="An exhausted budget explains missing explanations. Nothing else does — matches still score, the prose just degrades to the templated one."
+    >
+      <div className="flex flex-col gap-4">
         <ApiErrorAlert error={usage.error} />
         {usage.isPending ? (
           <Skeleton className="h-16 w-full" />
@@ -252,7 +246,7 @@ function SpendCard() {
 
             {(usage.data?.rows ?? []).length > 0 && (
               <div className="overflow-x-auto">
-                <Table>
+                <Table density="compact">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Day</TableHead>
@@ -266,10 +260,10 @@ function SpendCard() {
                       <TableRow key={`${row.day}-${row.purpose}-${index}`}>
                         <TableCell>{row.day}</TableCell>
                         <TableCell>{row.purpose}</TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell numeric>
                           {row.calls}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell numeric>
                           {(row.tokens_in + row.tokens_out).toLocaleString()}
                         </TableCell>
                       </TableRow>
@@ -280,8 +274,8 @@ function SpendCard() {
             )}
           </>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </ConsoleSection>
   )
 }
 

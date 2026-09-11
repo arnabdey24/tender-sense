@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import { RotateCcwIcon } from "lucide-react"
 
-import { PageSection } from "@/components/layout/PageSection"
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -149,8 +149,15 @@ function LimitsPage() {
         one, so it returns to a known state.
       </p>
 
+      {/*
+        Three groups of fields stacked down a 1,228px page, each a short list
+        of numbers. They are independent of one another — nobody sets a
+        sign-in throttle *because* of a model budget — so they sit side by side
+        and the whole form is visible at once rather than scrolled through.
+      */}
+      <div className="grid gap-8 xl:grid-cols-3">
       {GROUPS.map((group) => (
-        <PageSection
+        <ConsoleSection
           key={group.title}
           title={group.title}
           caption={group.caption}
@@ -201,8 +208,9 @@ function LimitsPage() {
               </div>
             ))}
           </div>
-        </PageSection>
+        </ConsoleSection>
       ))}
+      </div>
 
       <div className="flex flex-wrap items-center gap-3 border-t pt-6">
         <Button type="submit" disabled={!dirty || save.isPending}>

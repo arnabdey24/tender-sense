@@ -12,13 +12,33 @@ export type VoiceState =
   | "muted"
   | "error"
 
+/** Gemini Live speaks at 24 kHz; the buffers are built to match. */
+const OUTPUT_RATE = 24000
+
+/** Where the schedule is aimed when it has to be re-established. */
+const TARGET_LEAD = 0.12
+
+/** Below this, the next chunk cannot be placed without a gap. */
+const MIN_LEAD = 0.02
+
 export class VoiceSession {
   private socket?: WebSocket
   private stream?: MediaStream
   private audio?: AudioContext
+  /** Half a sample, waiting for the byte that completes it. */
+  private pendingByte: number | null = null
   private capture?: AudioWorkletNode
   private sources = new Set<AudioBufferSourceNode>()
-  private nextPlayback = 0
+  /**
+   * The end of scheduled audio, counted in samples rather than seconds.
+   *
+   * Seconds accumulate floating-point error: a stream is thousands of chunks,
+   * and `+= buffer.duration` on each one drifts the schedule sub-sample until
+   * it re-snaps. Samples are integers and 24,000 of them is exactly a second.
+   */
+  private playHead = 0
+  /** Times the stream arrived later than it could be played. */
+  private underruns = 0
   private stopped = false
   private muted = false
   private speakerMuted = false
@@ -153,7 +173,7 @@ export class VoiceSession {
       if (
         this.audio &&
         this.speaking &&
-        this.audio.currentTime >= this.nextPlayback
+        this.audio.currentTime >= this.playHead / OUTPUT_RATE
       ) {
         this.speaking = false
         this.onState(this.muted ? "muted" : "listening", 0)
@@ -164,16 +184,43 @@ export class VoiceSession {
   private play(encoded: string) {
     if (!this.audio || !this.outputGain || this.stopped) return
     const raw = atob(encoded)
-    const bytes = Uint8Array.from(raw, (c) => c.charCodeAt(0))
-    const view = new DataView(bytes.buffer)
-    const buffer = this.audio.createBuffer(1, bytes.length / 2, 24000)
+    const arrived = Uint8Array.from(raw, (c) => c.charCodeAt(0))
+
+    /*
+     * A 16-bit sample is two bytes, and a chunk boundary does not respect that.
+     *
+     * When a chunk arrives with an odd number of bytes the last byte is half a
+     * sample. Dropping it puts every sample in the *next* chunk one byte out of
+     * phase — each one then built from the high byte of one sample and the low
+     * byte of the next, which is not noise but a loud periodic waveform. That
+     * is the horn: a sustained buzz in the middle of speech, on a stream that
+     * is otherwise clean.
+     *
+     * So the odd byte waits for the byte that completes it.
+     */
+    let bytes = arrived
+    if (this.pendingByte !== null) {
+      bytes = new Uint8Array(arrived.length + 1)
+      bytes[0] = this.pendingByte
+      bytes.set(arrived, 1)
+      this.pendingByte = null
+    }
+    if (bytes.length % 2 === 1) {
+      this.pendingByte = bytes[bytes.length - 1]
+      bytes = bytes.subarray(0, bytes.length - 1)
+    }
+    // An empty chunk is not an error, but `createBuffer(1, 0, …)` throws.
+    if (bytes.length === 0) return
+
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    const buffer = this.audio.createBuffer(1, bytes.length / 2, OUTPUT_RATE)
     const channel = buffer.getChannelData(0)
     let energy = 0
     for (let i = 0; i < channel.length; i++) {
       channel[i] = view.getInt16(i * 2, true) / 32768
       energy += channel[i] ** 2
     }
-    if (this.nextPlayback - this.audio.currentTime > 30) {
+    if (this.playHead / OUTPUT_RATE - this.audio.currentTime > 30) {
       this.fail("Audio playback fell behind. Please restart voice.")
       return
     }
@@ -182,9 +229,31 @@ export class VoiceSession {
     source.connect(this.outputGain)
     this.sources.add(source)
     source.onended = () => this.sources.delete(source)
-    this.nextPlayback = Math.max(this.audio.currentTime, this.nextPlayback)
-    source.start(this.nextPlayback)
-    this.nextPlayback += buffer.duration
+
+    /*
+     * A lead, so ordinary network jitter cannot open a gap.
+     *
+     * Scheduling each chunk at `max(currentTime, end-of-last)` sounds correct
+     * and is the whole bug: the moment a chunk arrives later than real time —
+     * which on any real connection is most of them — the schedule has already
+     * passed, so it snaps to now. That leaves a silent gap and starts the next
+     * buffer mid-waveform. One of those is a click. At a twenty-millisecond
+     * chunk cadence they repeat tens of times a second, and a discontinuity
+     * repeating at an audio rate is not heard as clicking. It is heard as a
+     * tone — which is the horn.
+     *
+     * So the stream is played a fraction behind where it arrives, and the
+     * fraction absorbs the jitter. The cost is 120ms of latency on a spoken
+     * reply, which nobody can hear; the cost of not having it is audible to
+     * everybody.
+     */
+    const now = this.audio.currentTime
+    if (this.playHead / OUTPUT_RATE < now + MIN_LEAD) {
+      if (this.playHead > 0) this.underruns += 1
+      this.playHead = Math.ceil((now + TARGET_LEAD) * OUTPUT_RATE)
+    }
+    source.start(this.playHead / OUTPUT_RATE)
+    this.playHead += buffer.length
     this.speaking = true
     this.onState(
       "speaking",
@@ -219,8 +288,12 @@ export class VoiceSession {
       }
     }
     this.sources.clear()
-    this.nextPlayback = 0
+    this.playHead = 0
     this.speaking = false
+    // An interruption discards the rest of that utterance, so a half sample
+    // held from it has nothing to complete it — carrying it into whatever is
+    // said next would put that stream out of phase instead.
+    this.pendingByte = null
   }
   private fail(message: string) {
     if (this.stopped) return
@@ -240,5 +313,17 @@ export class VoiceSession {
   }
   get elapsedSeconds() {
     return Math.floor((Date.now() - this.started) / 1000)
+  }
+  /**
+   * How often the stream arrived too late to be played without a gap.
+   *
+   * Reported rather than inferred, because the artefact this counts is one a
+   * listener describes and a developer cannot reproduce: it depends on their
+   * connection, not on the code. A session that ends with zero here did not
+   * buzz; one that ends with hundreds is still doing it, and the lead needs to
+   * be longer rather than the cause re-guessed.
+   */
+  get underrunCount() {
+    return this.underruns
   }
 }

@@ -1,7 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { CheckCircle2Icon, TriangleAlertIcon } from "lucide-react"
+import {
+  ActivityIcon,
+  CoinsIcon,
+  ListChecksIcon,
+  MailIcon,
+  SatelliteDishIcon,
+} from "lucide-react"
 
-import { PageSection } from "@/components/layout/PageSection"
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -51,47 +57,119 @@ function Stat({
  * currently broken is stated in a sentence at the top, and when nothing is, the
  * page says that too rather than leaving the reader to infer it from six zeroes.
  */
-function Verdict({ data }: { data: Overview }) {
-  const unanswering = (data.sources ?? []).filter(
-    (source) => source.enabled && source.health !== "ok"
-  ).length
+type Health = "ok" | "warn" | "bad"
 
-  const problems = [
-    unanswering &&
-      `${unanswering} portal${unanswering === 1 ? "" : "s"} not answering`,
-    data.jobs_failed_24h && `${data.jobs_failed_24h} failed job runs in 24h`,
-    data.scrapes_failed_24h &&
-      `${data.scrapes_failed_24h} failed scrapes in 24h`,
-    data.email_failed && `${data.email_failed} messages gave up`,
-    data.ai_daily_token_budget > 0 &&
-      data.ai_tokens_today >= data.ai_daily_token_budget &&
-      "the model budget for today is spent",
-  ].filter(Boolean) as string[]
+/**
+ * One subsystem, as the console needs to report it.
+ *
+ * A tile carries a state, the number that decides that state, and a way into
+ * the section that can do something about it. The colour is never alone: the
+ * label says the same thing, which is the rule for every status in this
+ * product and the reason it survives a colour-blind reader and a bad monitor.
+ */
+function StatusTile({
+  icon: Icon,
+  label,
+  health,
+  value,
+  detail,
+  to,
+}: {
+  icon: typeof ActivityIcon
+  label: string
+  health: Health
+  value: string
+  detail: string
+  to: "/admin/sources" | "/admin/jobs" | "/admin/limits"
+}) {
+  const tone =
+    health === "ok"
+      ? "text-success"
+      : health === "warn"
+        ? "text-warning"
+        : "text-destructive"
+  const word = health === "ok" ? "Healthy" : health === "warn" ? "Degraded" : "Failing"
 
   return (
-    <div
-      className={cn(
-        "flex items-start gap-3 rounded-lg border p-4",
-        problems.length ? "border-warning/40 bg-warning/5" : "bg-surface-sunken"
-      )}
+    <Link
+      to={to}
+      className="group flex flex-col gap-2 rounded-xl border p-4 transition-colors hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
-      {problems.length ? (
-        <TriangleAlertIcon className="mt-0.5 size-5 shrink-0 text-warning" />
-      ) : (
-        <CheckCircle2Icon className="mt-0.5 size-5 shrink-0 text-success" />
-      )}
-      <div className="min-w-0">
-        <p className="text-sm font-medium">
-          {problems.length
-            ? "Wants attention"
-            : "Nothing is failing right now"}
-        </p>
-        <p className="text-sm text-pretty text-muted-foreground">
-          {problems.length
-            ? problems.join(" · ")
-            : "Portals answering, jobs completing, mail going out, budget intact."}
-        </p>
+      <div className="flex items-center gap-2">
+        <Icon className={cn("size-4 shrink-0", tone)} aria-hidden />
+        <span className="text-sm font-medium">{label}</span>
+        <span className={cn("ml-auto text-xs font-medium", tone)}>{word}</span>
       </div>
+      <div className="font-heading text-2xl leading-none tabular-nums">
+        {value}
+      </div>
+      <div className="text-xs text-muted-foreground">{detail}</div>
+    </Link>
+  )
+}
+
+/**
+ * Is anything wrong, answered before anything else is said.
+ *
+ * The page used to open on an alert and then four stacked sections of counts,
+ * which is a report rather than a board: an operator arriving because
+ * something broke had to read all of it to find out what. Four tiles, one per
+ * subsystem, each a link into the section that can fix it.
+ */
+function StatusBoard({ data }: { data: Overview }) {
+  const sources = (data.sources ?? []).filter((s) => s.enabled)
+  const budget = data.ai_daily_token_budget
+  const unhealthy = sources.filter((s) => s.health !== "ok")
+  const spend = budget > 0 ? data.ai_tokens_today / budget : 0
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatusTile
+        icon={SatelliteDishIcon}
+        label="Portals"
+        to="/admin/sources"
+        health={
+          unhealthy.length === 0 ? "ok" : unhealthy.length < sources.length ? "warn" : "bad"
+        }
+        value={`${sources.length - unhealthy.length}/${sources.length}`}
+        detail={
+          unhealthy.length
+            ? `${unhealthy.map((s) => s.code).join(", ")} not answering`
+            : "All answering"
+        }
+      />
+      <StatusTile
+        icon={ListChecksIcon}
+        label="Jobs"
+        to="/admin/jobs"
+        health={data.jobs_failed_24h === 0 ? "ok" : data.jobs_failed_24h < 10 ? "warn" : "bad"}
+        value={String(data.jobs_failed_24h)}
+        detail={`failed in 24h · ${data.scrapes_failed_24h} scrapes`}
+      />
+      <StatusTile
+        icon={MailIcon}
+        label="Mail"
+        to="/admin/jobs"
+        health={data.email_failed === 0 ? "ok" : "bad"}
+        value={String(data.email_failed)}
+        detail={`gave up · ${data.email_queued} waiting`}
+      />
+      <StatusTile
+        icon={CoinsIcon}
+        label="Model spend"
+        to="/admin/limits"
+        health={budget === 0 ? "ok" : spend >= 1 ? "bad" : spend > 0.8 ? "warn" : "ok"}
+        value={
+          budget > 0
+            ? `${Math.round(spend * 100)}%`
+            : data.ai_tokens_today.toLocaleString()
+        }
+        detail={
+          budget > 0
+            ? `${data.ai_tokens_today.toLocaleString()} of ${budget.toLocaleString()}`
+            : "tokens today · no cap set"
+        }
+      />
     </div>
   )
 }
@@ -107,17 +185,16 @@ function OverviewPage() {
   }
 
   const data = overview.data
-  const budget = data.ai_daily_token_budget
 
   return (
     <div className="flex flex-col gap-8">
-      <Verdict data={data} />
+      <StatusBoard data={data} />
 
-      <PageSection
+      <ConsoleSection
         title="The pool"
         caption="Shared across every tenant. A pool that stops growing is the first symptom of a portal that has stopped answering."
       >
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Stat
             label="Notices held"
             value={data.tenders.toLocaleString()}
@@ -132,19 +209,11 @@ function OverviewPage() {
                 : undefined
             }
           />
-          <Stat
-            label="Model spend today"
-            value={data.ai_tokens_today.toLocaleString()}
-            detail={
-              budget > 0
-                ? `of ${budget.toLocaleString()} tokens`
-                : "no daily cap set"
-            }
-          />
-        </div>
-      </PageSection>
 
-      <PageSection
+        </div>
+      </ConsoleSection>
+
+      <ConsoleSection
         title="Portals"
         caption="Where the notices come from, and when each last answered."
         action={
@@ -157,13 +226,13 @@ function OverviewPage() {
         }
       >
         <div className="overflow-x-auto">
-          <Table>
+          <Table density="compact">
             <TableHeader>
               <TableRow>
                 <TableHead>Portal</TableHead>
                 <TableHead>Health</TableHead>
                 <TableHead>Last success</TableHead>
-                <TableHead className="text-right">Notices</TableHead>
+                <TableHead numeric>Notices</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -200,7 +269,7 @@ function OverviewPage() {
                         ? timeAgo(source.last_success_at)
                         : "Never"}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell numeric>
                     {source.tenders.toLocaleString()}
                   </TableCell>
                 </TableRow>
@@ -208,9 +277,9 @@ function OverviewPage() {
             </TableBody>
           </Table>
         </div>
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
+      <ConsoleSection
         title="Tenants and accounts"
         caption="Every organization on this deployment, and everyone who can sign in to one."
       >
@@ -226,22 +295,8 @@ function OverviewPage() {
             detail={`${data.users_active.toLocaleString()} active`}
           />
         </div>
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
-        title="Queues"
-        caption="A job that fails quietly and mail that never leaves look identical from inside the app. These are where they show."
-      >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Failed jobs, 24h" value={String(data.jobs_failed_24h)} />
-          <Stat
-            label="Failed scrapes, 24h"
-            value={String(data.scrapes_failed_24h)}
-          />
-          <Stat label="Mail waiting" value={String(data.email_queued)} />
-          <Stat label="Mail gave up" value={String(data.email_failed)} />
-        </div>
-      </PageSection>
     </div>
   )
 }

@@ -1,8 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
-import { PlayIcon, RefreshCwIcon, RotateCcwIcon } from "lucide-react"
+import { PlayIcon, PlusIcon, RefreshCwIcon, RotateCcwIcon } from "lucide-react"
 
-import { PageSection } from "@/components/layout/PageSection"
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -187,74 +192,86 @@ function Portals() {
   if (!sources.data) return <ApiErrorAlert error={sources.error} />
 
   return (
-    <div className="flex flex-col gap-4">
-      {sources.data.map((source) => (
-        <div key={source.id} className="flex flex-col gap-3 rounded-lg border p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="font-medium">{source.name}</div>
-              <div className="truncate text-xs text-muted-foreground">
-                {source.code} · {source.adapter_key} ·{" "}
-                {source.base_url || "no base URL"}
-                {source.consecutive_failures > 0 &&
-                  ` · ${source.consecutive_failures} failures in a row`}
-              </div>
-              <div className="text-xs text-muted-foreground">
+    <div className="overflow-x-auto">
+      {/*
+        Rows, not cards. Three portals in cards took 430px and said the same
+        six things a table says in 120px — and a table is what an operator is
+        actually doing here: comparing portals against each other on health and
+        on when they last answered.
+      */}
+      <Table density="compact">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Portal</TableHead>
+            <TableHead>Adapter</TableHead>
+            <TableHead>Last success</TableHead>
+            <TableHead className="text-center">Scraped</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {sources.data.map((source) => (
+            <TableRow key={source.id}>
+              <TableCell className="max-w-xs">
+                <div className="truncate font-medium">{source.name}</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {source.code}
+                  {source.consecutive_failures > 0 &&
+                    ` · ${source.consecutive_failures} failures in a row`}
+                </div>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {source.adapter_key}
+              </TableCell>
+              <TableCell className="text-sm whitespace-nowrap text-muted-foreground">
                 {source.last_success_at
-                  ? `Last success ${timeAgo(source.last_success_at)}`
-                  : "Never succeeded"}
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Label
-                htmlFor={`enabled-${source.id}`}
-                className="text-xs text-muted-foreground"
-              >
-                Scraped
-              </Label>
-              <Switch
-                id={`enabled-${source.id}`}
-                checked={source.enabled}
-                disabled={update.isPending}
-                onCheckedChange={(checked) =>
-                  update.mutate({ id: source.id, enabled: checked })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={run.isPending || !source.enabled}
-              onClick={() => run.mutate(source.id)}
-            >
-              <PlayIcon /> Scrape now
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={check.isPending}
-              onClick={() => check.mutate(source.id)}
-            >
-              <RefreshCwIcon /> Probe
-            </Button>
-            {/*
-              Replays what is already stored and fetches nothing, which is what
-              makes it the safe repair for a portal that has started refusing us.
-            */}
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={reparse.isPending}
-              onClick={() => reparse.mutate(source.id)}
-            >
-              <RotateCcwIcon /> Replay stored pages
-            </Button>
-          </div>
-        </div>
-      ))}
+                  ? timeAgo(source.last_success_at)
+                  : "Never"}
+              </TableCell>
+              <TableCell className="text-center">
+                <Switch
+                  aria-label={`Scrape ${source.name}`}
+                  checked={source.enabled}
+                  disabled={update.isPending}
+                  onCheckedChange={(checked) =>
+                    update.mutate({ id: source.id, enabled: checked })
+                  }
+                />
+              </TableCell>
+              <TableCell>
+                <div className="flex justify-end gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={run.isPending || !source.enabled}
+                    onClick={() => run.mutate(source.id)}
+                  >
+                    <PlayIcon /> Scrape
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={check.isPending}
+                    onClick={() => check.mutate(source.id)}
+                  >
+                    <RefreshCwIcon /> Probe
+                  </Button>
+                  {/* Replays what is stored and fetches nothing, which is what
+                      makes it safe against a portal refusing us. */}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={reparse.isPending}
+                    onClick={() => reparse.mutate(source.id)}
+                  >
+                    <RotateCcwIcon /> Replay
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }
@@ -278,16 +295,16 @@ function RunHistory() {
 
   return (
     <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
+      <Table density="compact">
+        <TableHeader sticky>
           <TableRow>
             <TableHead>Started</TableHead>
             <TableHead>Portal</TableHead>
             <TableHead>Result</TableHead>
-            <TableHead className="text-right">Seen</TableHead>
-            <TableHead className="text-right">New</TableHead>
-            <TableHead className="text-right">Updated</TableHead>
-            <TableHead className="text-right">Lost</TableHead>
+            <TableHead numeric>Seen</TableHead>
+            <TableHead numeric>New</TableHead>
+            <TableHead numeric>Updated</TableHead>
+            <TableHead numeric>Lost</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -305,16 +322,16 @@ function RunHistory() {
                   </div>
                 )}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.notices_seen}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.created}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.updated}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.failed}
               </TableCell>
             </TableRow>
@@ -327,27 +344,41 @@ function RunHistory() {
 
 function SourcesPage() {
   return (
-    <div className="flex flex-col gap-8">
-      <PageSection
+    <div className="flex flex-col gap-6">
+      <ConsoleSection
         title="Portals"
-        caption="The full configuration behind each source. Members see health and can start a sync under Settings — this is where a portal is registered, retuned or taken out of the schedule."
+        caption="Members see health and can start a sync under Settings. This is where a portal is registered, retuned or taken out of the schedule."
       >
         <Portals />
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
-        title="Register a portal"
-        caption="A code, a name and the adapter that knows how to read it. Selector and endpoint details are configuration, so a portal that changes its markup is a data fix rather than a deploy."
-      >
-        <RegisterPortal />
-      </PageSection>
-
-      <PageSection
+      <ConsoleSection
         title="Recent runs"
         caption="A scraper that quietly stops returning notices looks exactly like a quiet portal. These records are the difference."
       >
         <RunHistory />
-      </PageSection>
+      </ConsoleSection>
+
+      {/*
+        Registering a portal is a twice-a-year action, and it was sitting above
+        the run history an operator checks daily — 500px of form between them
+        and the thing they came for. Collapsed, the page opens on what is
+        watched rather than on what is occasionally added.
+      */}
+      <ConsoleSection title="Register a portal">
+        <Collapsible>
+          <CollapsibleTrigger
+            render={
+              <Button variant="outline" size="sm">
+                <PlusIcon /> Add a portal
+              </Button>
+            }
+          />
+          <CollapsibleContent className="pt-4">
+            <RegisterPortal />
+          </CollapsibleContent>
+        </Collapsible>
+      </ConsoleSection>
     </div>
   )
 }

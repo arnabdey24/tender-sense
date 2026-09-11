@@ -30,9 +30,7 @@ THRESHOLD = 50
 
 
 def upgrade() -> None:
-    op.add_column(
-        "company_profiles", sa.Column("welcome_sync_at", sa.DateTime(), nullable=True)
-    )
+    op.add_column("company_profiles", sa.Column("welcome_sync_at", sa.DateTime(), nullable=True))
     op.execute(
         f"UPDATE company_profiles SET welcome_sync_at = now() WHERE completeness >= {THRESHOLD}"
     )

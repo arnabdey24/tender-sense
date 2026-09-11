@@ -19,6 +19,25 @@ function TodayPage() {
   const shortlist = useTodayShortlist({ page_size: 25 })
   const total = shortlist.data?.total ?? 0
 
+  const items = shortlist.data?.items ?? []
+  const strongest = items.filter((m) => m.grade === "S").length
+  const soonest = items
+    .map((m) => m.tender.days_to_deadline)
+    .filter((d): d is number => typeof d === "number" && d >= 0)
+    .sort((a, b) => a - b)[0]
+  const shape = items.length
+    ? [
+        strongest ? `${strongest} at S` : null,
+        soonest === undefined
+          ? null
+          : soonest === 0
+            ? "one closes today"
+            : `soonest closes in ${soonest} day${soonest === 1 ? "" : "s"}`,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : ""
+
   return (
     <>
       <PageHeader
@@ -48,17 +67,29 @@ function TodayPage() {
       {/* The list is the page. Wrapping it in a card put a second border around
           content that already separates itself with rules. */}
       {/*
-        `max-w-4xl` left roughly 300px of dead gutter on a 1484px screen while
-        the rows inside it truncated their own titles. A list of notices is not
-        prose: it is scanned, the deadline and the grade are read together with
-        the title, and the measure that suits a paragraph starves a row. It
-        takes the width the rest of the workspace takes.
+        No artificial measure. `max-w-4xl` left ~300px of dead gutter on a wide
+        screen while the rows inside it truncated their own titles — the page
+        was narrower than its content needed and wider than it used. A list of
+        notices is a dense panel, not prose: it is scanned, the grade and the
+        deadline are read together with the title, and the design system's
+        65–75ch rule is explicitly for prose, with dense panels free to run
+        wider. The width goes to the rows.
       */}
-      <section className="max-w-5xl">
-        <div className="mb-3 flex items-baseline gap-2 border-b pb-3">
+      <section>
+        {/*
+          A count alone says how much, never what kind. Two S grades closing
+          this week and eleven A grades a month out are the same number and
+          completely different mornings — so the line that opens the page says
+          the shape of it, from rows already loaded rather than another
+          request.
+        */}
+        <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-3">
           <h2 className="font-heading text-base font-medium tabular-nums">
             {shortlist.isPending ? "Loading…" : `${total} to look at`}
           </h2>
+          {shape ? (
+            <p className="text-sm text-muted-foreground">{shape}</p>
+          ) : null}
         </div>
         <ApiErrorAlert error={shortlist.error} />
         <MatchList

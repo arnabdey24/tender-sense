@@ -65,6 +65,7 @@ export function MatchList({
   emptyTitle = "No matches yet",
   emptyDescription = "Once your profile is set up, graded tenders appear here.",
   denseEmpty = false,
+  groups,
 }: {
   matches: Match[]
   isLoading?: boolean
@@ -80,6 +81,15 @@ export function MatchList({
    * pushed the charts, which had data, off the bottom of it.
    */
   denseEmpty?: boolean
+  /**
+   * Break the list into named runs.
+   *
+   * A flat list says only "these are your rows". Where the rows divide on
+   * something the page is actually about — a pipeline splits into what you
+   * have committed to and what you are still weighing — the division is worth
+   * more than the ordering, and a subhead costs one line to say it.
+   */
+  groups?: { key: string; label: string; match: (m: Match) => boolean }[]
 }) {
   if (isLoading) {
     return (
@@ -119,6 +129,32 @@ export function MatchList({
           <EmptyDescription>{emptyDescription}</EmptyDescription>
         </EmptyHeader>
       </Empty>
+    )
+  }
+
+  if (groups?.length) {
+    const runs = groups
+      .map((group) => ({ ...group, rows: matches.filter(group.match) }))
+      .filter((group) => group.rows.length > 0)
+
+    return (
+      <div className="flex flex-col gap-6">
+        {runs.map((group) => (
+          <section key={group.key}>
+            <h3 className="flex items-baseline gap-2 pb-1 text-sm font-medium">
+              {group.label}
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {group.rows.length}
+              </span>
+            </h3>
+            <ul className="flex flex-col">
+              {group.rows.map((match) => (
+                <MatchRow key={match.id} match={match} />
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
     )
   }
 

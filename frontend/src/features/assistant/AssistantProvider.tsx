@@ -413,6 +413,17 @@ function AssistantSession({
   const [mode, setMode] = useState<"compact" | "expanded" | "workspace">(
     "compact"
   )
+  /**
+   * Whether the reader has deliberately made the panel smaller.
+   *
+   * Every artifact opened the workspace, which is right for the first one and
+   * wrong for the eleventh: during a live call the assistant builds charts and
+   * checklists as it talks, so a panel made compact re-expanded on the next
+   * one and the control appeared broken. Shrinking it is a decision, and it
+   * stands until the reader opens the workspace again or starts a new
+   * conversation.
+   */
+  const [collapsedByUser, setCollapsedByUser] = useState(false)
   const [mobileTab, setMobileTab] = useState("conversation")
   const [selected, setSelected] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
@@ -500,8 +511,12 @@ function AssistantSession({
   }
   function showArtifact(value: Artifact) {
     setArtifact(value)
-    setMode("workspace")
-    setMobileTab("analysis")
+    // The artifact is always kept; whether it takes the screen is the reader's
+    // call. The footer's "Analysis workspace" is how they ask for it back.
+    if (!collapsedByUser) {
+      setMode("workspace")
+      setMobileTab("analysis")
+    }
   }
   function receive(event: AssistantEvent) {
     setMessages((old) => applyEvent(old, event))
@@ -567,6 +582,8 @@ function AssistantSession({
     setChatEpoch((n) => n + 1)
     setArtifact(null)
     setError(null)
+    // A fresh conversation carries no decision about the panel's size.
+    setCollapsedByUser(false)
     setLoading(true)
     try {
       const recent = fresh ? [] : await getConversations(id ?? undefined)
@@ -1340,9 +1357,11 @@ function AssistantSession({
                       aria-label={
                         mode === "compact" ? "Expand chat" : "Compact chat"
                       }
-                      onClick={() =>
-                        setMode(mode === "compact" ? "expanded" : "compact")
-                      }
+                      onClick={() => {
+                        const next = mode === "compact" ? "expanded" : "compact"
+                        setMode(next)
+                        setCollapsedByUser(next === "compact")
+                      }}
                     >
                       {mode === "compact" ? (
                         <Maximize2Icon />
@@ -1414,6 +1433,9 @@ function AssistantSession({
                   size="sm"
                   disabled={false}
                   onClick={() => {
+                    // Asking for the workspace withdraws the earlier decision
+                    // to keep the panel small.
+                    setCollapsedByUser(false)
                     setMode("workspace")
                     setMobileTab("analysis")
                   }}

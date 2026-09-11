@@ -27,7 +27,7 @@ colors:
   success: "oklch(0.48 0.14 150)"
   warning: "oklch(0.48 0.13 70)"
   info: "oklch(0.48 0.11 200)"
-  destructive: "oklch(0.55 0.2 27)"
+  destructive: "oklch(0.5 0.21 27)"
 typography:
   page-title:
     fontFamily: "Geist Variable, Noto Sans Bengali, system-ui, sans-serif"

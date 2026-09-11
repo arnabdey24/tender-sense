@@ -13,7 +13,7 @@ keeps editing one service line from re-embedding an entire profile.
 from __future__ import annotations
 
 import enum
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
@@ -87,6 +87,15 @@ class CompanyProfile(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     #: 0..100, driven by which sections are filled in. Shown as an onboarding nudge.
     completeness: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    #: When this organization's one welcome pull was started.
+    #:
+    #: Filling in a profile is the moment someone expects the product to do
+    #: something, and until then the pool may be whatever the last scheduled
+    #: pass left. So the first save that carries the profile over the matching
+    #: threshold pulls the portals once. Once, ever: after that the schedule
+    #: owns it, and a stamp here is what makes the difference between a
+    #: courtesy and a portal being asked again on every edit.
+    welcome_sync_at: Mapped[datetime | None] = mapped_column(default=None)
 
 
 class ProfileService(UUIDPrimaryKeyMixin, TimestampMixin, Base):

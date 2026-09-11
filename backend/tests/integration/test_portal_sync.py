@@ -196,3 +196,172 @@ class TestRegistry:
 
         assert created == []
         assert sorted(after) == sorted(before)
+
+
+class TestScopedAnalysis:
+    """A hand-pressed sync grades for the organization that pressed it.
+
+    The bargain: the notices land in the shared pool for everyone, but only
+    the presser is re-scored, so one button cannot make a portal's worth of
+    notices re-score the whole deployment. The other half of that bargain is
+    the six-hourly sweep below — without it, a scoped pass would hide those
+    notices from every other tenant permanently, because on the next scheduled
+    pass they are neither new nor amended.
+    """
+
+    async def test_the_fan_out_narrows_to_the_organization_that_asked(self) -> None:
+        """`orgs_with_profiles` is what decides who a notice gets scored for."""
+        from app.modules.matching.service import orgs_with_profiles
+
+        async with session_scope() as session:
+            everyone = await orgs_with_profiles(session)
+            assert everyone, "the fixture pool should leave at least one tenant"
+            target = str(everyone[0][0].id)
+
+            scoped = await orgs_with_profiles(session, only_org_id=target)
+
+        assert [str(org.id) for org, _ in scoped] == [target]
+
+    async def test_a_scoped_run_and_a_full_one_do_not_cancel_each_other(self) -> None:
+        """Both are deduplicated per tender. Sharing one job id would let
+        whichever arrived first drop the other — and the sweep being dropped is
+        the expensive direction, because the notice never reaches anyone else.
+        """
+        from app.jobs.tasks.matching import enqueue_processing
+
+        # A synthetic id: this pins the job-id convention, and a real tender
+        # would put the result at the mercy of whatever a live worker has
+        # already queued.
+        tender_id = str(uuid4())
+        redis = await get_queue()
+        try:
+            assert await enqueue_processing(tender_id) is not None
+            assert await enqueue_processing(tender_id, only_org_id="org-abc") is not None
+            # A repeat of either is still deduplicated.
+            assert await enqueue_processing(tender_id) is None
+            assert await enqueue_processing(tender_id, only_org_id="org-abc") is None
+        finally:
+            keys = [key async for key in redis.scan_iter(f"arq:job:process:{tender_id}*")]
+            if keys:
+                await redis.delete(*keys)
+
+    async def test_the_scheduled_pass_is_not_scoped(self) -> None:
+        """The cron dispatch must stay tenant-wide: it is what grades a notice
+        for everyone who did not press anything."""
+        from app.jobs.tasks.scraping import scrape_all_sources
+
+        result = await scrape_all_sources({})
+
+        assert result["queued"] >= 1
+        assert result.get("scoped_to_org") is None
+
+
+class TestSweep:
+    async def test_it_finds_a_notice_no_tenant_wide_pass_has_reached(self) -> None:
+        """`analysed_at` is null exactly when a scoped pass stored a notice and
+        nothing has matched it for the other tenants yet."""
+        from app.jobs.tasks.matching import sweep_unanalysed_tenders
+        from app.modules.tenders.models import Tender
+
+        async with session_scope() as session:
+            tender = await session.scalar(select(Tender).limit(1))
+            assert tender is not None, "the pool fixture should have left one"
+            tender.analysed_at = None
+            tender_id = tender.id
+
+        result = await sweep_unanalysed_tenders({})
+
+        assert result["found"] >= 1
+        async with session_scope() as session:
+            # Still null: the sweep queues the work, the pass does the marking.
+            fresh = await session.get(Tender, tender_id)
+            assert fresh is not None and fresh.analysed_at is None
+
+    async def test_it_leaves_an_already_analysed_notice_alone(self) -> None:
+        from app.jobs.tasks.matching import sweep_unanalysed_tenders
+        from app.modules.tenders.models import Tender
+
+        async with session_scope() as session:
+            await session.execute(Tender.__table__.update().values(analysed_at=utcnow()))
+
+        result = await sweep_unanalysed_tenders({})
+
+        assert result["found"] == 0
+
+
+class TestWelcomeSync:
+    """One pull, the first time a profile is worth matching against.
+
+    The courtesy exists because finishing a profile is the moment somebody
+    expects the product to do something, and what they see otherwise is
+    whatever the last scheduled pass left. What these pin is the "once" — a
+    portal that has been running since 2011 must not be asked again on every
+    edit — and that a refused pull does not burn the single chance.
+    """
+
+    async def _profile(self, completeness: int):
+        from app.modules.orgs.models import Organization
+        from app.modules.profiles.models import CompanyProfile
+
+        async with session_scope() as session:
+            org = Organization(name=f"welcome-{uuid4().hex[:8]}", slug=uuid4().hex[:12])
+            session.add(org)
+            await session.flush()
+            profile = CompanyProfile(org_id=org.id, completeness=completeness)
+            session.add(profile)
+            await session.flush()
+            return profile.id
+
+    async def test_crossing_the_threshold_pulls_the_portals_once(self) -> None:
+        from app.modules.profiles.models import CompanyProfile
+        from app.modules.profiles.service import maybe_welcome_sync
+
+        profile_id = await self._profile(completeness=60)
+
+        async with session_scope() as session:
+            profile = await session.get(CompanyProfile, profile_id)
+            assert profile is not None
+            first = await maybe_welcome_sync(session, profile)
+            assert first is not None, "a qualifying profile should pull once"
+            assert profile.welcome_sync_at is not None
+
+        # A second save must not ask the portals again.
+        async with session_scope() as session:
+            profile = await session.get(CompanyProfile, profile_id)
+            assert profile is not None
+            assert await maybe_welcome_sync(session, profile) is None
+
+    async def test_a_thin_profile_is_left_alone(self) -> None:
+        from app.modules.profiles.models import CompanyProfile
+        from app.modules.profiles.service import maybe_welcome_sync
+
+        profile_id = await self._profile(completeness=30)
+
+        async with session_scope() as session:
+            profile = await session.get(CompanyProfile, profile_id)
+            assert profile is not None
+
+            assert await maybe_welcome_sync(session, profile) is None
+            # No stamp: it has not had its turn yet, so crossing later still works.
+            assert profile.welcome_sync_at is None
+
+    async def test_a_pull_refused_by_the_cooldown_does_not_spend_the_chance(
+        self, api: AsyncClient, member_headers: dict[str, str]
+    ) -> None:
+        """The cooldown is deployment-wide, so a courtesy can collide with
+        somebody else's sync. Stamping then would cost this organization its
+        one pull for a pass that never ran."""
+        from app.modules.profiles.models import CompanyProfile
+        from app.modules.profiles.service import maybe_welcome_sync
+
+        # Someone else presses first, claiming the deployment-wide cooldown.
+        pressed = await api.post("/api/v1/sources/sync", headers=member_headers)
+        assert pressed.status_code == 200, pressed.text
+
+        profile_id = await self._profile(completeness=80)
+        async with session_scope() as session:
+            profile = await session.get(CompanyProfile, profile_id)
+            assert profile is not None
+
+            assert await maybe_welcome_sync(session, profile) is None
+            assert profile.welcome_sync_at is None

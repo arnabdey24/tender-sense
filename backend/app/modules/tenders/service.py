@@ -190,7 +190,7 @@ async def get_sync_state(session: AsyncSession) -> SyncState:
     )
 
 
-async def sync_sources(session: AsyncSession) -> SyncState:
+async def sync_sources(session: AsyncSession, *, org_id: UUID | None = None) -> SyncState:
     """Queue a pass over every enabled portal, if the cooldown allows it.
 
     The same dispatch the schedule calls four times a day: one job per portal on
@@ -202,6 +202,12 @@ async def sync_sources(session: AsyncSession) -> SyncState:
     fill up, and telling them to wait nine minutes is a legitimate answer to
     "again, now" — so this returns the state with a countdown rather than
     raising, and the interface shows the wait instead of a failure.
+
+    ``org_id`` scopes the *analysis* to the organization that pressed the
+    button. The notices still land in the shared pool for everyone; what is
+    skipped is re-scoring every other tenant on demand, which is the schedule's
+    job. The six-hourly sweep picks up what a scoped pass left behind — see
+    :func:`app.jobs.tasks.matching.sweep_unanalysed_tenders`.
     """
     retry_after = await cooldown_remaining(SYNC_COOLDOWN_KEY)
     if retry_after:
@@ -221,8 +227,9 @@ async def sync_sources(session: AsyncSession) -> SyncState:
         return await _sync_state(session, retry_after=retry_after, queued=[])
 
     queued: list[str] = []
+    only_org_id = str(org_id) if org_id is not None else None
     for portal in ready:
-        if await enqueue_scrape_source(portal.id, portal.code):
+        if await enqueue_scrape_source(portal.id, portal.code, only_org_id=only_org_id):
             queued.append(portal.code)
 
     state.queued = queued

@@ -106,25 +106,45 @@ async def _run_extraction(
     return extraction
 
 
-async def enqueue_processing(tender_id: str) -> str | None:
+async def enqueue_processing(tender_id: str, *, only_org_id: str | None = None) -> str | None:
     """Queue extraction, embedding and matching for one notice.
 
     Deduplicated by tender, so a notice seen twice in one scrape — or replayed
     while a previous pass is still queued — costs one pipeline run, not two.
+
+    A scoped run carries the organization in its job id. A manual sync and the
+    tenant-wide sweep want different work out of the same notice, and sharing
+    one id would let whichever arrived first silently cancel the other — the
+    sweep being dropped is the expensive direction, because the notice would
+    then never reach the other tenants.
     """
     from app.jobs.queue import get_queue
 
+    job_id = f"process:{tender_id}" if only_org_id is None else f"process:{tender_id}:{only_org_id}"
     try:
         queue = await get_queue()
-        job = await queue.enqueue_job("process_tender", tender_id, _job_id=f"process:{tender_id}")
+        job = await queue.enqueue_job("process_tender", tender_id, only_org_id, _job_id=job_id)
     except Exception as exc:  # pragma: no cover - Redis down must not lose the row
         logger.warning("process_enqueue_failed", tender_id=tender_id, error=str(exc))
         return None
     return job.job_id if job else None
 
 
-async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
-    """Extract, embed and match one notice across every tenant."""
+async def process_tender(
+    ctx: dict[str, Any], tender_id: str, only_org_id: str | None = None
+) -> dict[str, Any]:
+    """Extract, embed and match one notice.
+
+    Across every tenant by default. ``only_org_id`` narrows the matching to
+    one organization — what a hand-pressed sync asks for, so the person who
+    pressed it gets their grades without making a portal's worth of notices
+    re-score the whole deployment on demand.
+
+    A scoped pass deliberately leaves ``analysed_at`` null. That is the flag
+    the six-hourly sweep looks for: without it a notice stored by one
+    organization's sync would be neither new nor amended on the next scheduled
+    pass, and would stay ungraded for every other tenant forever.
+    """
     client = _client(ctx)
     result: dict[str, Any] = {
         "tender_id": tender_id,
@@ -132,6 +152,7 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
         "skipped": 0,
         "not_scorable": 0,
         "failed": 0,
+        "scoped_to_org": only_org_id,
     }
 
     async with session_scope() as session:
@@ -148,7 +169,7 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
         await session.commit()
 
         thresholds = await active_thresholds(session)
-        tenants = await orgs_with_profiles(session)
+        tenants = await orgs_with_profiles(session, only_org_id=only_org_id)
 
     for org, profile in tenants:
         try:
@@ -201,10 +222,57 @@ async def process_tender(ctx: dict[str, Any], tender_id: str) -> dict[str, Any]:
 
         result["alerts"] = await notify_instant(ctx, tender_id)
 
+    # Only a tenant-wide pass may claim the notice is analysed. A scoped one
+    # deliberately leaves the mark off so the sweep still comes for it.
+    if only_org_id is None:
+        async with session_scope() as session:
+            fresh = await session.get(Tender, UUID(tender_id))
+            if fresh is not None:
+                fresh.analysed_at = utcnow()
+
     logger.info(
         "tender_processed",
         **{k: v for k, v in result.items() if k not in ("explanations", "alerts")},
     )
+    return result
+
+
+#: A sweep that enqueued the whole backlog at once would put thousands of
+#: extractions on the queue in one tick and spend a day's model budget before
+#: lunch. It catches up over successive passes instead.
+SWEEP_BATCH = 200
+
+
+async def sweep_unanalysed_tenders(ctx: dict[str, Any]) -> dict[str, Any]:
+    """Match, for every tenant, the notices only one tenant has seen.
+
+    A manual sync scores for the organization that pressed it and no one else,
+    which is what keeps a hand-pressed button from re-scoring the deployment.
+    The cost of that is a notice sitting in the shared pool that is invisible
+    to everybody else: on the next scheduled pass it is neither new nor
+    amended, so nothing would queue it and it would stay ungraded forever.
+
+    This is the other half of that bargain. Anything still carrying a null
+    ``analysed_at`` gets a tenant-wide pass, oldest first so the backlog drains
+    in the order it arrived.
+    """
+    async with session_scope() as session:
+        rows = (
+            await session.scalars(
+                select(Tender.id)
+                .where(Tender.analysed_at.is_(None))
+                .order_by(Tender.first_seen_at)
+                .limit(SWEEP_BATCH)
+            )
+        ).all()
+
+    queued = 0
+    for tender_id in rows:
+        if await enqueue_processing(str(tender_id)):
+            queued += 1
+
+    result = {"found": len(rows), "queued": queued}
+    logger.info("sweep_unanalysed", **result)
     return result
 
 

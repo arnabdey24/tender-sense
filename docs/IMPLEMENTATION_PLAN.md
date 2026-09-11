@@ -1021,8 +1021,7 @@ retyping nine fields. `useUpdateProject` ships, and the dialog now serves both
 paths — they differ only in which mutation they end with — with a pencil on
 each row and a form that opens on what is stored.
 
-**Separating the manual sync from the scheduled one.** *(planned — the
-threshold warning below it has shipped; the rest has not)*
+**Separating the manual sync from the scheduled one.** *(shipped)*
 
 Requested after an organization pressed Sync now, watched 44 notices arrive,
 and saw nothing graded. The pull and the grading are one job today, so
@@ -1045,8 +1044,29 @@ the other tenants and it would stay ungraded for them permanently. Passing the
 org through without closing this converts a transient stranding into a
 designed one. The fix is a marker on the tender — `analysed_at`, null until a
 pass has matched it for every tenant — which the six-hourly cron sweeps:
-`process_tender` for anything still null. That is a migration, and it is the
-reason this is planned rather than done.
+`process_tender` for anything still null. Migration `0014_tender_analysed_at`
+adds it, backfilled to `now()` so the first sweep after deploying does not
+re-run the whole pool and the model spend with it.
+
+`sweep_unanalysed_tenders` runs at `hour={2, 8, 14, 20}, minute=20` — twenty
+past the scrape, so a pass still fetching is not swept mid-flight — and takes
+200 rows at a time, because a sweep that enqueued the whole backlog at once
+would spend a day's model budget in one tick. It is deliberately distinct from
+`process_unprocessed_tenders`, which looks for notices with *no extraction*: a
+pipeline that never ran, rather than one that ran for a single tenant.
+
+Two details worth keeping. A scoped run and a full one carry different arq job
+ids (`process:{id}` vs `process:{id}:{org}`) — sharing one would let whichever
+arrived first cancel the other, and the sweep being dropped is the expensive
+direction. And the endpoint takes `OptionalOrg` rather than `CurrentOrg`:
+platform staff created from the command line have no membership, and refusing
+them a deployment-wide control is how the operations console once ended up
+unreachable by the account most likely to need it. No org means no scoping —
+a tenant-wide pass, which is the safe default.
+
+Notifications needed no work: `process_tender` already ends in `notify_instant`
+whenever anything matched, and a scoped pass matches for the presser, so a
+manual sync raises alerts exactly as the schedule does.
 
 **The threshold, shipped.** `PROFILE_SYNC_THRESHOLD = 50` in
 `features/sources/use-portal-sync.ts`. Under it, the sync panel carries a

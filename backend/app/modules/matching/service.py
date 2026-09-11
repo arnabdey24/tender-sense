@@ -255,15 +255,25 @@ async def match_tender_for_org(
     return MatchOutcome(match_id=match.id, created=created, updated=not created, grade=grade)
 
 
-async def orgs_with_profiles(session: AsyncSession) -> list[tuple[Organization, CompanyProfile]]:
+async def orgs_with_profiles(
+    session: AsyncSession, *, only_org_id: str | None = None
+) -> list[tuple[Organization, CompanyProfile]]:
     """Every tenant that can actually be matched.
 
     An organization with no profile has nothing to score against, so it is
     skipped rather than given a row of zeroes it would have to look at.
+
+    ``only_org_id`` narrows this to one tenant, for a sync somebody pressed
+    themselves. It still goes through the profile join, so an organization
+    that asks for a scoped pass and has no profile gets the same empty answer
+    as it would in a tenant-wide one.
     """
-    rows = await session.execute(
+    query = (
         select(Organization, CompanyProfile)
         .join(CompanyProfile, CompanyProfile.org_id == Organization.id)
         .where(Organization.is_active.is_(True))
     )
+    if only_org_id is not None:
+        query = query.where(Organization.id == UUID(only_org_id))
+    rows = await session.execute(query)
     return [(org, profile) for org, profile in rows.all()]

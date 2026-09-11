@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ai.schemas import Sector
 from app.core.exceptions import NotFoundError
 from app.core.logging import get_logger
+from app.core.time import utcnow
 from app.jobs.queue import get_queue
 from app.modules.profiles.models import (
     CompanyProfile,
@@ -184,6 +185,60 @@ async def read_profile(session: AsyncSession, org_id: UUID) -> ProfileRead:
     )
 
 
+#: The score at which a profile has enough in it to match against, and so the
+#: score at which pulling the portals for this organization is worth doing.
+#: Paired with PROFILE_SYNC_THRESHOLD in the frontend's use-portal-sync.ts,
+#: which is what warns a member that a sync will not grade anything yet.
+WELCOME_SYNC_COMPLETENESS = 50
+
+
+async def maybe_welcome_sync(session: AsyncSession, profile: CompanyProfile) -> str | None:
+    """Pull the portals once, the first time a profile is worth matching.
+
+    Someone who has just finished a profile expects to see the product work.
+    What they actually see is whatever the last scheduled pass happened to
+    leave, which on a quiet deployment is nothing — and the honest next step is
+    the one thing they cannot be expected to know to go and do.
+
+    Scoped to this organization, like any hand-pressed sync: the notices land
+    in the shared pool for everyone, and only the tenant who just described
+    themselves is re-scored on the spot.
+
+    Stamped only when something was actually queued. The cooldown is
+    deployment-wide, so a courtesy that collided with someone else's sync would
+    otherwise spend this organization's single chance on a pass that never ran.
+    """
+    if profile.welcome_sync_at is not None:
+        return None
+    if profile.completeness < WELCOME_SYNC_COMPLETENESS:
+        return None
+
+    # Imported here: the tender service reaches back into profiles for
+    # matching, and a module-level import would close the loop.
+    from app.modules.tenders import service as tenders
+
+    try:
+        state = await tenders.sync_sources(session, org_id=profile.org_id)
+    except Exception as exc:  # pragma: no cover - a courtesy must not fail a save
+        logger.warning("welcome_sync_failed", org_id=str(profile.org_id), error=str(exc))
+        return None
+
+    if not state.queued:
+        # Refused by the cooldown, or every portal was already mid-pass. Leave
+        # the stamp off so the next save tries again.
+        return None
+
+    profile.welcome_sync_at = utcnow()
+    await session.flush()
+    logger.info(
+        "welcome_sync_started",
+        org_id=str(profile.org_id),
+        completeness=profile.completeness,
+        queued=state.queued,
+    )
+    return ",".join(state.queued)
+
+
 async def touch_profile(session: AsyncSession, profile: CompanyProfile) -> None:
     """Record that the profile changed and refresh its completeness.
 
@@ -195,6 +250,7 @@ async def touch_profile(session: AsyncSession, profile: CompanyProfile) -> None:
     ).score
     profile.version += 1
     await session.flush()
+    await maybe_welcome_sync(session, profile)
 
 
 async def schedule_rematch(org_id: UUID, *, reason: str = "profile_changed") -> str | None:

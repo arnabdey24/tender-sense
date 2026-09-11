@@ -220,3 +220,95 @@ export function useResetLimits() {
     onError: (error) => reportFailure(error, "Could not restore the limits"),
   })
 }
+
+export type TenderCreate = components["schemas"]["TenderCreate"]
+export type ImportResponse = components["schemas"]["ImportResponse"]
+
+/** Add one notice by hand, through the same upsert path the scrapers use. */
+export function useCreateTender() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    components["schemas"]["TenderCreateResponse"],
+    ApiError,
+    TenderCreate
+  >({
+    mutationFn: (body) => unwrap(api.POST("/api/v1/admin/tenders", { body })),
+    onSuccess: (result) => {
+      toast.add({
+        type: "success",
+        title:
+          result.outcome === "created" ? "Notice added" : `Notice ${result.outcome}`,
+        description: "It goes through extraction and matching like any other.",
+      })
+      void queryClient.invalidateQueries({ queryKey: qk.tenders.all() })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.all() })
+    },
+    onError: (error) => reportFailure(error, "Could not add the notice"),
+  })
+}
+
+/**
+ * Bulk import from a JSON array or a CSV document.
+ *
+ * The body is the document itself rather than a form field, and the content
+ * type is what tells the server which it is — so this posts raw rather than
+ * going through the typed client, which has no route for an unstructured body.
+ */
+export function useImportTenders() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    ImportResponse,
+    ApiError,
+    { payload: string; format: "json" | "csv"; sourceCode?: string }
+  >({
+    mutationFn: async ({ payload, format, sourceCode }) => {
+      const query = sourceCode
+        ? `?source_code=${encodeURIComponent(sourceCode)}`
+        : ""
+      return unwrap(
+        api.POST(`/api/v1/admin/tenders/import${query}` as "/api/v1/admin/tenders/import", {
+          body: payload as unknown as never,
+          bodySerializer: (body: unknown) => body as string,
+          headers: {
+            "Content-Type": format === "csv" ? "text/csv" : "application/json",
+          },
+        })
+      )
+    },
+    onSuccess: (report) => {
+      toast.add({
+        type: report.failed ? "warning" : "success",
+        title: `${report.created} added, ${report.updated} updated`,
+        description: report.failed
+          ? `${report.failed} rows were skipped; the reasons are listed below.`
+          : `${report.unchanged} already held, nothing lost.`,
+      })
+      void queryClient.invalidateQueries({ queryKey: qk.tenders.all() })
+      void queryClient.invalidateQueries({ queryKey: qk.admin.all() })
+    },
+    onError: (error) => reportFailure(error, "Could not import that document"),
+  })
+}
+
+/** Send one notice back through extraction, embedding and matching. */
+export function useReprocessTender() {
+  return useMutation<unknown, ApiError, { tenderId: string; reparse?: boolean }>({
+    mutationFn: ({ tenderId, reparse }) =>
+      unwrap(
+        api.POST("/api/v1/admin/tenders/{tender_id}/reprocess", {
+          params: {
+            path: { tender_id: tenderId },
+            query: reparse ? { reparse: true } : {},
+          },
+        })
+      ),
+    onSuccess: (_result, { reparse }) =>
+      toast.add({
+        type: "success",
+        title: reparse ? "Re-parse and reprocess queued" : "Reprocess queued",
+        description:
+          "Extraction, embedding and every tenant's match are recomputed.",
+      }),
+    onError: (error) => reportFailure(error, "Could not queue the reprocess"),
+  })
+}

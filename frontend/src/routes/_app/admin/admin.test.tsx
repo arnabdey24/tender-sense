@@ -15,6 +15,12 @@ function memberSession() {
   return { ...payload, user: { ...payload.user, is_superuser: false } }
 }
 
+/** Platform staff who belong to no organization — a freshly made operator. */
+function orglessStaffSession() {
+  const payload = staffSession()
+  return { ...payload, memberships: [] }
+}
+
 const OVERVIEW = {
   tenders: 146,
   tenders_open: 59,
@@ -53,6 +59,32 @@ describe("the operations console", () => {
   it("turns a member away", async () => {
     // The API refuses them too; this only spares them a screen of 403s.
     await renderRoute("/admin", { session: memberSession() })
+
+    expect(
+      screen.queryByRole("heading", { name: "Operations" })
+    ).not.toBeInTheDocument()
+  })
+
+  it("lets an operator with no organization in", async () => {
+    // Staff of the platform is not membership of a company on it, and a
+    // superuser made from the command line has no organization at all. The
+    // org guard was sending them to onboarding, which made the console
+    // unreachable for exactly the account most likely to need it.
+    server.use(
+      http.get("*/api/v1/admin/overview", () => HttpResponse.json(OVERVIEW))
+    )
+
+    await renderRoute("/admin", { session: orglessStaffSession() })
+
+    expect(
+      await screen.findByRole("heading", { name: "Operations" })
+    ).toBeInTheDocument()
+  })
+
+  it("still sends a member with no organization to onboarding", async () => {
+    await renderRoute("/app/dashboard", {
+      session: { ...memberSession(), memberships: [] },
+    })
 
     expect(
       screen.queryByRole("heading", { name: "Operations" })

@@ -26,6 +26,7 @@ import { Route as NotificationsVerifyRouteImport } from './routes/notifications/
 import { Route as AppAdminIndexRouteImport } from './routes/_app/admin/index'
 import { Route as AppAdminJobsRouteImport } from './routes/_app/admin/jobs'
 import { Route as AppAdminLimitsRouteImport } from './routes/_app/admin/limits'
+import { Route as AppAdminPoolRouteImport } from './routes/_app/admin/pool'
 import { Route as AppAdminSourcesRouteImport } from './routes/_app/admin/sources'
 import { Route as AppAdminTenantsRouteImport } from './routes/_app/admin/tenants'
 import { Route as AppAppIndexRouteImport } from './routes/_app/app/index'
@@ -128,6 +129,11 @@ const AppAdminJobsRoute = AppAdminJobsRouteImport.update({
 const AppAdminLimitsRoute = AppAdminLimitsRouteImport.update({
   id: '/limits',
   path: '/limits',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminPoolRoute = AppAdminPoolRouteImport.update({
+  id: '/pool',
+  path: '/pool',
   getParentRoute: () => AppAdminRoute,
 } as any)
 const AppAdminSourcesRoute = AppAdminSourcesRouteImport.update({
@@ -243,6 +249,7 @@ export interface FileRoutesByFullPath {
   '/notifications/verify': typeof NotificationsVerifyRoute
   '/admin/jobs': typeof AppAdminJobsRoute
   '/admin/limits': typeof AppAdminLimitsRoute
+  '/admin/pool': typeof AppAdminPoolRoute
   '/admin/sources': typeof AppAdminSourcesRoute
   '/admin/tenants': typeof AppAdminTenantsRoute
   '/app/dashboard': typeof AppAppDashboardRoute
@@ -278,6 +285,7 @@ export interface FileRoutesByTo {
   '/notifications/verify': typeof NotificationsVerifyRoute
   '/admin/jobs': typeof AppAdminJobsRoute
   '/admin/limits': typeof AppAdminLimitsRoute
+  '/admin/pool': typeof AppAdminPoolRoute
   '/admin/sources': typeof AppAdminSourcesRoute
   '/admin/tenants': typeof AppAdminTenantsRoute
   '/app/dashboard': typeof AppAppDashboardRoute
@@ -317,6 +325,7 @@ export interface FileRoutesById {
   '/notifications/verify': typeof NotificationsVerifyRoute
   '/_app/admin/jobs': typeof AppAdminJobsRoute
   '/_app/admin/limits': typeof AppAdminLimitsRoute
+  '/_app/admin/pool': typeof AppAdminPoolRoute
   '/_app/admin/sources': typeof AppAdminSourcesRoute
   '/_app/admin/tenants': typeof AppAdminTenantsRoute
   '/_app/app/dashboard': typeof AppAppDashboardRoute
@@ -355,6 +364,7 @@ export interface FileRouteTypes {
     | '/notifications/verify'
     | '/admin/jobs'
     | '/admin/limits'
+    | '/admin/pool'
     | '/admin/sources'
     | '/admin/tenants'
     | '/app/dashboard'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/notifications/verify'
     | '/admin/jobs'
     | '/admin/limits'
+    | '/admin/pool'
     | '/admin/sources'
     | '/admin/tenants'
     | '/app/dashboard'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/notifications/verify'
     | '/_app/admin/jobs'
     | '/_app/admin/limits'
+    | '/_app/admin/pool'
     | '/_app/admin/sources'
     | '/_app/admin/tenants'
     | '/_app/app/dashboard'
@@ -582,6 +594,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminLimitsRouteImport
       parentRoute: typeof AppAdminRoute
     }
+    '/_app/admin/pool': {
+      id: '/_app/admin/pool'
+      path: '/pool'
+      fullPath: '/admin/pool'
+      preLoaderRoute: typeof AppAdminPoolRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
     '/_app/admin/sources': {
       id: '/_app/admin/sources'
       path: '/sources'
@@ -721,6 +740,7 @@ declare module '@tanstack/react-router' {
 interface AppAdminRouteChildren {
   AppAdminJobsRoute: typeof AppAdminJobsRoute
   AppAdminLimitsRoute: typeof AppAdminLimitsRoute
+  AppAdminPoolRoute: typeof AppAdminPoolRoute
   AppAdminSourcesRoute: typeof AppAdminSourcesRoute
   AppAdminTenantsRoute: typeof AppAdminTenantsRoute
   AppAdminIndexRoute: typeof AppAdminIndexRoute
@@ -729,6 +749,7 @@ interface AppAdminRouteChildren {
 const AppAdminRouteChildren: AppAdminRouteChildren = {
   AppAdminJobsRoute: AppAdminJobsRoute,
   AppAdminLimitsRoute: AppAdminLimitsRoute,
+  AppAdminPoolRoute: AppAdminPoolRoute,
   AppAdminSourcesRoute: AppAdminSourcesRoute,
   AppAdminTenantsRoute: AppAdminTenantsRoute,
   AppAdminIndexRoute: AppAdminIndexRoute,

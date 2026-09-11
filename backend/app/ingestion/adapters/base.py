@@ -14,9 +14,9 @@ from __future__ import annotations
 import hashlib
 from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import Any, Protocol, runtime_checkable
+from typing import Annotated, Any, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.modules.tenders.models import DocumentKind, ProcurementCategory, TenderStatus
 
@@ -47,9 +47,16 @@ class RawDocument(BaseModel):
 class TenderIn(BaseModel):
     """A normalised notice, ready to upsert into the shared pool."""
 
-    external_id: str
-    canonical_url: str
-    title: str
+    # The three fields that make a notice a notice, and the reason they are
+    # constrained rather than merely typed: `str` accepts "", so a CSV row of
+    # empty cells, or an adapter whose selector stopped matching, wrote a
+    # titleless row into the shared pool that every tenant then saw and nobody
+    # could search for. Rejecting it costs one row and reports why; accepting it
+    # costs a pool nobody trusts. Whitespace-only is the same thing wearing a
+    # space, so both ends are stripped first.
+    external_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    canonical_url: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+    title: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     summary: str | None = None
     description: str | None = None
     procuring_entity: str | None = None

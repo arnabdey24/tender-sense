@@ -165,11 +165,26 @@
   --grade-c-foreground: oklch(0.99 0 260);
 
   /* Status. Each is legible as text on the page ground, not only as a fill. */
-  --success: oklch(0.52 0.13 150);
+  /*
+   * Two steps darker than they were, because of where they are read.
+   *
+   * A status badge is the token as ink on a 15% tint of itself, which is the
+   * pattern the whole set shares — and at 0.52 all three measured between 4.04
+   * and 4.38 against their own tint, under the 4.5 this project commits to. It
+   * went unnoticed because the axe suite runs in jsdom, which has no layout
+   * engine and so skips contrast entirely; a browser run is what found it.
+   * Darkening the ink lifts the badge and the page-ground text together, since
+   * the tint is 85% surface and barely moves. Dark already passed and is
+   * unchanged — light ink on a dark tint is the easier direction.
+   *
+   * All three land on 0.48, which is `brand-600`'s own lightness, so the status
+   * set now sits on the same step as the brand rather than a step of its own.
+   */
+  --success: oklch(0.48 0.14 150);
   --success-foreground: oklch(0.99 0.005 150);
-  --warning: oklch(0.52 0.12 70);
+  --warning: oklch(0.48 0.13 70);
   --warning-foreground: oklch(0.99 0.005 70);
-  --info: oklch(0.52 0.1 200);
+  --info: oklch(0.48 0.11 200);
   --info-foreground: oklch(0.99 0.005 200);
 
   /* Surfaces, deepest to highest. A well is cut into a card; a card rises off

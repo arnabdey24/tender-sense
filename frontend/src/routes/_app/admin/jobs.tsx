@@ -240,7 +240,14 @@ function SpendCard() {
                   {budget > 0 ? ` / ${budget.toLocaleString()}` : " (no cap)"}
                 </span>
               </div>
-              {budget > 0 && <Progress value={percent} />}
+              {/* A bare progressbar has no accessible name, so a screen
+                  reader announces a percentage of nothing in particular. */}
+              {budget > 0 && (
+                <Progress
+                  value={percent}
+                  aria-label={`Model tokens used today: ${spent.toLocaleString()} of ${budget.toLocaleString()}`}
+                />
+              )}
             </div>
 
             {(usage.data?.rows ?? []).length > 0 && (

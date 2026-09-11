@@ -25,6 +25,7 @@ type AdminPage = {
   to:
     | "/admin"
     | "/admin/sources"
+    | "/admin/pool"
     | "/admin/tenants"
     | "/admin/jobs"
     | "/admin/limits"
@@ -36,6 +37,7 @@ type AdminPage = {
 const PAGES: AdminPage[] = [
   { to: "/admin", label: "Overview", exact: true },
   { to: "/admin/sources", label: "Portals" },
+  { to: "/admin/pool", label: "Tender pool" },
   { to: "/admin/tenants", label: "Tenants" },
   { to: "/admin/jobs", label: "Jobs & mail" },
   { to: "/admin/limits", label: "Limits" },

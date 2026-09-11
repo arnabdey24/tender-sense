@@ -1249,7 +1249,22 @@ function AssistantSession({
               showCloseButton={false}
               showOverlay={mode === "workspace"}
               className={cn(
-                "assistant-panel flex flex-col gap-0 overflow-hidden p-0",
+                // `top-auto left-auto translate-none` are not decoration: the
+                // dialog's own base classes centre it with `top-1/2 left-1/2
+                // -translate-x-1/2 -translate-y-1/2`, and `index.css` tried to
+                // undo that in a rule that sits in the same `@layer utilities`
+                // as the utilities themselves. Same layer, same specificity, so
+                // source order decides — and the production build emits the
+                // utility last while the dev server happened to emit it first.
+                // The panel was therefore correct in development and shifted by
+                // half its own size on the deployed site: 210px left, 370px up,
+                // its header off the top of the window.
+                //
+                // Naming the conflict in the class list instead means the
+                // merger drops the centring classes before they ever reach the
+                // DOM, so there is nothing left to win or lose a cascade.
+                "assistant-panel top-auto left-auto translate-none",
+                "flex flex-col gap-0 overflow-hidden p-0",
                 mode === "workspace"
                   ? "assistant-panel-workspace"
                   : mode === "expanded"

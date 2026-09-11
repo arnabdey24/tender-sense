@@ -1,4 +1,4 @@
-import { PlusIcon, XIcon } from "lucide-react"
+import { PencilIcon, PlusIcon, XIcon } from "lucide-react"
 import * as React from "react"
 import { z } from "zod"
 
@@ -30,6 +30,7 @@ import {
   useAddProject,
   useDeleteProject,
   useTaxonomies,
+  useUpdateProject,
   type PastProject,
   type PastProjectIn,
   type Profile,
@@ -70,10 +71,39 @@ function orNull(value: string | undefined): string | null {
   return trimmed ? trimmed : null
 }
 
-function AddProjectDialog({ profile }: { profile: Profile }) {
+/** What the form shows for a project, or for the blank one being added. */
+function formValues(profile: Profile, project?: PastProject) {
+  return {
+    title: project?.title ?? "",
+    client: project?.client ?? "",
+    description: project?.description ?? "",
+    sector: project?.sector ?? NO_SECTOR,
+    country: project?.country ?? "",
+    value: project?.value?.toString() ?? "",
+    // Most firms quote every contract in the currency they report turnover in.
+    currency: project?.currency ?? profile.turnover_currency ?? "",
+    started_on: project?.started_on ?? "",
+    completed_on: project?.completed_on ?? "",
+  }
+}
+
+/**
+ * One dialog for both adding and editing: they differ only in which mutation
+ * they end with. `project` absent means add.
+ */
+function ProjectDialog({
+  profile,
+  project,
+}: {
+  profile: Profile
+  project?: PastProject
+}) {
   const [open, setOpen] = React.useState(false)
   const add = useAddProject()
+  const update = useUpdateProject()
   const taxonomies = useTaxonomies()
+  const editing = project !== undefined
+  const pending = add.isPending || update.isPending
 
   const sectors = [
     { value: NO_SECTOR, label: "Not specified" },
@@ -85,19 +115,15 @@ function AddProjectDialog({ profile }: { profile: Profile }) {
 
   const form = useZodForm({
     schema,
-    defaultValues: {
-      title: "",
-      client: "",
-      description: "",
-      sector: NO_SECTOR,
-      country: "",
-      value: "",
-      // Most firms quote every contract in the currency they report turnover in.
-      currency: profile.turnover_currency ?? "",
-      started_on: "",
-      completed_on: "",
-    },
+    defaultValues: formValues(profile, project),
   })
+
+  // Reopening after a cancelled edit should show what is stored, not the
+  // half-finished text the abandoned attempt left behind.
+  const onOpenChange = (next: boolean) => {
+    if (next) form.reset(formValues(profile, project))
+    setOpen(next)
+  }
 
   const onSubmit = form.handleSubmit(async (values) => {
     const amount = values.value?.trim()
@@ -115,23 +141,42 @@ function AddProjectDialog({ profile }: { profile: Profile }) {
       started_on: orNull(values.started_on),
       completed_on: orNull(values.completed_on),
     }
-    await add.mutateAsync(body)
-    form.reset()
+    if (project) await update.mutateAsync({ id: project.id, body })
+    else await add.mutateAsync(body)
+    form.reset(editing ? values : formValues(profile))
     setOpen(false)
   })
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger
-        render={<Button variant="outline" className="self-start" />}
+        render={
+          editing ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Edit ${project.title}`}
+            />
+          ) : (
+            <Button variant="outline" className="self-start" />
+          )
+        }
       >
-        <PlusIcon data-icon="inline-start" />
-        Add project
+        {editing ? (
+          <PencilIcon />
+        ) : (
+          <>
+            <PlusIcon data-icon="inline-start" />
+            Add project
+          </>
+        )}
       </DialogTrigger>
       <DialogContent className="max-h-[85svh] overflow-y-auto sm:max-w-lg">
         <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
           <DialogHeader>
-            <DialogTitle>Add a past project</DialogTitle>
+            <DialogTitle>
+              {editing ? "Edit a past project" : "Add a past project"}
+            </DialogTitle>
             <DialogDescription>
               Only the title is required. Everything else sharpens the match.
             </DialogDescription>
@@ -141,7 +186,7 @@ function AddProjectDialog({ profile }: { profile: Profile }) {
             <RhfField
               form={form}
               name="title"
-              label="What the contract was"
+              label="Title"
               description="Write it the way the work would be advertised."
             >
               <Input placeholder="Core network upgrade for a district hospital" />
@@ -237,9 +282,9 @@ function AddProjectDialog({ profile }: { profile: Profile }) {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={add.isPending}>
-              {add.isPending ? <Spinner data-icon="inline-start" /> : null}
-              Add project
+            <Button type="submit" disabled={pending}>
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              {editing ? "Save project" : "Add project"}
             </Button>
           </DialogFooter>
         </form>
@@ -288,7 +333,7 @@ export function PastProjectsCard({ profile }: { profile: Profile }) {
       caption="Evidence of delivery. Each project is matched on its own, and rules that demand a number of comparable contracts count these."
     >
       <div className="flex flex-col gap-4">
-        <AddProjectDialog profile={profile} />
+        <ProjectDialog profile={profile} />
 
         {projects.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -310,15 +355,18 @@ export function PastProjectsCard({ profile }: { profile: Profile }) {
                     </p>
                   ) : null}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={`Remove ${project.title}`}
-                  disabled={remove.isPending}
-                  onClick={() => remove.mutate(project)}
-                >
-                  <XIcon />
-                </Button>
+                <div className="flex shrink-0 items-center">
+                  <ProjectDialog profile={profile} project={project} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Remove ${project.title}`}
+                    disabled={remove.isPending}
+                    onClick={() => remove.mutate(project)}
+                  >
+                    <XIcon />
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>

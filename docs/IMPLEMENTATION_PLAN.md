@@ -1010,6 +1010,17 @@ queries the signed-in shell fires on every route — made the axe pass over
 along and its progress bar has no accessible name. Both progress bars are now
 labelled.
 
+Shipping it as v1.2.0 then proved two things wrong, both found by someone
+using the screen rather than reading the diff. The title field was labelled
+"What the contract was" while the dialog's own description said "only the title
+is required" — copy naming a field that appeared nowhere on screen, so the form
+read as having no title input at all. It is labelled `Title` now. And there was
+no way to correct a project: `PUT /profile/projects/{id}` had been in the API
+since M1 and still had no caller, so fixing a typo meant deleting the row and
+retyping nine fields. `useUpdateProject` ships, and the dialog now serves both
+paths — they differ only in which mutation they end with — with a pencil on
+each row and a form that opens on what is stored.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

@@ -117,6 +117,26 @@ export function useAddProject(): UseMutationResult<
   })
 }
 
+export function useUpdateProject(): UseMutationResult<
+  PastProject,
+  ApiError,
+  { id: string; body: PastProjectIn }
+> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }) =>
+      unwrap(
+        api.PUT("/api/v1/profile/projects/{project_id}", {
+          params: { path: { project_id: id } },
+          body,
+        })
+      ),
+    onSuccess: () => invalidateProfileAndMatches(queryClient),
+    onError: (error) =>
+      toast.add({ type: "error", title: "Could not save", description: error.message }),
+  })
+}
+
 export function useDeleteProject(): UseMutationResult<void, ApiError, PastProject> {
   const queryClient = useQueryClient()
   return useMutation({

@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
+import { PastProjectsCard } from "@/features/profile/PastProjectsCard"
 import {
   useAddCertification,
   useAddService,
@@ -339,7 +340,10 @@ function ProfilePage() {
           caption={completeness.data?.next_step ?? "Your profile is complete."}
         >
           <div className="flex flex-col gap-3">
-            <Progress value={completeness.data?.score ?? 0} />
+            <Progress
+              value={completeness.data?.score ?? 0}
+              aria-label="Profile completeness"
+            />
             <div className="flex flex-wrap gap-2">
               {(completeness.data?.sections ?? []).map((section) => (
                 <Badge
@@ -373,6 +377,7 @@ function ProfilePage() {
         {isAdmin ? (
           <>
             <ServicesCard profile={profile.data} />
+            <PastProjectsCard profile={profile.data} />
             <CertificationsCard profile={profile.data} />
           </>
         ) : null}

@@ -63,7 +63,11 @@ export function SetupStrip() {
 
       {task.score !== null ? (
         <div className="flex shrink-0 items-center gap-2">
-          <Progress value={task.score} className="w-24" />
+          <Progress
+            value={task.score}
+            className="w-24"
+            aria-label="Profile completeness"
+          />
           <span className="text-xs tabular-nums text-muted-foreground">
             {Math.round(task.score)}%
           </span>

@@ -10,6 +10,9 @@ type NotificationRead = components["schemas"]["NotificationRead"]
 type NotificationSettingsRead =
   components["schemas"]["NotificationSettingsRead"]
 type RecipientRead = components["schemas"]["RecipientRead"]
+type ProfileRead = components["schemas"]["ProfileRead"]
+type CompletenessRead = components["schemas"]["CompletenessRead"]
+type TaxonomiesRead = components["schemas"]["TaxonomiesRead"]
 
 export const ORG_ID = "11111111-1111-4111-8111-111111111111"
 export const OTHER_ORG_ID = "22222222-2222-4222-8222-222222222222"
@@ -162,3 +165,77 @@ export const recipients: RecipientRead[] = [
     created_at: new Date().toISOString(),
   },
 ]
+
+/** A capability profile with everything filled in but the past projects. */
+export const profile: ProfileRead = {
+  id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+  org_id: ORG_ID,
+  overview: "Systems integration and enterprise networking for public clients.",
+  sectors: ["it"],
+  geographies: ["BD"],
+  keywords: ["networking"],
+  annual_turnover: 200000000,
+  turnover_currency: "BDT",
+  turnover_year: 2025,
+  years_in_business: 12,
+  employee_count: 60,
+  accepts_jv: true,
+  completeness: 85,
+  version: 3,
+  updated_at: "2026-01-01T00:00:00Z",
+  services: [
+    {
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      name: "Network integration",
+      position: 0,
+    },
+  ],
+  past_projects: [],
+  certifications: [
+    {
+      id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+      code: "ISO9001",
+      label: "ISO 9001",
+      issuer: null,
+      valid_until: null,
+    },
+  ],
+}
+
+/** Mirrors the backend weights: every section but past projects is done. */
+export const completeness: CompletenessRead = {
+  score: 85,
+  next_step: "Add your past projects.",
+  sections: [
+    { key: "overview", label: "Company overview", complete: true, weight: 25 },
+    { key: "services", label: "Services", complete: true, weight: 25 },
+    {
+      key: "sectors",
+      label: "Sectors and geographies",
+      complete: true,
+      weight: 15,
+    },
+    {
+      key: "past_projects",
+      label: "Past projects",
+      complete: false,
+      weight: 15,
+    },
+    { key: "turnover", label: "Annual turnover", complete: true, weight: 10 },
+    {
+      key: "certifications",
+      label: "Certifications",
+      complete: true,
+      weight: 10,
+    },
+  ],
+}
+
+export const taxonomies: TaxonomiesRead = {
+  sectors: [
+    { value: "it", label: "It" },
+    { value: "construction", label: "Construction" },
+    { value: "healthcare", label: "Healthcare" },
+  ],
+  common_certifications: ["ISO 9001", "ISO 27001"],
+}

@@ -981,6 +981,35 @@ trust when the checkout and the containers have drifted apart.
 CI gained `actionlint`, because a workflow's own mistakes otherwise surface only
 when it runs, and for a release pipeline that means "during a release".
 
+**Past projects — a scored section with nowhere to type.**
+
+`completeness` weights past projects at 15 of 100 and the API has carried
+`POST/PUT/DELETE /profile/projects` since M1, but the capability profile page
+only ever rendered cards for services and certifications. `useAddProject` and
+`useDeleteProject` existed in `features/profile/api.ts` and nothing imported
+them. The practical cost was not the missing 15 points: a profile could never
+reach 100, so `SetupStrip` told every organization to "add your past projects"
+on every page, forever, with no way to comply, and the experience rules that
+count `past_project_count` had nothing to count.
+
+`features/profile/PastProjectsCard.tsx` fills it. Nine fields is too many for
+the inline add-form the sibling cards use, so it is a dialog; everything but the
+title is optional, empty fields go as `null` rather than `""`, and the currency
+defaults to the one the profile already reports turnover in. It lives in
+`features/` rather than inline in the route because it carries its own form
+schema and the route file is long enough.
+
+The trigger sits in the section body rather than `PageSection`'s `action` slot:
+that slot renders its child twice, once for each breakpoint, which for a dialog
+means two mounted dialogs with two independent open states.
+
+Two things fell out of writing the test. The mock server had no profile
+handlers at all, so the whole page was untestable; adding them — plus the two
+queries the signed-in shell fires on every route — made the axe pass over
+`/app/dashboard` fail, because `SetupStrip` had been invisible in tests all
+along and its progress bar has no accessible name. Both progress bars are now
+labelled.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

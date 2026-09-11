@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw"
 
 import {
+  completeness,
   errorEnvelope,
   invitationPreview,
   invitations,
@@ -8,8 +9,10 @@ import {
   notificationSettings,
   notifications,
   organization,
+  profile,
   recipients,
   session,
+  taxonomies,
   user,
 } from "@/mocks/fixtures"
 
@@ -120,6 +123,65 @@ export const handlers = [
   http.delete(
     "*/api/v1/orgs/current/invitations/:id",
     () => new HttpResponse(null, { status: 204 })
+  ),
+
+  // The signed-in shell mounts on every route, so its two background queries
+  // answer everywhere rather than only on the pages that display them.
+  http.get("*/api/v1/tenders", () =>
+    HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0 })
+  ),
+  http.get("*/api/v1/matches/stats", () => HttpResponse.json({ total: 0 })),
+
+  http.get("*/api/v1/profile", () => HttpResponse.json(profile)),
+  http.put("*/api/v1/profile", async ({ request }) =>
+    HttpResponse.json({ ...profile, ...((await request.json()) as object) })
+  ),
+  http.get("*/api/v1/profile/completeness", () =>
+    HttpResponse.json(completeness)
+  ),
+  http.get("*/api/v1/taxonomies", () => HttpResponse.json(taxonomies)),
+  http.post("*/api/v1/profile/services", async ({ request }) =>
+    HttpResponse.json(
+      {
+        id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+        ...((await request.json()) as object),
+      },
+      { status: 201 }
+    )
+  ),
+  http.delete(
+    "*/api/v1/profile/services/:id",
+    () => new HttpResponse(null, { status: 204 })
+  ),
+  http.post("*/api/v1/profile/projects", async ({ request }) =>
+    HttpResponse.json(
+      {
+        id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        ...((await request.json()) as object),
+      },
+      { status: 201 }
+    )
+  ),
+  http.delete(
+    "*/api/v1/profile/projects/:id",
+    () => new HttpResponse(null, { status: 204 })
+  ),
+  http.post("*/api/v1/profile/certifications", async ({ request }) =>
+    HttpResponse.json(
+      {
+        id: "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        code: "ISO9001",
+        ...((await request.json()) as object),
+      },
+      { status: 201 }
+    )
+  ),
+  http.delete(
+    "*/api/v1/profile/certifications/:id",
+    () => new HttpResponse(null, { status: 204 })
+  ),
+  http.post("*/api/v1/profile/rematch", () =>
+    HttpResponse.json({ enqueued: true, job_id: "job-1", reason: "manual" })
   ),
 
   http.get("*/api/v1/invitations/:token", () =>

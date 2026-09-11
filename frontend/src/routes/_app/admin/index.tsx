@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 
 import { ConsoleSection } from "@/components/layout/ConsoleSection"
+import { PoolIntakeChart } from "@/features/admin/AdminCharts"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -21,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
-import { useOverview, type Overview } from "@/features/admin/api"
+import { useOverview, useTrends, type Overview } from "@/features/admin/api"
 import { timeAgo } from "@/lib/data/time"
 import { cn } from "@/lib/utils"
 
@@ -178,6 +179,7 @@ function StatusBoard({ data }: { data: Overview }) {
 
 function OverviewPage() {
   const overview = useOverview()
+  const trends = useTrends()
 
   if (overview.isPending) {
     return <Skeleton className="h-64 w-full" />
@@ -219,6 +221,13 @@ function OverviewPage() {
                 : undefined
             }
           />
+        </div>
+
+        {/* The three numbers above are instants. This is the one thing on the
+            page that can tell a portal which has stopped answering from one
+            that simply had a quiet Tuesday. */}
+        <div className="mt-6">
+          <PoolIntakeChart trends={trends.data} isLoading={trends.isPending} />
         </div>
       </ConsoleSection>
 

@@ -10,6 +10,7 @@ import type { components } from "@/lib/api/schema"
 export type JobRun = components["schemas"]["JobRunRead"]
 export type EmailOutboxRow = components["schemas"]["EmailOutboxRead"]
 export type AiUsageSummary = components["schemas"]["AiUsageSummary"]
+export type Trends = components["schemas"]["Trends"]
 
 export function useJobRuns(limit = 25) {
   return useQuery<JobRun[], ApiError>({
@@ -41,6 +42,18 @@ export function useAiUsage(days = 14) {
       unwrap(
         api.GET("/api/v1/admin/ai-usage", { params: { query: { days } } })
       ),
+  })
+}
+
+export function useTrends(days = 14) {
+  return useQuery<Trends, ApiError>({
+    queryKey: qk.admin.trends(days),
+    // Same cadence as the run list it sits beside: a console showing a chart
+    // that disagrees with the table under it is worse than one showing
+    // neither.
+    refetchInterval: 30_000,
+    queryFn: () =>
+      unwrap(api.GET("/api/v1/admin/trends", { params: { query: { days } } })),
   })
 }
 

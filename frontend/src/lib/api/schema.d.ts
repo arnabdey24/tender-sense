@@ -1877,6 +1877,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Is today normal
+         * @description Daily pool intake per portal, and daily job outcomes.
+         *
+         *     The counters say what is true now. This says whether that is where it was
+         *     yesterday, which is the question a portal that has quietly stopped
+         *     answering can only be caught by.
+         */
+        get: operations["trends_api_v1_admin_trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/organizations": {
         parameters: {
             query?: never;
@@ -2408,6 +2432,21 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
+        /**
+         * IntakeDay
+         * @description One day's arrivals into the shared pool, per portal.
+         */
+        IntakeDay: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** By Source */
+            by_source?: {
+                [key: string]: number;
+            };
+        };
         /** InvitationCreate */
         InvitationCreate: {
             /**
@@ -2468,6 +2507,32 @@ export interface components {
              * @enum {string}
              */
             status: "pending" | "accepted" | "revoked" | "expired";
+        };
+        /**
+         * JobDay
+         * @description One day of background work, by outcome.
+         */
+        JobDay: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /**
+             * Succeeded
+             * @default 0
+             */
+            succeeded: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Partial
+             * @default 0
+             */
+            partial: number;
         };
         /** JobRunRead */
         JobRunRead: {
@@ -4170,6 +4235,30 @@ export interface components {
             queued: boolean;
             /** To Email */
             to_email: string;
+        };
+        /**
+         * Trends
+         * @description What the counters cannot say: whether today is normal.
+         *
+         *     Every figure on the console's front page is an instant — 146 notices, 271
+         *     failures, 0% of budget. None of them answers the question an operator
+         *     actually arrives with, which is whether that number is where it was
+         *     yesterday. A portal that has stopped answering still reports a pool size;
+         *     it is the shape of the intake that gives it away.
+         */
+        Trends: {
+            /** Days */
+            days: number;
+            /** Sources */
+            sources?: string[];
+            /** Source Names */
+            source_names?: {
+                [key: string]: string;
+            };
+            /** Intake */
+            intake?: components["schemas"]["IntakeDay"][];
+            /** Jobs */
+            jobs?: components["schemas"]["JobDay"][];
         };
         /** TurnInput */
         TurnInput: {
@@ -7505,6 +7594,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Overview"];
+                };
+            };
+        };
+    };
+    trends_api_v1_admin_trends_get: {
+        parameters: {
+            query?: {
+                /** @description Window in days */
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trends"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

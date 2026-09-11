@@ -36,6 +36,7 @@ from app.modules.admin.schemas import (
     SourceUpdate,
     TenderCreate,
     TenderCreateResponse,
+    Trends,
     UserAdminRead,
     UserAdminUpdate,
 )
@@ -279,6 +280,21 @@ async def ai_usage(
 async def overview(_: Superuser, db: DbSession) -> Overview:
     """The console's front page: pool size, portal health, failures, spend."""
     return await service.overview(db)
+
+
+@router.get("/trends", response_model=Trends, summary="Is today normal")
+async def trends(
+    _: Superuser,
+    db: DbSession,
+    days: Annotated[int, Query(ge=1, le=90, description="Window in days")] = 14,
+) -> Trends:
+    """Daily pool intake per portal, and daily job outcomes.
+
+    The counters say what is true now. This says whether that is where it was
+    yesterday, which is the question a portal that has quietly stopped
+    answering can only be caught by.
+    """
+    return await service.trends(db, days=days)
 
 
 @router.get("/organizations", response_model=list[OrganizationAdminRead])

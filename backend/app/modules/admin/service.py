@@ -6,7 +6,7 @@ scrapers use, so a hand-added notice is indistinguishable downstream.
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Any
 from uuid import UUID
 
@@ -25,6 +25,8 @@ from app.jobs.queue import QUEUE_DEFAULT
 from app.jobs.runs import JobRun, RunStatus, ScraperRun
 from app.modules.admin.schemas import (
     ImportResponse,
+    IntakeDay,
+    JobDay,
     OrganizationAdminRead,
     Overview,
     SourceCreate,
@@ -32,6 +34,7 @@ from app.modules.admin.schemas import (
     SourceUpdate,
     TenderCreate,
     TenderCreateResponse,
+    Trends,
     UserAdminRead,
     UserAdminUpdate,
 )
@@ -526,3 +529,73 @@ async def update_user(
         is_superuser=user.is_superuser,
     )
     return (await list_users(session, q=user.email, limit=1))[0]
+
+
+async def trends(session: AsyncSession, days: int = 14) -> Trends:
+    """Daily intake per portal, and daily job outcomes.
+
+    Two aggregate queries rather than one row per notice: the pool is the
+    largest table in the product and the console is opened while something is
+    already wrong, which is the worst moment to ask Postgres for 50,000 rows so
+    the browser can count them.
+
+    Days with nothing are filled in rather than omitted. A chart drawn only from
+    days that had arrivals closes the gap that is the entire signal — a portal
+    silent since Tuesday looks identical to one that reports every day.
+    """
+    window = max(1, min(int(days), 90))
+    # Bucket by calendar day in UTC, which is what the labels say. A local
+    # timezone here would make "today" disagree with `tenders_added_today`.
+    today = utcnow().date()
+    since = today - timedelta(days=window - 1)
+    calendar = [since + timedelta(days=offset) for offset in range(window)]
+
+    portals = [
+        source
+        for source in (await session.scalars(select(TenderSource).order_by(TenderSource.code)))
+        if source.enabled
+    ]
+    codes = [source.code for source in portals]
+    by_id = {source.id: source.code for source in portals}
+
+    intake: dict[date, dict[str, int]] = {day: dict.fromkeys(codes, 0) for day in calendar}
+    rows = await session.execute(
+        select(
+            func.date(Tender.first_seen_at).label("day"),
+            Tender.source_id,
+            func.count(Tender.id).label("total"),
+        )
+        .where(func.date(Tender.first_seen_at) >= since)
+        .group_by("day", Tender.source_id)
+    )
+    for day, source_id, total in rows:
+        code = by_id.get(source_id)
+        if code and day in intake:
+            intake[day][code] = int(total)
+
+    jobs: dict[date, dict[str, int]] = {
+        day: {"succeeded": 0, "failed": 0, "partial": 0} for day in calendar
+    }
+    rows = await session.execute(
+        select(
+            func.date(JobRun.started_at).label("day"),
+            JobRun.status,
+            func.count(JobRun.id).label("total"),
+        )
+        .where(func.date(JobRun.started_at) >= since)
+        .group_by("day", JobRun.status)
+    )
+    for day, status, total in rows:
+        # `running` is a job in flight, not an outcome, so it is not drawn as
+        # one — a bar counting it would fall as the run finished.
+        bucket = jobs.get(day)
+        if bucket is not None and status.value in bucket:
+            bucket[status.value] = int(total)
+
+    return Trends(
+        days=window,
+        sources=codes,
+        source_names={source.code: source.name for source in portals},
+        intake=[IntakeDay(day=day, by_source=intake[day]) for day in calendar],
+        jobs=[JobDay(day=day, **jobs[day]) for day in calendar],
+    )

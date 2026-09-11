@@ -252,3 +252,41 @@ class UserAdminUpdate(BaseModel):
 
     is_active: bool | None = None
     is_superuser: bool | None = None
+
+
+class IntakeDay(BaseModel):
+    """One day's arrivals into the shared pool, per portal."""
+
+    day: date
+    #: Portal code to notices first seen that day. Portals that brought nothing
+    #: are present with a zero, so a silent portal reads as a gap in its own
+    #: band rather than as a day the chart simply skipped.
+    by_source: dict[str, int] = Field(default_factory=dict)
+
+
+class JobDay(BaseModel):
+    """One day of background work, by outcome."""
+
+    day: date
+    succeeded: int = 0
+    failed: int = 0
+    partial: int = 0
+
+
+class Trends(BaseModel):
+    """What the counters cannot say: whether today is normal.
+
+    Every figure on the console's front page is an instant — 146 notices, 271
+    failures, 0% of budget. None of them answers the question an operator
+    actually arrives with, which is whether that number is where it was
+    yesterday. A portal that has stopped answering still reports a pool size;
+    it is the shape of the intake that gives it away.
+    """
+
+    days: int
+    #: Portal codes in a fixed order, so a series keeps its colour between
+    #: refreshes rather than swapping when a portal has a quiet day.
+    sources: list[str] = Field(default_factory=list)
+    source_names: dict[str, str] = Field(default_factory=dict)
+    intake: list[IntakeDay] = Field(default_factory=list)
+    jobs: list[JobDay] = Field(default_factory=list)

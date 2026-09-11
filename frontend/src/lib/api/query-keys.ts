@@ -78,6 +78,7 @@ export const qk = {
     emailOutbox: () => ["admin", "email-outbox"] as const,
     aiUsage: (days: number) => ["admin", "ai-usage", days] as const,
     overview: () => ["admin", "overview"] as const,
+    trends: (days: number) => ["admin", "trends", days] as const,
     organizations: (q?: string) => ["admin", "organizations", q ?? ""] as const,
     users: (q?: string) => ["admin", "users", q ?? ""] as const,
     limits: () => ["admin", "limits"] as const,

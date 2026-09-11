@@ -8,6 +8,7 @@ import {
 } from "lucide-react"
 
 import { ConsoleSection } from "@/components/layout/ConsoleSection"
+import { JobOutcomeChart, SpendChart } from "@/features/admin/AdminCharts"
 import { timeAgo } from "@/lib/data/time"
 import {
   DropdownMenu,
@@ -35,6 +36,7 @@ import {
   useEmailOutbox,
   useJobRuns,
   useRetryEmail,
+  useTrends,
   useTriggerJob,
 } from "@/features/admin/api"
 
@@ -55,6 +57,7 @@ const RUN_VARIANTS: Record<
 
 function JobRunsCard() {
   const runs = useJobRuns()
+  const trends = useTrends()
   const trigger = useTriggerJob()
 
   return (
@@ -91,8 +94,13 @@ function JobRunsCard() {
         </DropdownMenu>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
         <ApiErrorAlert error={runs.error} />
+        {/* The list below holds twenty-five runs, which is about an hour on a
+            busy deployment. "271 failed in 24h" cannot tell a burst that ended
+            from a failure still running; the shape can. */}
+        <JobOutcomeChart trends={trends.data} isLoading={trends.isPending} />
+        <ApiErrorAlert error={trends.error} />
         {runs.isPending ? (
           <Skeleton className="h-24 w-full" />
         ) : (
@@ -251,34 +259,14 @@ function SpendCard() {
               )}
             </div>
 
-            {(usage.data?.rows ?? []).length > 0 && (
-              <Table density="compact" fixed className="max-w-3xl min-w-[34rem]">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32">Day</TableHead>
-                    <TableHead>Purpose</TableHead>
-                    <TableHead numeric className="w-24">
-                      Calls
-                    </TableHead>
-                    <TableHead numeric className="w-32">
-                      Tokens
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(usage.data?.rows ?? []).slice(0, 12).map((row, index) => (
-                    <TableRow key={`${row.day}-${row.purpose}-${index}`}>
-                      <TableCell className="tabular-nums">{row.day}</TableCell>
-                      <TableCell className="truncate">{row.purpose}</TableCell>
-                      <TableCell numeric>{row.calls}</TableCell>
-                      <TableCell numeric>
-                        {(row.tokens_in + row.tokens_out).toLocaleString()}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            {/*
+              This was twelve rows of day-and-purpose pairs. They held these
+              same figures and could not answer the question anybody asks of
+              them: whether today is unusual, and which work is responsible. A
+              budget that empties at four is a different problem from one that
+              has been climbing all week.
+            */}
+            <SpendChart usage={usage.data} />
           </>
         )}
       </div>

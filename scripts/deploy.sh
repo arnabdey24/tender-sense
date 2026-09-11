@@ -22,7 +22,10 @@ log() { printf '%s  %s\n' "$(date -u +%H:%M:%S)" "$*" >&2; }
 fail() { log "FAILED: $*"; exit 1; }
 
 log "checking out $RELEASE"
-git fetch --tags --prune origin
+# --force because a tag that moved upstream (someone re-cutting a release after
+# a failed build) otherwise makes `git fetch` exit non-zero, and `set -e` turns
+# that into a failed deploy of a tag that had nothing to do with it.
+git fetch --tags --force --prune origin
 git checkout --detach "$RELEASE" || fail "no such tag: $RELEASE"
 
 export RELEASE

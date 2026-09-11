@@ -310,7 +310,18 @@ export function TendersTable({
                       <span className="flex items-baseline gap-1.5">
                         {sourceShort(tender.source_code)}
                         {tender.country ? (
-                          <span className="text-xs text-muted-foreground/70">
+                          /*
+                            Full muted, not `/70`. Dimming it measured 3.05:1
+                            at 12px — under the 4.5:1 this project holds itself
+                            to — and it went unnoticed because almost nothing
+                            in the pool carried a country until ADB arrived
+                            with two hundred notices across twenty-four of
+                            them. Size already makes it the secondary half of
+                            this cell; opacity was doing the same job twice and
+                            failing a bar doing it. It is also not decoration:
+                            country is what an eligibility rule filters on.
+                          */
+                          <span className="text-xs text-muted-foreground">
                             {tender.country}
                           </span>
                         ) : null}

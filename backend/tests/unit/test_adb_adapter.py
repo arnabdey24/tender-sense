@@ -97,8 +97,7 @@ class TestNormalisation:
     def test_consulting_notices_are_categorised(self) -> None:
         assert normalize(by_type("Firm")).procurement_category is ProcurementCategory.CONSULTING
         assert (
-            normalize(by_type("Individual")).procurement_category
-            is ProcurementCategory.CONSULTING
+            normalize(by_type("Individual")).procurement_category is ProcurementCategory.CONSULTING
         )
 
     def test_a_bid_invitation_is_not_guessed_into_a_category(self) -> None:
@@ -128,7 +127,7 @@ class TestNormalisation:
         doc = by_type("Firm")
         summary = normalize(doc).summary or ""
         assert "Firm" in summary
-        for part in (doc.get("tm_X3b_en_sector") or []):
+        for part in doc.get("tm_X3b_en_sector") or []:
             assert part in summary
 
     def test_relative_document_links_are_absolute(self) -> None:

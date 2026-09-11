@@ -25,7 +25,6 @@ from selectolax.parser import HTMLParser
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.ingestion.countries import country_code
 from app.ingestion.adapters.base import (
     NoticeRef,
     RawDocument,
@@ -33,6 +32,7 @@ from app.ingestion.adapters.base import (
     TenderIn,
     register_adapter,
 )
+from app.ingestion.countries import country_code
 from app.ingestion.retry import with_retry
 from app.modules.tenders.models import DocumentKind, ProcurementCategory, TenderStatus
 
@@ -73,6 +73,7 @@ _CATEGORIES: dict[str, ProcurementCategory] = {
 
 #: A notice type that describes something already decided is not biddable.
 _CLOSED_NOTICE_TYPES = frozenset({"contract award", "award notice", "cancellation notice"})
+
 
 def _parse_date(value: Any) -> datetime | None:
     """The portal writes dates as `08-Sep-2026`, sometimes with a time."""

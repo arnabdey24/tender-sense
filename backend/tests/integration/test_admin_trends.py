@@ -75,29 +75,21 @@ class TestAccess:
 
 class TestShape:
     @pytest.mark.anyio
-    async def test_quiet_days_are_present_rather_than_omitted(
-        self, api: AsyncClient
-    ) -> None:
+    async def test_quiet_days_are_present_rather_than_omitted(self, api: AsyncClient) -> None:
         """The gap is the signal; a series that skips it cannot show it."""
         email, headers = await _auth()
         try:
-            body = (
-                await api.get("/api/v1/admin/trends?days=14", headers=headers)
-            ).json()
+            body = (await api.get("/api/v1/admin/trends?days=14", headers=headers)).json()
             assert len(body["intake"]) == 14
             assert len(body["jobs"]) == 14
         finally:
             await _drop_user(email)
 
     @pytest.mark.anyio
-    async def test_the_window_is_contiguous_and_ends_today(
-        self, api: AsyncClient
-    ) -> None:
+    async def test_the_window_is_contiguous_and_ends_today(self, api: AsyncClient) -> None:
         email, headers = await _auth()
         try:
-            body = (
-                await api.get("/api/v1/admin/trends?days=7", headers=headers)
-            ).json()
+            body = (await api.get("/api/v1/admin/trends?days=7", headers=headers)).json()
             days = [row["day"] for row in body["intake"]]
             assert days == sorted(days)
             assert len(set(days)) == 7
@@ -110,9 +102,7 @@ class TestShape:
         """Including the ones that brought nothing, or a band vanishes."""
         email, headers = await _auth()
         try:
-            body = (
-                await api.get("/api/v1/admin/trends?days=5", headers=headers)
-            ).json()
+            body = (await api.get("/api/v1/admin/trends?days=5", headers=headers)).json()
             codes = set(body["sources"])
             assert codes
             for row in body["intake"]:
@@ -181,15 +171,11 @@ class TestCounts:
             assert today["by_source"][code] >= 1
         finally:
             async with session_scope() as session:
-                await session.execute(
-                    delete(Tender).where(Tender.external_id == marker)
-                )
+                await session.execute(delete(Tender).where(Tender.external_id == marker))
             await _drop_user(email)
 
     @pytest.mark.anyio
-    async def test_a_running_job_is_not_counted_as_an_outcome(
-        self, api: AsyncClient
-    ) -> None:
+    async def test_a_running_job_is_not_counted_as_an_outcome(self, api: AsyncClient) -> None:
         """A bar counting it would fall as the run finished."""
         email, headers = await _auth()
         name = f"trend-probe-{uuid4().hex[:8]}"
@@ -211,16 +197,12 @@ class TestCounts:
             await _drop_user(email)
 
     @pytest.mark.anyio
-    async def test_outcomes_are_counted_on_their_own_day(
-        self, api: AsyncClient
-    ) -> None:
+    async def test_outcomes_are_counted_on_their_own_day(self, api: AsyncClient) -> None:
         email, headers = await _auth()
         name = f"trend-probe-{uuid4().hex[:8]}"
         async with session_scope() as session:
             for status in (RunStatus.SUCCEEDED, RunStatus.FAILED, RunStatus.FAILED):
-                session.add(
-                    JobRun(name=name, status=status, started_at=utcnow())
-                )
+                session.add(JobRun(name=name, status=status, started_at=utcnow()))
             session.add(
                 JobRun(
                     name=name,
@@ -230,9 +212,7 @@ class TestCounts:
                 )
             )
         try:
-            body = (
-                await api.get("/api/v1/admin/trends?days=3", headers=headers)
-            ).json()
+            body = (await api.get("/api/v1/admin/trends?days=3", headers=headers)).json()
             today = body["jobs"][-1]
             assert today["succeeded"] >= 1
             assert today["failed"] >= 2

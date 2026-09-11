@@ -144,3 +144,8 @@ async def latest_scraper_runs(
         .order_by(ScraperRun.source_id, ScraperRun.started_at.desc())
     )
     return {run.source_id: run for run in runs.all()}
+
+
+async def count_tenders(session: AsyncSession) -> int:
+    """How many notices the shared pool holds, across every portal."""
+    return int(await session.scalar(select(func.count(Tender.id))) or 0)

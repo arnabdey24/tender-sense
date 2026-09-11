@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { MatchCharts } from "@/features/matches/MatchCharts"
-import { MatchList } from "@/features/matches/MatchList"
+import {
+  MatchList,
+  NOTHING_NEW_DESCRIPTION,
+} from "@/features/matches/MatchList"
 import {
   useMatches,
   useMatchStats,
@@ -17,6 +20,8 @@ import {
   type MatchStats,
 } from "@/features/matches/api"
 import { SetupStrip } from "@/features/profile/SetupStrip"
+import { PortalSyncButton } from "@/features/sources/PortalSync"
+import { useAutoSyncEmptyPool } from "@/features/sources/use-portal-sync"
 import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/app/dashboard")({
@@ -56,7 +61,7 @@ const SEGMENTS: {
     count: (s) => s?.new_today ?? 0,
     empty: {
       title: "Nothing new today",
-      description: "Graded matches appear here as tenders arrive each morning.",
+      description: NOTHING_NEW_DESCRIPTION,
     },
   },
   {
@@ -162,6 +167,12 @@ function DashboardPage() {
   const [active, setActive] = React.useState<SegmentId>("new")
   const segment = SEGMENTS.find((s) => s.id === active) ?? SEGMENTS[0]
 
+  // A deployment nobody has filled shows a new organization a dashboard with
+  // nothing on it, and the one thing that would fix it is the thing they have
+  // no reason to know about. So it starts itself — once per tab, only when the
+  // shared pool is genuinely empty, and never while a pull is already running.
+  useAutoSyncEmptyPool()
+
   const stats = useMatchStats()
   const shortlist = useTodayShortlist({ page_size: 8 })
   // The list endpoint serves every segment but "new today", which has its own
@@ -176,6 +187,7 @@ function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description="What needs a decision this morning."
+        actions={<PortalSyncButton size="default" variant="outline" />}
       />
 
       <SetupStrip />

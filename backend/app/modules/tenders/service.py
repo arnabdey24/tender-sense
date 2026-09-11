@@ -154,6 +154,7 @@ async def _sync_state(session: AsyncSession, *, retry_after: int, queued: list[s
         running=any(portal.running for portal in portals),
         retry_after_seconds=retry_after,
         cooldown_seconds=cooldown,
+        pool_size=await repo.count_tenders(session),
         queued=queued,
     )
 

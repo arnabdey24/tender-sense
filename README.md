@@ -40,8 +40,51 @@ Once the stack is up:
 | Mailpit inbox | http://localhost:8025 |
 | Vite dev server | http://localhost:5173 after `make fe-dev` |
 
-Sign in as a superuser to reach `/admin` — background job runs, the mail queue
-and model spend. Ordinary members see portal health under Settings → Sources.
+### Platform staff
+
+`/admin` is the operations console: what is failing right now, the portals and
+their configuration, every tenant and account, background job runs, the mail
+queue, model spend, and the rate limits the deployment runs under. It is staff
+only — `is_superuser`, which is *platform* staff and has nothing to do with
+being an admin of an organization.
+
+The first one has to be made from the command line, because there is nobody to
+grant it yet:
+
+```bash
+make superuser EMAIL=you@example.com
+```
+
+That creates the account, marks it verified so it can sign in straight away, and
+prints a generated password **once**. Store it then; it is not recoverable, and
+it is worth changing after the first sign-in.
+
+Running it again on an address that already exists **promotes** that account
+instead, and deliberately leaves its password alone — granting a colleague staff
+access must not lock them out of the account they are signed in to. Reactivating
+a suspended account and marking an unverified one verified are part of the grant,
+because staff who cannot sign in are not staff.
+
+```bash
+make superuser EMAIL=colleague@example.com                      # promote
+make superuser EMAIL=you@example.com ARGS="--reset-password"    # new password
+make superuser EMAIL=you@example.com ARGS="--password '...'"    # choose one
+```
+
+On a deployed VM, where there is no `make`:
+
+```bash
+docker compose run --rm api python -m scripts.create_superuser --email you@example.com
+```
+
+After the first one exists, everything else is in the console: **Operations →
+Tenants** grants and revokes staff, and suspends accounts. It will not let you
+do either to yourself — revoking your own access is the one change the console
+cannot undo afterwards, and on a single-VM deployment there may be no second
+operator to undo it. That is what the command line above is for.
+
+Ordinary members need none of this. They see portal health and can pull the
+portals by hand under Settings → Sources.
 
 If any of those ports is already taken on your machine, change `API_PORT_HOST`,
 `HTTP_PORT` or `HTTPS_PORT` in `.env`. When you move the API, point the Vite dev
@@ -50,6 +93,21 @@ proxy at it with `VITE_API_PROXY_TARGET` in `frontend/.env.local`.
 `AI_PROVIDER=fake` in `.env` runs the whole pipeline offline with deterministic
 stubs, so no Gemini key is needed for development. Set `AI_PROVIDER=gemini` and
 `GEMINI_API_KEY` for real matching.
+
+The assistant's **live voice** needs four settings agreeing, and `.env.example`
+ships the second one off, so a deployment copied from it has voice disabled:
+
+| Setting | Needs to be |
+|---|---|
+| `ASSISTANT_ENABLED` | `true` |
+| `ASSISTANT_VOICE_ENABLED` | `true` |
+| `AI_PROVIDER` | `gemini` — the offline stub has no live voice |
+| `GEMINI_API_KEY` | set |
+
+`APP_URL` must also be the origin people actually open, because the voice socket
+refuses any other. When voice is off the panel now says which of the four is
+missing, and names the setting if you are signed in as platform staff, so this
+table is a confirmation rather than the only way to find out.
 
 One thing to expect from the stub: it *ranks* correctly — the seeded IT tenders
 come out on top for the sample integrator — but its similarities sit well below

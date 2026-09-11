@@ -83,6 +83,14 @@ async def test_voice_unavailable_is_explicit(
     caps = (await api.get("/api/v1/assistant/capabilities", headers=tenant.headers)).json()
     assert caps["mode"] == "demo"
     assert caps["voice_enabled"] is False
+    # Not merely off: the panel needs to know which sentence to show, and a
+    # greyed button with no explanation is what it showed before it could.
+    assert caps["voice_unavailable_reason"] in {
+        "assistant_off",
+        "voice_off",
+        "no_key",
+        "provider_not_gemini",
+    }
     created = await api.post(
         "/api/v1/assistant/conversations",
         headers=tenant.headers,

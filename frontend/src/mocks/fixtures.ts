@@ -13,6 +13,7 @@ type RecipientRead = components["schemas"]["RecipientRead"]
 type ProfileRead = components["schemas"]["ProfileRead"]
 type CompletenessRead = components["schemas"]["CompletenessRead"]
 type TaxonomiesRead = components["schemas"]["TaxonomiesRead"]
+type SyncState = components["schemas"]["SyncState"]
 
 export const ORG_ID = "11111111-1111-4111-8111-111111111111"
 export const OTHER_ORG_ID = "22222222-2222-4222-8222-222222222222"
@@ -238,4 +239,38 @@ export const taxonomies: TaxonomiesRead = {
     { value: "healthcare", label: "Healthcare" },
   ],
   common_certifications: ["ISO 9001", "ISO 27001"],
+}
+
+/** Portals settled: nothing running, nothing to wait for, both pulled today. */
+export const syncState: SyncState = {
+  running: false,
+  retry_after_seconds: 0,
+  cooldown_seconds: 600,
+  queued: [],
+  portals: [
+    {
+      id: "55555555-5555-4555-8555-555555555555",
+      code: "egp_bd",
+      name: "e-GP Bangladesh",
+      enabled: true,
+      health: "ok",
+      running: false,
+      last_run_at: "2026-09-11T08:00:00Z",
+      last_success_at: "2026-09-11T08:00:00Z",
+      last_status: "succeeded",
+      last_notices_added: 3,
+    },
+    {
+      id: "66666666-6666-4666-8666-666666666666",
+      code: "wb",
+      name: "World Bank procurement notices",
+      enabled: true,
+      health: "ok",
+      running: false,
+      last_run_at: "2026-09-11T08:00:01Z",
+      last_success_at: "2026-09-11T08:00:01Z",
+      last_status: "succeeded",
+      last_notices_added: 0,
+    },
+  ],
 }

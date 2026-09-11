@@ -29,6 +29,7 @@ export const qk = {
       ["tenders", "facets", params] as const,
     detail: (id: string) => ["tenders", "detail", id] as const,
     sources: () => ["tenders", "sources"] as const,
+    sync: () => ["tenders", "sources", "sync"] as const,
   },
   matches: {
     all: () => ["matches"] as const,
@@ -76,6 +77,11 @@ export const qk = {
     jobRuns: (name?: string) => ["admin", "job-runs", name ?? "all"] as const,
     emailOutbox: () => ["admin", "email-outbox"] as const,
     aiUsage: (days: number) => ["admin", "ai-usage", days] as const,
+    overview: () => ["admin", "overview"] as const,
+    organizations: (q?: string) => ["admin", "organizations", q ?? ""] as const,
+    users: (q?: string) => ["admin", "users", q ?? ""] as const,
+    limits: () => ["admin", "limits"] as const,
+    adapters: () => ["admin", "adapters"] as const,
   },
   health: () => ["health"] as const,
 } as const

@@ -1,14 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
-import {
-  PlayIcon,
-  RefreshCwIcon,
-  RotateCcwIcon,
-  SatelliteDishIcon,
-} from "lucide-react"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { SatelliteDishIcon } from "lucide-react"
 
 import { PageHeader } from "@/components/layout/PageHeader"
 import { PageBody, PageSection } from "@/components/layout/PageSection"
-import { Button } from "@/components/ui/button"
 import {
   Empty,
   EmptyDescription,
@@ -17,8 +11,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Spinner } from "@/components/ui/spinner"
-import { useTriggerJob } from "@/features/admin/api"
 import {
   Table,
   TableBody,
@@ -27,16 +19,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
+import { PortalSyncPanel } from "@/features/sources/PortalSync"
 import { SourceHealthBadge } from "@/features/sources/SourceHealthBadge"
-import {
-  useAdminSources,
-  useCheckSource,
-  useReparseSource,
-  useRunSource,
-  useScraperRuns,
-  useSources,
-} from "@/features/sources/api"
+import { useSources } from "@/features/sources/api"
 import { countryName } from "@/lib/data/locale"
 import { useIsSuperuser } from "@/lib/auth/store"
 
@@ -128,149 +113,6 @@ function SourceTable() {
   )
 }
 
-function OperatorControls() {
-  const sources = useAdminSources(true)
-  const syncAll = useTriggerJob()
-  const runSource = useRunSource()
-  const checkSource = useCheckSource()
-  const reparseSource = useReparseSource()
-
-  if (sources.isPending) return <Skeleton className="h-24 w-full" />
-
-  return (
-    <div className="flex flex-col gap-4">
-      <ApiErrorAlert error={sources.error} />
-
-      {/*
-        The cron visits the portals four times a day, which leaves two moments
-        with no control for them: the first pull on a fresh deployment, where
-        waiting for 02:00 means an empty product, and the hour after a portal
-        publishes something you already know is there. Scraping every portal by
-        hand, one button at a time, was the only way to cover either.
-
-        It queues the same dispatch the cron calls — one job per portal on a
-        queue capped at one at a time, so this stays as polite to an old portal
-        as the schedule is.
-      */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-sunken p-3 ring-1 ring-foreground/10">
-        <div className="min-w-0">
-          <p className="text-sm font-medium">Sync every portal now</p>
-          <p className="text-sm text-muted-foreground">
-            For a first pull, or when you need today&rsquo;s notices before the
-            next scheduled run at 02:00, 08:00, 14:00 or 20:00.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          disabled={syncAll.isPending}
-          onClick={() => syncAll.mutate("scrape_all_sources")}
-        >
-          {syncAll.isPending ? <Spinner /> : <RefreshCwIcon />}
-          Sync now
-        </Button>
-      </div>
-      {sources.data?.map((source) => (
-        <div
-          key={source.id}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3"
-        >
-          <div className="min-w-0">
-            <div className="font-medium">{source.code}</div>
-            <div className="truncate text-xs text-muted-foreground">
-              {source.adapter_key} · {source.base_url || "no base URL"}
-              {source.consecutive_failures > 0 &&
-                ` · ${source.consecutive_failures} failures in a row`}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => checkSource.mutate(source.id)}
-              disabled={checkSource.isPending}
-            >
-              <RefreshCwIcon /> Probe
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => runSource.mutate(source.id)}
-              disabled={runSource.isPending}
-            >
-              <PlayIcon /> Scrape now
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => reparseSource.mutate(source.id)}
-              disabled={reparseSource.isPending}
-            >
-              <RotateCcwIcon /> Replay stored pages
-            </Button>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function RunHistory() {
-  const runs = useScraperRuns(true)
-
-  if (runs.isPending) return <Skeleton className="h-24 w-full" />
-  if (!runs.data?.length) {
-    return (
-      <p className="text-sm text-muted-foreground">No runs recorded yet.</p>
-    )
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Started</TableHead>
-            <TableHead>Result</TableHead>
-            <TableHead className="text-right">Seen</TableHead>
-            <TableHead className="text-right">New</TableHead>
-            <TableHead className="text-right">Updated</TableHead>
-            <TableHead className="text-right">Lost</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {runs.data.slice(0, 20).map((run) => (
-            <TableRow key={run.id}>
-              <TableCell className="text-sm">
-                {formatWhen(run.started_at)}
-              </TableCell>
-              <TableCell>
-                <span className="text-sm capitalize">{run.status}</span>
-                {run.error && (
-                  <div className="max-w-md truncate text-xs text-muted-foreground">
-                    {run.error}
-                  </div>
-                )}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {run.notices_seen}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {run.created}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {run.updated}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {run.failed}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  )
-}
-
 function SourcesSettingsPage() {
   const isSuperuser = useIsSuperuser()
 
@@ -287,24 +129,38 @@ function SourcesSettingsPage() {
           caption="The tender pool is shared, so every portal here feeds every organization's matches. A portal marked degraded or down means notices may be missing from your feed."
         >
           <SourceTable />
+          {/*
+            Not an operator control, and no longer filed as one. The schedule
+            visits the portals four times a day, which leaves the two moments
+            that matter to a member with nothing to press: the first pull on a
+            deployment whose pool is still empty, and the hour after a portal
+            publishes something they already know is there. Neither person is
+            usually platform staff, and telling them to find someone who is was
+            the whole of the previous answer.
+          */}
+          <PortalSyncPanel className="mt-4" />
         </PageSection>
 
+        {/*
+          The operator controls used to sit here behind a superuser check, which
+          made one page serve two readers and neither of them well: a member
+          scrolled past four staff-only blocks, and staff found portal
+          registration nowhere at all. Configuration, registration and run
+          history are in the operations console now; this page is what a member
+          came for.
+        */}
         {isSuperuser && (
-          <>
-            <PageSection
-              title="Operator controls"
-              caption="Syncing visits the portals; replaying re-parses pages already stored and fetches nothing, which is what makes it safe to run against a portal that has started refusing us."
+          <PageSection
+            title="Operator controls"
+            caption="Registering a portal, changing its selectors and replaying stored pages live in the operations console."
+          >
+            <Link
+              to="/admin/sources"
+              className="text-sm font-medium text-primary hover:underline"
             >
-              <OperatorControls />
-            </PageSection>
-
-            <PageSection
-              title="Recent runs"
-              caption="A scraper that quietly stops returning notices looks exactly like a quiet portal. These records are the difference."
-            >
-              <RunHistory />
-            </PageSection>
-          </>
+              Open Portals in Operations
+            </Link>
+          </PageSection>
         )}
       </PageBody>
     </>

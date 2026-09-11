@@ -24,6 +24,16 @@ import { usePersistentState } from "@/hooks/use-persistent-state"
 import { Switch } from "@/components/ui/switch"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { TendersTable, type TenderSort } from "@/features/tenders/TendersTable"
+import { PortalSyncButton } from "@/features/sources/PortalSync"
+import { usePortalSync } from "@/features/sources/use-portal-sync"
+import { EmptySignal } from "@/components/brand/EmptySignal"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { TENDER_COLUMNS } from "@/features/tenders/columns"
 import { useRecordDecisions } from "@/features/decisions/api"
 import { TenderFilterSelect } from "@/features/tenders/TenderFilterSelect"
@@ -58,6 +68,34 @@ const searchSchema = z.object({
 })
 
 type Search = z.infer<typeof searchSchema>
+
+/**
+ * The pool has never been filled — or has been emptied. Distinct from "no
+ * notices match", and answered with the control rather than with advice.
+ */
+function EmptyPool() {
+  const { state } = usePortalSync()
+  const everPulled = state?.portals.some((portal) => portal.last_success_at)
+
+  return (
+    <Empty>
+      <EmptyHeader>
+        <EmptySignal />
+        <EmptyTitle>
+          {everPulled ? "The portals have nothing right now" : "Nothing pulled yet"}
+        </EmptyTitle>
+        <EmptyDescription>
+          {everPulled
+            ? "The last pass over each portal came back empty. The schedule tries again at 02:00, 08:00, 14:00 and 20:00 — or pull them now."
+            : "TenderSense reads e-GP Bangladesh and the World Bank procurement feed four times a day. Pull them now and the first notices arrive in a few minutes."}
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        <PortalSyncButton />
+      </EmptyContent>
+    </Empty>
+  )
+}
 
 export const Route = createFileRoute("/_app/app/tenders/")({
   validateSearch: searchSchema,
@@ -353,6 +391,16 @@ function TendersPage() {
           sort={sortField}
           descending={descending}
           onSort={onSort}
+          /*
+            An empty pool is not an empty result. With no filter applied there
+            is nothing to broaden and nothing to clear — the portals have simply
+            not been read yet, which is what a new organization on a fresh
+            deployment sees and what it saw with no way out of. So this is where
+            the pull is offered, on the screen where the wall actually is.
+          */
+          emptyState={
+            activeFilters.length === 0 ? <EmptyPool /> : undefined
+          }
         />
 
         <Paginator

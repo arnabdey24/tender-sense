@@ -1,16 +1,8 @@
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { CheckCircle2Icon, TriangleAlertIcon } from "lucide-react"
 
-import { PageHeader } from "@/components/layout/PageHeader"
+import { PageSection } from "@/components/layout/PageSection"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -21,285 +13,235 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
-import {
-  TRIGGERABLE_JOBS,
-  useAiUsage,
-  useEmailOutbox,
-  useJobRuns,
-  useRetryEmail,
-  useTriggerJob,
-} from "@/features/admin/api"
-import { useAuthStore } from "@/lib/auth/store"
+import { useOverview, type Overview } from "@/features/admin/api"
+import { timeAgo } from "@/lib/data/time"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_app/admin/")({
-  beforeLoad: () => {
-    // Platform staff, not organization admins. The API enforces this too; the
-    // guard is here so a non-staff user gets a redirect rather than a wall of
-    // 403s from every panel on the page.
-    if (!useAuthStore.getState().user?.is_superuser) {
-      throw redirect({ to: "/app/dashboard" })
-    }
-  },
-  component: AdminPage,
+  component: OverviewPage,
 })
 
-const RUN_VARIANTS: Record<
-  string,
-  React.ComponentProps<typeof Badge>["variant"]
-> = {
-  succeeded: "success",
-  partial: "warning",
-  failed: "destructive",
-  running: "secondary",
-}
-
-function when(iso: string | null | undefined): string {
-  if (!iso) return "—"
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return "—"
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-
-function JobRunsCard() {
-  const runs = useJobRuns()
-  const trigger = useTriggerJob()
-
+function Stat({
+  label,
+  value,
+  detail,
+}: {
+  label: string
+  value: string
+  detail?: string
+}) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Background jobs</CardTitle>
-        <CardDescription>
-          A job that quietly stops running looks exactly like a job with nothing
-          to do. These records are the difference.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-wrap gap-2">
-          {TRIGGERABLE_JOBS.map((item) => (
-            <Button
-              key={item.job}
-              size="sm"
-              variant="outline"
-              onClick={() => trigger.mutate(item.job)}
-              disabled={trigger.isPending}
-            >
-              {item.label}
-            </Button>
-          ))}
-        </div>
-
-        <ApiErrorAlert error={runs.error} />
-        {runs.isPending ? (
-          <Skeleton className="h-24 w-full" />
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Job</TableHead>
-                  <TableHead>Started</TableHead>
-                  <TableHead>Result</TableHead>
-                  <TableHead className="text-right">Took</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(runs.data ?? []).map((run) => (
-                  <TableRow key={run.id}>
-                    <TableCell className="font-medium">{run.name}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {when(run.started_at)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={RUN_VARIANTS[run.status] ?? "outline"}>
-                        {run.status}
-                      </Badge>
-                      {run.error && (
-                        <div className="max-w-md truncate text-xs text-muted-foreground">
-                          {run.error}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {(run.duration_ms / 1000).toFixed(1)}s
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <div className="flex flex-col gap-1 rounded-lg border p-4">
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="font-heading text-2xl leading-none tabular-nums">
+        {value}
+      </span>
+      {detail ? (
+        <span className="text-xs text-muted-foreground">{detail}</span>
+      ) : null}
+    </div>
   )
 }
 
-function MailCard() {
-  const outbox = useEmailOutbox()
-  const retry = useRetryEmail()
-  const rows = outbox.data ?? []
+/**
+ * What is wrong, said first.
+ *
+ * An operator opens this page with one question, and a wall of totals does not
+ * answer it: the counts are context, and the failures are the news. So anything
+ * currently broken is stated in a sentence at the top, and when nothing is, the
+ * page says that too rather than leaving the reader to infer it from six zeroes.
+ */
+function Verdict({ data }: { data: Overview }) {
+  const unanswering = (data.sources ?? []).filter(
+    (source) => source.enabled && source.health !== "ok"
+  ).length
+
+  const problems = [
+    unanswering &&
+      `${unanswering} portal${unanswering === 1 ? "" : "s"} not answering`,
+    data.jobs_failed_24h && `${data.jobs_failed_24h} failed job runs in 24h`,
+    data.scrapes_failed_24h &&
+      `${data.scrapes_failed_24h} failed scrapes in 24h`,
+    data.email_failed && `${data.email_failed} messages gave up`,
+    data.ai_daily_token_budget > 0 &&
+      data.ai_tokens_today >= data.ai_daily_token_budget &&
+      "the model budget for today is spent",
+  ].filter(Boolean) as string[]
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Mail queue</CardTitle>
-        <CardDescription>
-          Anything not yet delivered. A row that gave up names its own cause in
-          the last error — usually an SPF record rather than a bug.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <ApiErrorAlert error={outbox.error} />
-        {outbox.isPending ? (
-          <Skeleton className="h-16 w-full" />
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Nothing waiting. Every message has been delivered.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>To</TableHead>
-                  <TableHead>Template</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Attempts</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="max-w-48 truncate">
-                      {row.to_email}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {row.template_key}
-                    </TableCell>
-                    <TableCell>
+    <div
+      className={cn(
+        "flex items-start gap-3 rounded-lg border p-4",
+        problems.length ? "border-warning/40 bg-warning/5" : "bg-surface-sunken"
+      )}
+    >
+      {problems.length ? (
+        <TriangleAlertIcon className="mt-0.5 size-5 shrink-0 text-warning" />
+      ) : (
+        <CheckCircle2Icon className="mt-0.5 size-5 shrink-0 text-success" />
+      )}
+      <div className="min-w-0">
+        <p className="text-sm font-medium">
+          {problems.length
+            ? "Wants attention"
+            : "Nothing is failing right now"}
+        </p>
+        <p className="text-sm text-pretty text-muted-foreground">
+          {problems.length
+            ? problems.join(" · ")
+            : "Portals answering, jobs completing, mail going out, budget intact."}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function OverviewPage() {
+  const overview = useOverview()
+
+  if (overview.isPending) {
+    return <Skeleton className="h-64 w-full" />
+  }
+  if (!overview.data) {
+    return <ApiErrorAlert error={overview.error} />
+  }
+
+  const data = overview.data
+  const budget = data.ai_daily_token_budget
+
+  return (
+    <div className="flex flex-col gap-8">
+      <Verdict data={data} />
+
+      <PageSection
+        title="The pool"
+        caption="Shared across every tenant. A pool that stops growing is the first symptom of a portal that has stopped answering."
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Stat
+            label="Notices held"
+            value={data.tenders.toLocaleString()}
+            detail={`${data.tenders_open.toLocaleString()} still open`}
+          />
+          <Stat
+            label="Added in 24h"
+            value={data.tenders_added_today.toLocaleString()}
+            detail={
+              data.tenders_added_today === 0
+                ? "Nothing new since yesterday"
+                : undefined
+            }
+          />
+          <Stat
+            label="Model spend today"
+            value={data.ai_tokens_today.toLocaleString()}
+            detail={
+              budget > 0
+                ? `of ${budget.toLocaleString()} tokens`
+                : "no daily cap set"
+            }
+          />
+        </div>
+      </PageSection>
+
+      <PageSection
+        title="Portals"
+        caption="Where the notices come from, and when each last answered."
+        action={
+          <Link
+            to="/app/settings/sources"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Sources
+          </Link>
+        }
+      >
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Portal</TableHead>
+                <TableHead>Health</TableHead>
+                <TableHead>Last success</TableHead>
+                <TableHead className="text-right">Notices</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {(data.sources ?? []).map((source) => (
+                <TableRow key={source.code}>
+                  <TableCell className="font-medium">{source.name}</TableCell>
+                  <TableCell>
+                    {/*
+                      A disabled source is not an unhealthy one. `manual` holds
+                      hand-entered notices and is never scraped, so reporting it
+                      as "ok · never" put a permanent non-event beside the
+                      portals that actually answer.
+                    */}
+                    {source.enabled ? (
                       <Badge
                         variant={
-                          row.status === "failed" ? "destructive" : "secondary"
+                          source.health === "ok"
+                            ? "success"
+                            : source.health === "degraded"
+                              ? "warning"
+                              : "destructive"
                         }
                       >
-                        {row.status}
+                        {source.health}
                       </Badge>
-                      {row.last_error && (
-                        <div className="max-w-md truncate text-xs text-muted-foreground">
-                          {row.last_error}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {row.attempts}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {row.status === "failed" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => retry.mutate(row.id)}
-                          disabled={retry.isPending}
-                        >
-                          Retry
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
+                    ) : (
+                      <Badge variant="outline">not scraped</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {!source.enabled
+                      ? "—"
+                      : source.last_success_at
+                        ? timeAgo(source.last_success_at)
+                        : "Never"}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {source.tenders.toLocaleString()}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </PageSection>
 
-function SpendCard() {
-  const usage = useAiUsage()
-  const budget = usage.data?.daily_token_budget ?? 0
-  const spent = usage.data?.spent_today ?? 0
-  const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0
+      <PageSection
+        title="Tenants and accounts"
+        caption="Every organization on this deployment, and everyone who can sign in to one."
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Stat
+            label="Organizations"
+            value={data.organizations.toLocaleString()}
+            detail={`${data.organizations_active.toLocaleString()} active`}
+          />
+          <Stat
+            label="Accounts"
+            value={data.users.toLocaleString()}
+            detail={`${data.users_active.toLocaleString()} active`}
+          />
+        </div>
+      </PageSection>
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Model spend</CardTitle>
-        <CardDescription>
-          An exhausted budget explains missing explanations. Nothing else does —
-          matches still score, the prose just degrades to the templated one.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <ApiErrorAlert error={usage.error} />
-        {usage.isPending ? (
-          <Skeleton className="h-16 w-full" />
-        ) : (
-          <>
-            <div className="flex flex-col gap-2">
-              <div className="flex justify-between text-sm">
-                <span>Today</span>
-                <span className="tabular-nums">
-                  {spent.toLocaleString()}
-                  {budget > 0 ? ` / ${budget.toLocaleString()}` : " (no cap)"}
-                </span>
-              </div>
-              {budget > 0 && <Progress value={percent} />}
-            </div>
-
-            {(usage.data?.rows ?? []).length > 0 && (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Day</TableHead>
-                      <TableHead>Purpose</TableHead>
-                      <TableHead className="text-right">Calls</TableHead>
-                      <TableHead className="text-right">Tokens</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(usage.data?.rows ?? []).slice(0, 12).map((row, index) => (
-                      <TableRow key={`${row.day}-${row.purpose}-${index}`}>
-                        <TableCell>{row.day}</TableCell>
-                        <TableCell>{row.purpose}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {row.calls}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {(row.tokens_in + row.tokens_out).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  )
-}
-
-function AdminPage() {
-  return (
-    <>
-      <PageHeader
-        title="Operations"
-        description="Platform staff only. Sources live under Settings — this is everything else that can go quiet."
-      />
-      <div className="flex flex-col gap-6">
-        <JobRunsCard />
-        <MailCard />
-        <SpendCard />
-      </div>
-    </>
+      <PageSection
+        title="Queues"
+        caption="A job that fails quietly and mail that never leaves look identical from inside the app. These are where they show."
+      >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Stat label="Failed jobs, 24h" value={String(data.jobs_failed_24h)} />
+          <Stat
+            label="Failed scrapes, 24h"
+            value={String(data.scrapes_failed_24h)}
+          />
+          <Stat label="Mail waiting" value={String(data.email_queued)} />
+          <Stat label="Mail gave up" value={String(data.email_failed)} />
+        </div>
+      </PageSection>
+    </div>
   )
 }

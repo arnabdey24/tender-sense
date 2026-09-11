@@ -120,6 +120,27 @@ class Settings(BaseSettings):
     scraper_user_agent: str = "TenderSenseBot/1.0 (+https://tendersense.local/bot)"
     scraper_request_delay_seconds: float = 2.0
     scraper_max_pages_per_run: int = 20
+    source_sync_cooldown_seconds: int = 600
+    """Shortest gap between hand-started portal syncs, across the whole deployment.
+
+    Any signed-in member can start one, because a new organization arriving on a
+    deployment whose pool has not been filled yet has no other way to see the
+    product work, and waiting for the next cron pass is not an answer. The pool
+    is shared, so the cooldown is global: ten organizations pressing the button
+    must not mean ten times the traffic to a portal that has been running since
+    2011. Set to 0 to allow a sync on every press — development only.
+    """
+
+    # --- rate limits ---
+    #
+    # Defaults, not the final word: an operator can move any of these from the
+    # admin console without a redeploy, and `app/core/platform_settings.py`
+    # resolves the stored override over whatever is configured here. An unset
+    # override means exactly this value, so a fresh database behaves as the
+    # deployment was configured to.
+    login_attempts_per_ip: int = 20
+    login_attempts_per_email: int = 10
+    login_window_seconds: int = 900
 
     # --- retention & housekeeping ---
     job_run_retention_days: int = 30

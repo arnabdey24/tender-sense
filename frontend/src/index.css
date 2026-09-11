@@ -165,11 +165,26 @@
   --grade-c-foreground: oklch(0.99 0 260);
 
   /* Status. Each is legible as text on the page ground, not only as a fill. */
-  --success: oklch(0.52 0.13 150);
+  /*
+   * Two steps darker than they were, because of where they are read.
+   *
+   * A status badge is the token as ink on a 15% tint of itself, which is the
+   * pattern the whole set shares — and at 0.52 all three measured between 4.04
+   * and 4.38 against their own tint, under the 4.5 this project commits to. It
+   * went unnoticed because the axe suite runs in jsdom, which has no layout
+   * engine and so skips contrast entirely; a browser run is what found it.
+   * Darkening the ink lifts the badge and the page-ground text together, since
+   * the tint is 85% surface and barely moves. Dark already passed and is
+   * unchanged — light ink on a dark tint is the easier direction.
+   *
+   * All three land on 0.48, which is `brand-600`'s own lightness, so the status
+   * set now sits on the same step as the brand rather than a step of its own.
+   */
+  --success: oklch(0.48 0.14 150);
   --success-foreground: oklch(0.99 0.005 150);
-  --warning: oklch(0.52 0.12 70);
+  --warning: oklch(0.48 0.13 70);
   --warning-foreground: oklch(0.99 0.005 70);
-  --info: oklch(0.52 0.1 200);
+  --info: oklch(0.48 0.11 200);
   --info-foreground: oklch(0.99 0.005 200);
 
   /* Surfaces, deepest to highest. A well is cut into a card; a card rises off
@@ -498,6 +513,41 @@
 .assistant-panel-workspace {
   width: min(1240px, calc(100vw - 3rem));
   height: calc(100dvh - 3rem);
+}
+
+/*
+ * A short window is the panel's hardest case, and the one it was losing.
+ *
+ * The compact panel is `min(740px, 100dvh - 3rem)`, so under about 760px of
+ * viewport its height is the window's, and the header, composer and footer take
+ * a fixed 200px of it whatever is left. On a 520px-tall window that leaves the
+ * conversation 225px — while the opening greeting alone, orb included, asks for
+ * roughly 270px. The result was an opening view with no whole sentence in it.
+ *
+ * So the greeting spends less where there is less: the orb goes (the header
+ * carries the mark, and it is decoration here), the title drops a step, and the
+ * gaps tighten. That buys back around 150px — enough for the welcome to be read
+ * in full and for the first suggestions to show beneath it, which is what tells
+ * the reader there is more.
+ *
+ * Keyed to the viewport rather than the panel because the panel's height is the
+ * viewport's at exactly these sizes; a container query would be measuring the
+ * same number one step further away.
+ */
+@media (max-height: 760px) {
+  .assistant-welcome {
+    gap: 1rem;
+    padding-top: 0;
+  }
+
+  .assistant-welcome .assistant-orb {
+    display: none;
+  }
+
+  .assistant-welcome-title {
+    font-size: 1.25rem;
+    letter-spacing: -0.014em;
+  }
 }
 
 /*

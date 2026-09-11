@@ -7,6 +7,7 @@ scrapers use, so a hand-added notice is indistinguishable downstream.
 from __future__ import annotations
 
 from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -14,23 +15,29 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
+from app.core.platform_settings import get_limits
 from app.core.time import utcnow
 from app.ingestion.adapters import ADAPTERS, build_adapter
 from app.ingestion.adapters.base import TenderIn
 from app.ingestion.importer import import_tenders, parse_payload
 from app.ingestion.service import upsert_tender
 from app.jobs.queue import QUEUE_DEFAULT
-from app.jobs.runs import JobRun, ScraperRun
+from app.jobs.runs import JobRun, RunStatus, ScraperRun
 from app.modules.admin.schemas import (
     ImportResponse,
+    OrganizationAdminRead,
+    Overview,
     SourceCreate,
+    SourceHealthCount,
     SourceUpdate,
     TenderCreate,
     TenderCreateResponse,
+    UserAdminRead,
+    UserAdminUpdate,
 )
 from app.modules.matching.ai_usage import AiUsage
 from app.modules.notifications.models import EmailOutbox, EmailStatus
-from app.modules.tenders.models import Tender, TenderSource
+from app.modules.tenders.models import Tender, TenderSource, TenderStatus
 
 logger = get_logger(__name__)
 
@@ -127,21 +134,10 @@ async def enqueue_scrape(session: AsyncSession, source_id: UUID) -> str | None:
     passes over the same portal — which is exactly the impolite behaviour the
     adapter is careful to avoid.
     """
-    from app.jobs.queue import QUEUE_SCRAPE, get_queue
+    from app.jobs.tasks.scraping import enqueue_scrape_source
 
     source = await get_source(session, source_id)
-    try:
-        queue = await get_queue()
-        job = await queue.enqueue_job(
-            "scrape_source",
-            str(source.id),
-            _queue_name=QUEUE_SCRAPE,
-            _job_id=f"scrape:{source.id}",
-        )
-    except Exception as exc:  # pragma: no cover - Redis down must not 500
-        logger.warning("scrape_enqueue_failed", source=source.code, error=str(exc))
-        return None
-    return job.job_id if job else None
+    return await enqueue_scrape_source(source.id, source.code)
 
 
 async def probe_source(session: AsyncSession, source_id: UUID) -> tuple[str, bool, str | None]:
@@ -316,3 +312,215 @@ async def ai_usage_summary(session: AsyncSession, days: int = 14) -> list[dict[s
         }
         for row in rows.all()
     ]
+
+
+async def _count(session: AsyncSession, stmt: Any) -> int:
+    """A count that is an int, so callers stop writing `or 0` seven times."""
+    return int(await session.scalar(stmt) or 0)
+
+
+async def overview(session: AsyncSession) -> Overview:
+    """One read of everything the console's front page asserts.
+
+    A single endpoint rather than six, because the question it answers is "is
+    anything wrong right now" — and six requests means six chances to render a
+    page that is half stale and disagrees with itself.
+    """
+    from app.modules.matching.ai_usage import spent_today
+    from app.modules.orgs.models import Organization
+    from app.modules.users.models import User
+
+    since = utcnow() - timedelta(hours=24)
+
+    per_source = {
+        row.source_id: row.total
+        for row in await session.execute(
+            select(Tender.source_id, func.count(Tender.id).label("total")).group_by(
+                Tender.source_id
+            )
+        )
+    }
+    sources = [
+        SourceHealthCount(
+            code=source.code,
+            name=source.name,
+            health=source.health.value,
+            enabled=source.enabled,
+            last_success_at=source.last_success_at,
+            tenders=int(per_source.get(source.id, 0)),
+        )
+        for source in (await session.scalars(select(TenderSource).order_by(TenderSource.code)))
+    ]
+
+    return Overview(
+        tenders=await _count(session, select(func.count(Tender.id))),
+        tenders_open=await _count(
+            session, select(func.count(Tender.id)).where(Tender.status == TenderStatus.OPEN)
+        ),
+        tenders_added_today=await _count(
+            session,
+            select(func.count(Tender.id)).where(
+                Tender.first_seen_at >= utcnow() - timedelta(days=1)
+            ),
+        ),
+        organizations=await _count(session, select(func.count(Organization.id))),
+        organizations_active=await _count(
+            session,
+            select(func.count(Organization.id)).where(Organization.is_active.is_(True)),
+        ),
+        users=await _count(session, select(func.count(User.id))),
+        users_active=await _count(
+            session, select(func.count(User.id)).where(User.is_active.is_(True))
+        ),
+        sources=sources,
+        jobs_failed_24h=await _count(
+            session,
+            select(func.count(JobRun.id)).where(
+                JobRun.status == RunStatus.FAILED, JobRun.started_at >= since
+            ),
+        ),
+        scrapes_failed_24h=await _count(
+            session,
+            select(func.count(ScraperRun.id)).where(
+                ScraperRun.status == RunStatus.FAILED, ScraperRun.started_at >= since
+            ),
+        ),
+        email_queued=await _count(
+            session,
+            select(func.count(EmailOutbox.id)).where(EmailOutbox.status == EmailStatus.PENDING),
+        ),
+        email_failed=await _count(
+            session,
+            select(func.count(EmailOutbox.id)).where(EmailOutbox.status == EmailStatus.FAILED),
+        ),
+        ai_tokens_today=await spent_today(session),
+        ai_daily_token_budget=(await get_limits(session)).ai_daily_token_budget,
+    )
+
+
+async def list_organizations(
+    session: AsyncSession, *, q: str | None = None, limit: int = 100
+) -> list[OrganizationAdminRead]:
+    """Every tenant, with the two facts that say whether it is real: how many
+    people are in it, and when it last did anything."""
+    from app.modules.decisions.models import TenderDecision
+    from app.modules.orgs.models import Membership, MembershipStatus, Organization
+
+    members = (
+        select(Membership.org_id, func.count(Membership.id).label("total"))
+        .where(Membership.status == MembershipStatus.ACTIVE)
+        .group_by(Membership.org_id)
+        .subquery()
+    )
+    activity = (
+        select(
+            TenderDecision.org_id,
+            func.max(TenderDecision.created_at).label("last_at"),
+        )
+        .group_by(TenderDecision.org_id)
+        .subquery()
+    )
+
+    stmt = (
+        select(Organization, members.c.total, activity.c.last_at)
+        .outerjoin(members, members.c.org_id == Organization.id)
+        .outerjoin(activity, activity.c.org_id == Organization.id)
+        .order_by(Organization.created_at.desc())
+        .limit(limit)
+    )
+    if q:
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(Organization.name.ilike(term) | Organization.slug.ilike(term))
+
+    return [
+        OrganizationAdminRead(
+            id=org.id,
+            name=org.name,
+            slug=org.slug,
+            country=org.country,
+            plan=org.plan,
+            is_active=org.is_active,
+            created_at=org.created_at,
+            members=int(total or 0),
+            last_activity_at=last_at,
+        )
+        for org, total, last_at in await session.execute(stmt)
+    ]
+
+
+async def list_users(
+    session: AsyncSession, *, q: str | None = None, limit: int = 100
+) -> list[UserAdminRead]:
+    """Accounts, with the organizations each one belongs to."""
+    from app.modules.orgs.models import Membership, MembershipStatus, Organization
+    from app.modules.users.models import User
+
+    stmt = select(User).order_by(User.created_at.desc()).limit(limit)
+    if q:
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(User.email.ilike(term) | User.full_name.ilike(term))
+    users = list((await session.scalars(stmt)).all())
+    if not users:
+        return []
+
+    names: dict[UUID, list[str]] = {}
+    for user_id, org_name in await session.execute(
+        select(Membership.user_id, Organization.name)
+        .join(Organization, Organization.id == Membership.org_id)
+        .where(
+            Membership.user_id.in_([user.id for user in users]),
+            Membership.status == MembershipStatus.ACTIVE,
+        )
+    ):
+        names.setdefault(user_id, []).append(org_name)
+
+    return [
+        UserAdminRead(
+            id=user.id,
+            email=user.email,
+            full_name=user.full_name,
+            is_active=user.is_active,
+            is_superuser=user.is_superuser,
+            email_verified=user.email_verified,
+            last_login_at=user.last_login_at,
+            created_at=user.created_at,
+            organizations=sorted(names.get(user.id, [])),
+        )
+        for user in users
+    ]
+
+
+async def update_user(
+    session: AsyncSession, user_id: UUID, data: UserAdminUpdate, *, acting_user_id: UUID
+) -> UserAdminRead:
+    """Suspend an account, or grant and revoke platform staff.
+
+    A caller cannot do either to themselves. Revoking your own last superuser
+    flag, or deactivating the account you are signed in as, is the one mistake
+    here that nobody can undo from the console afterwards — it would need
+    somebody with database access, which on a single-VM deployment may be the
+    same person now locked out.
+    """
+    from app.modules.users.models import User
+
+    if user_id == acting_user_id:
+        raise ValidationError("Change another operator's access, not your own.")
+
+    user = await session.get(User, user_id)
+    if user is None:
+        raise NotFoundError("User not found.")
+
+    if data.is_active is not None:
+        user.is_active = data.is_active
+    if data.is_superuser is not None:
+        user.is_superuser = data.is_superuser
+    await session.flush()
+
+    logger.info(
+        "admin_user_updated",
+        user_id=str(user_id),
+        by=str(acting_user_id),
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+    )
+    return (await list_users(session, q=user.email, limit=1))[0]

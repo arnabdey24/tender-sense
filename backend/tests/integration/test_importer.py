@@ -6,11 +6,11 @@ from collections.abc import AsyncIterator
 from uuid import uuid4
 
 import pytest
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from app.db.session import session_scope
 from app.ingestion.importer import import_tenders
-from app.modules.tenders.models import TenderSource
+from app.modules.tenders.models import Tender, TenderSource
 
 
 @pytest.fixture
@@ -126,3 +126,59 @@ async def test_the_error_list_is_capped(source: TenderSource) -> None:
 
     assert report.failed == 80
     assert len(report.as_dict()["errors"]) == 50
+
+
+class TestBlankIdentity:
+    """A notice needs an id, a link and a title. `str` alone accepts none of
+    those being present, which is how a row of empty CSV cells became a
+    titleless tender in a pool shared by every tenant."""
+
+    async def test_a_row_of_empty_cells_is_skipped_not_stored(self, source: TenderSource) -> None:
+        rows = [
+            {"external_id": "", "canonical_url": "", "title": ""},
+            {
+                "external_id": "keeps-going-1",
+                "canonical_url": "https://example.org/keeps-going-1",
+                "title": "The rest of the batch is unaffected",
+            },
+        ]
+
+        async with session_scope() as session:
+            report = await import_tenders(session, rows, default_source=source)
+
+        assert report.failed == 1
+        assert report.created == 1
+
+    async def test_a_title_of_spaces_is_not_a_title(self, source: TenderSource) -> None:
+        rows = [
+            {
+                "external_id": "blank-title-1",
+                "canonical_url": "https://example.org/blank-title-1",
+                "title": "   ",
+            }
+        ]
+
+        async with session_scope() as session:
+            report = await import_tenders(session, rows, default_source=source)
+
+        assert report.failed == 1
+        assert report.created == 0
+
+    async def test_surrounding_whitespace_is_trimmed_rather_than_kept(
+        self, source: TenderSource
+    ) -> None:
+        rows = [
+            {
+                "external_id": "  trimmed-1  ",
+                "canonical_url": "https://example.org/trimmed-1",
+                "title": "  A notice pasted out of a spreadsheet  ",
+            }
+        ]
+
+        async with session_scope() as session:
+            report = await import_tenders(session, rows, default_source=source)
+            stored = await session.scalar(select(Tender).where(Tender.external_id == "trimmed-1"))
+
+        assert report.created == 1
+        assert stored is not None
+        assert stored.title == "A notice pasted out of a spreadsheet"

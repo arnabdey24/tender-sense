@@ -18,6 +18,7 @@ from app.modules.tenders import repository as repo
 from app.modules.tenders import service
 from app.modules.tenders.schemas import (
     SourceRead,
+    SyncState,
     TenderDetail,
     TenderFacets,
     TenderFilters,
@@ -57,3 +58,28 @@ async def list_sources(_: CurrentUser, db: DbSession) -> list[SourceRead]:
     """Portals TenderSense ingests from, with their current health."""
     sources = await repo.list_sources(db)
     return [SourceRead.model_validate(source) for source in sources]
+
+
+@router.get("/sources/sync", response_model=SyncState)
+async def sync_status(_: CurrentUser, db: DbSession) -> SyncState:
+    """Where each portal stands, and whether a sync can be started now."""
+    return await service.get_sync_state(db)
+
+
+@router.post("/sources/sync", response_model=SyncState)
+async def sync_sources(_: CurrentUser, db: DbSession) -> SyncState:
+    """Pull every portal now.
+
+    Any signed-in member, deliberately, rather than platform staff only. A
+    deployment whose pool has never been filled shows an organization nothing at
+    all, and the person looking at that empty screen is exactly the one who
+    needs the button — telling them to find an operator, or to come back after
+    the next cron pass, is not an answer.
+
+    What it starts is the same work the schedule starts: one job per portal on a
+    queue that runs one at a time. A deployment-wide cooldown keeps ten
+    organizations from meaning ten times the traffic to a portal that has been
+    running since 2011. Pressing inside that window is answered with the wait,
+    not an error — see ``service.sync_sources``.
+    """
+    return await service.sync_sources(db)

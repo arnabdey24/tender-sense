@@ -29,27 +29,13 @@
     />
     <meta property="og:image" content="/icon-512.png" />
 
-    <script>
-      /*
-       * Resolve the theme before first paint. Without this a dark-mode user
-       * gets a full white frame while the bundle loads. Mirrors the contract in
-       * src/components/theme-provider.tsx: key "theme", values light|dark|system.
-       */
-      ;(function () {
-        try {
-          var stored = localStorage.getItem("theme")
-          var theme =
-            stored === "light" || stored === "dark"
-              ? stored
-              : window.matchMedia("(prefers-color-scheme: dark)").matches
-                ? "dark"
-                : "light"
-          document.documentElement.classList.add(theme)
-        } catch (e) {
-          /* Private mode or blocked storage: the provider settles it on mount. */
-        }
-      })()
-    </script>
+    <!--
+      Resolves the theme before first paint; see public/theme.js. It is a file
+      and not an inline script because the proxy serves this page under
+      `script-src 'self'`, which blocked the inline version — so the script that
+      exists to prevent a white flash was the one thing guaranteed not to run.
+    -->
+    <script src="/theme.js"></script>
   </head>
   <body>
     <div id="root"></div>

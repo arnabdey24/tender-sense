@@ -92,6 +92,43 @@ The `last_error` on a row names the cause. In order of likelihood:
 Retry a specific failed message with
 `POST /admin/email-outbox/{id}/retry`. The pump runs twice a minute.
 
+### Nobody can reach /admin
+
+The console refuses to let an operator revoke their own staff access or suspend
+their own account, so the usual way into this is a deployment that never had a
+superuser, or one whose only operator has left. Make another from the box:
+
+```bash
+docker compose run --rm api python -m scripts.create_superuser --email you@example.com
+```
+
+On an address that already exists this promotes it and leaves its password
+alone; add `--reset-password` if the password is what was lost. The generated
+password is printed once and is not recoverable afterwards.
+
+```bash
+docker compose exec db psql -U tendersense -d tendersense \
+  -c "select email, is_superuser, is_active from users where is_superuser;"
+```
+
+### Live voice will not start
+
+Open the assistant and press the waveform button in the composer. It answers
+with the reason rather than doing nothing, and as a superuser it also names the
+setting to change. The four conditions are in the README; `ASSISTANT_VOICE_ENABLED`
+defaults to `false`, so a deployment made from `.env.example` has voice off and
+nothing is broken.
+
+If the panel says voice is available but a call never connects, check `APP_URL`:
+the socket compares the browser's `Origin` against `APP_URL` plus
+`BACKEND_CORS_ORIGINS` and closes with 1008 on a mismatch, which in the browser
+looks like a connection that opens and immediately drops. A deployment that
+moved to a real domain without updating `APP_URL` fails exactly this way.
+
+```bash
+docker compose logs api | grep -i voice
+```
+
 ### Matches stopped appearing
 
 ```bash

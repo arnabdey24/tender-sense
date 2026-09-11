@@ -11,6 +11,18 @@ import { AssistantProvider } from "@/features/assistant/AssistantProvider"
 /** Screens a member-less account may still visit. */
 const ORGLESS_ALLOWED = ["/onboarding", "/account"]
 
+/**
+ * And the one a member-less account may visit *if they are platform staff*.
+ *
+ * An operator is staff of the platform, not a member of any company on it — the
+ * two are unrelated, and a freshly created superuser has no organization at all.
+ * Sending them to onboarding made the operations console unreachable in the
+ * browser for exactly the account most likely to need it, and the only way out
+ * was to invent a company that then sat in the tenant list forever. The API
+ * never required an organization here; only this guard did.
+ */
+const STAFF_ALLOWED = ["/admin"]
+
 export const Route = createFileRoute("/_app")({
   beforeLoad: async ({ location }) => {
     const status = await waitForAuth()
@@ -23,8 +35,11 @@ export const Route = createFileRoute("/_app")({
 
     // Every `/app/*` screen is org-scoped; without a membership the API would
     // answer 403 `no_active_org`, so send the user to create one first.
-    const { memberships } = useAuthStore.getState()
-    const allowed = ORGLESS_ALLOWED.some((p) => location.pathname.startsWith(p))
+    const { memberships, user } = useAuthStore.getState()
+    const allowed =
+      ORGLESS_ALLOWED.some((p) => location.pathname.startsWith(p)) ||
+      (user?.is_superuser &&
+        STAFF_ALLOWED.some((p) => location.pathname.startsWith(p)))
     if (memberships.length === 0 && !allowed) {
       throw redirect({ to: "/onboarding" })
     }

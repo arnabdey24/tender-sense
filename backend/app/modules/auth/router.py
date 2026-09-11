@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession
 from app.core.exceptions import AppError, AuthenticationError
 from app.core.logging import get_logger
+from app.core.platform_settings import get_limits
 from app.core.rate_limit import client_ip, enforce_rate_limit
 from app.core.time import utcnow
 from app.modules.auth import google, service
@@ -94,8 +95,19 @@ async def login(
 ) -> SessionResponse:
     """Exchange credentials for an access token and a refresh cookie."""
     ip = _client(request).ip_address
-    await enforce_rate_limit(f"login:ip:{ip}", limit=20, window_seconds=900)
-    await enforce_rate_limit(f"login:email:{data.email.lower()}", limit=10, window_seconds=900)
+    # Read rather than hardcoded: an office of forty people behind one address
+    # is a legitimate reason to raise this, and it should not need a redeploy.
+    limits = await get_limits(session)
+    await enforce_rate_limit(
+        f"login:ip:{ip}",
+        limit=limits.login_attempts_per_ip,
+        window_seconds=limits.login_window_seconds,
+    )
+    await enforce_rate_limit(
+        f"login:email:{data.email.lower()}",
+        limit=limits.login_attempts_per_email,
+        window_seconds=limits.login_window_seconds,
+    )
 
     user = await service.authenticate(session, email=data.email, password=data.password)
     issued = await service.issue_session(session, user=user, client=_client(request))

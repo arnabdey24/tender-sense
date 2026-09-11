@@ -24,9 +24,9 @@ colors:
   grade-a: "oklch(0.53 0.14 150)"
   grade-b: "oklch(0.72 0.15 70)"
   grade-c: "oklch(0.55 0.02 260)"
-  success: "oklch(0.52 0.13 150)"
-  warning: "oklch(0.52 0.12 70)"
-  info: "oklch(0.52 0.1 200)"
+  success: "oklch(0.48 0.14 150)"
+  warning: "oklch(0.48 0.13 70)"
+  info: "oklch(0.48 0.11 200)"
   destructive: "oklch(0.55 0.2 27)"
 typography:
   page-title:
@@ -113,7 +113,7 @@ components:
     height: "20px"
     padding: "0 8px"
   badge-status-warning:
-    backgroundColor: "color-mix(in oklch, oklch(0.52 0.12 70) 15%, transparent)"
+    backgroundColor: "color-mix(in oklch, oklch(0.48 0.13 70) 15%, transparent)"
     textColor: "{colors.warning}"
     rounded: "{rounded.pill}"
     height: "20px"
@@ -180,10 +180,17 @@ popover `0.232`. Dark surfaces are raised greys, never black.
 - **Grade colour is data, and is reserved.** S violet, A green, B amber, C grey
   are the shipped grading vocabulary. They are never reused as a chart series,
   never rebranded, and never the only signal — the letter is always present.
-- **Status tokens are legible as text on the page ground**, not only as fills.
-  `--success`, `--warning`, `--info` all pass 4.5:1 on `background` in both
-  themes. `--*-foreground` is the ink used *on* a solid fill of that colour and
-  must never be used as a text colour on the page ground.
+- **Status tokens are legible both as text on the page ground and as ink on
+  their own tint.** The badge pattern — the token at 15% as a ground, the token
+  itself as 12px ink — is the harder of the two, and the one that decides the
+  value: all three sit at lightness 0.48 in light, which is `brand-600`'s own
+  step, because at 0.52 they measured 4.04–4.38 against their tint and the bar
+  is 4.5. Dark is unchanged; light ink on a dark tint is the easier direction.
+  `--*-foreground` is the ink used *on* a solid fill of that colour and must
+  never be used as a text colour on the page ground.
+  Contrast is verified in a browser, not in the unit suite: jsdom has no layout
+  engine and skips the check entirely, which is how the light set shipped short
+  of the bar in the first place.
 - **Chart series are validated, not chosen.** The five categorical steps pass a
   colour-blind separation check on adjacent pairs, a chroma floor, a lightness
   band, and ≥3:1 against the surface — separately per theme. The dark ramp is

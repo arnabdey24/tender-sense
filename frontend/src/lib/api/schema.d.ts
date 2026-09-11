@@ -333,6 +333,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assistant/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capabilities */
+        get: operations["capabilities_api_v1_assistant_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Conversations */
+        get: operations["list_conversations_api_v1_assistant_conversations_get"];
+        put?: never;
+        /** Create Conversation */
+        post: operations["create_conversation_api_v1_assistant_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Conversation */
+        get: operations["get_conversation_api_v1_assistant_conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Conversation */
+        delete: operations["delete_conversation_api_v1_assistant_conversations__conversation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn */
+        post: operations["turn_api_v1_assistant_conversations__conversation_id__turns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}/voice-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Voice Ticket */
+        post: operations["voice_ticket_api_v1_assistant_conversations__conversation_id__voice_ticket_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me": {
         parameters: {
             query?: never;
@@ -839,6 +926,42 @@ export interface paths {
         get: operations["list_sources_api_v1_sources_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sync Status
+         * @description Where each portal stands, and whether a sync can be started now.
+         */
+        get: operations["sync_status_api_v1_sources_sync_get"];
+        put?: never;
+        /**
+         * Sync Sources
+         * @description Pull every portal now.
+         *
+         *     Any signed-in member, deliberately, rather than platform staff only. A
+         *     deployment whose pool has never been filled shows an organization nothing at
+         *     all, and the person looking at that empty screen is exactly the one who
+         *     needs the button — telling them to find an operator, or to come back after
+         *     the next cron pass, is not an answer.
+         *
+         *     What it starts is the same work the schedule starts: one job per portal on a
+         *     queue that runs one at a time. A deployment-wide cooldown keeps ten
+         *     organizations from meaning ten times the traffic to a portal that has been
+         *     running since 2011. Pressing inside that window is answered with the wait,
+         *     not an error — see ``service.sync_sources``.
+         */
+        post: operations["sync_sources_api_v1_sources_sync_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1436,6 +1559,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/adapters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Adapters this build knows
+         * @description Keys a source may name.
+         *
+         *     Registering a portal means choosing one of these, and the list is decided by
+         *     what the deployment imported — so it is read from the registry rather than
+         *     written down twice. Without it the only way to learn the options was to
+         *     submit a wrong one and read the error.
+         */
+        get: operations["list_adapters_api_v1_admin_adapters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/sources/{source_id}": {
         parameters: {
             query?: never;
@@ -1709,6 +1857,121 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Is anything wrong right now
+         * @description The console's front page: pool size, portal health, failures, spend.
+         */
+        get: operations["overview_api_v1_admin_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/organizations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Organizations
+         * @description Tenants, with member counts and when each last recorded a decision.
+         */
+        get: operations["list_organizations_api_v1_admin_organizations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["list_users_api_v1_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Update User
+         * @description Suspend an account, or grant and revoke platform staff.
+         *
+         *     Not on yourself: revoking your own access, or deactivating the account you
+         *     are signed in as, is the one mistake here the console cannot undo
+         *     afterwards.
+         */
+        patch: operations["update_user_api_v1_admin_users__user_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Rate limits in force
+         * @description What the limits are now — the deployment's configuration, with any
+         *     stored override applied.
+         */
+        get: operations["get_limits_api_v1_admin_limits_get"];
+        /**
+         * Change a rate limit
+         * @description Store the limits, taking effect within seconds and without a redeploy.
+         *
+         *     The moments that call for moving one of these are the moments nobody wants
+         *     to deploy: a portal being hammered on a demo day, one tenant consuming the
+         *     model budget, a sign-in throttle tighter than a real office sharing a single
+         *     address.
+         */
+        put: operations["put_limits_api_v1_admin_limits_put"];
+        post?: never;
+        /**
+         * Restore the configured limits
+         * @description Drop the override, so the deployment's own configuration applies again.
+         */
+        delete: operations["reset_limits_api_v1_admin_limits_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1743,6 +2006,76 @@ export interface components {
             /** Rows */
             rows?: components["schemas"]["AiUsageRow"][];
         };
+        /** AnalysisRow */
+        AnalysisRow: {
+            /** Label */
+            label: string;
+            /** Value */
+            value?: number | null;
+            /** Baseline */
+            baseline?: number | null;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Status */
+            status?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+        };
+        /** AnalyzeInput */
+        AnalyzeInput: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "capabilities" | "eligibility" | "calculation" | "checklist" | "timeline" | "scenario";
+            /**
+             * Adjustment Percent
+             * @default 0
+             */
+            adjustment_percent: number;
+        };
+        /** Artifact */
+        Artifact: {
+            /** Id */
+            id: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "capabilities" | "eligibility" | "calculation" | "checklist" | "timeline" | "scenario";
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Rows */
+            rows?: components["schemas"]["AnalysisRow"][];
+            /** Formulas */
+            formulas?: string[];
+            /** Assumptions */
+            assumptions?: string[];
+            /** Sources */
+            sources?: components["schemas"]["Source"][];
+            /**
+             * Unit
+             * @default
+             */
+            unit: string;
+            /** Context Version */
+            context_version: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /**
          * AttributeType
          * @enum {string}
@@ -1757,6 +2090,22 @@ export interface components {
         Body_verify_recipient_api_v1_notifications_verify_recipient_post: {
             /** Token */
             token: string;
+        };
+        /** Capabilities */
+        Capabilities: {
+            /** Enabled */
+            enabled: boolean;
+            /** Voice Enabled */
+            voice_enabled: boolean;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "gemini" | "demo" | "unavailable";
+            /** Voice Max Seconds */
+            voice_max_seconds: number;
+            /** Voice Unavailable Reason */
+            voice_unavailable_reason?: ("assistant_off" | "voice_off" | "no_key" | "provider_not_gemini") | null;
         };
         /** CatalogueAttribute */
         CatalogueAttribute: {
@@ -1857,6 +2206,57 @@ export interface components {
             complete: boolean;
             /** Weight */
             weight: number;
+        };
+        /** ConversationCreate */
+        ConversationCreate: {
+            /** Tender Id */
+            tender_id?: string | null;
+        };
+        /** ConversationDetail */
+        ConversationDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Tender Id */
+            tender_id: string | null;
+            /** Title */
+            title: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Messages */
+            messages: components["schemas"]["MessageRead"][];
+        };
+        /** ConversationRead */
+        ConversationRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Tender Id */
+            tender_id: string | null;
+            /** Title */
+            title: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * Decision
@@ -2111,6 +2511,47 @@ export interface components {
             enqueued: boolean;
         };
         /**
+         * Limits
+         * @description Every limit an operator can move, with the deployment's value as default.
+         */
+        Limits: {
+            /**
+             * Source Sync Cooldown Seconds
+             * @description Shortest gap between hand-started portal syncs, deployment-wide.
+             */
+            source_sync_cooldown_seconds: number;
+            /**
+             * Ai Daily Token Budget
+             * @description Model tokens per day across every tenant. 0 disables the cap.
+             */
+            ai_daily_token_budget: number;
+            /**
+             * Assistant Daily Turn Limit
+             * @description Assistant messages per organization per day. 0 is unlimited.
+             */
+            assistant_daily_turn_limit: number;
+            /**
+             * Assistant Daily Voice Seconds
+             * @description Live voice seconds per organization per day. 0 is unlimited.
+             */
+            assistant_daily_voice_seconds: number;
+            /**
+             * Login Attempts Per Ip
+             * @description Sign-in attempts allowed from one address per window.
+             */
+            login_attempts_per_ip: number;
+            /**
+             * Login Attempts Per Email
+             * @description Sign-in attempts allowed against one account per window.
+             */
+            login_attempts_per_email: number;
+            /**
+             * Login Window Seconds
+             * @description The window both sign-in limits are counted over.
+             */
+            login_window_seconds: number;
+        };
+        /**
          * LiteralValue
          * @description Compare against a value typed into the rule.
          */
@@ -2326,6 +2767,42 @@ export interface components {
             org_slug: string;
             role: components["schemas"]["OrgRole"];
         };
+        /** MessageRead */
+        MessageRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
+            /** Status */
+            status: string;
+            /** Sources */
+            sources?: components["schemas"]["Source"][];
+            /** Artifacts */
+            artifacts?: components["schemas"]["Artifact"][];
+            /**
+             * Context Version
+             * @default
+             */
+            context_version: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** MessageResponse */
         MessageResponse: {
             /** Message */
@@ -2440,6 +2917,33 @@ export interface components {
          * @enum {string}
          */
         OrgRole: "admin" | "member";
+        /** OrganizationAdminRead */
+        OrganizationAdminRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Country */
+            country?: string | null;
+            /** Plan */
+            plan: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Members */
+            members: number;
+            /** Last Activity At */
+            last_activity_at?: string | null;
+        };
         /** OrganizationCreate */
         OrganizationCreate: {
             /** Name */
@@ -2498,6 +3002,44 @@ export interface components {
             description?: string | null;
             /** Timezone */
             timezone?: string | null;
+        };
+        /**
+         * Overview
+         * @description What an operator opens the console to find out.
+         *
+         *     One request, because the question is "is anything wrong right now" and
+         *     answering it from six endpoints means six chances to show a page that is
+         *     half stale.
+         */
+        Overview: {
+            /** Tenders */
+            tenders: number;
+            /** Tenders Open */
+            tenders_open: number;
+            /** Tenders Added Today */
+            tenders_added_today: number;
+            /** Organizations */
+            organizations: number;
+            /** Organizations Active */
+            organizations_active: number;
+            /** Users */
+            users: number;
+            /** Users Active */
+            users_active: number;
+            /** Sources */
+            sources?: components["schemas"]["SourceHealthCount"][];
+            /** Jobs Failed 24H */
+            jobs_failed_24h: number;
+            /** Scrapes Failed 24H */
+            scrapes_failed_24h: number;
+            /** Email Queued */
+            email_queued: number;
+            /** Email Failed */
+            email_failed: number;
+            /** Ai Tokens Today */
+            ai_tokens_today: number;
+            /** Ai Daily Token Budget */
+            ai_daily_token_budget: number;
         };
         /** Page[DecisionWithTender] */
         Page_DecisionWithTender_: {
@@ -2587,6 +3129,38 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /**
+         * PortalSyncState
+         * @description One portal, as the sync control needs to describe it.
+         *
+         *     ``last_run_at`` on its own cannot tell a waiting person whether anything is
+         *     happening — a timestamp from four hours ago looks the same whether a pass is
+         *     running right now or the portal has been silent since. So the run in flight
+         *     is reported separately from the last one that finished.
+         */
+        PortalSyncState: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Enabled */
+            enabled: boolean;
+            health: components["schemas"]["SourceHealth"];
+            /** Running */
+            running: boolean;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Success At */
+            last_success_at?: string | null;
+            last_status?: components["schemas"]["RunStatus"] | null;
+            /** Last Notices Added */
+            last_notices_added?: number | null;
         };
         /** PreviewCounts */
         PreviewCounts: {
@@ -3065,6 +3639,11 @@ export interface components {
             /** Errors */
             errors?: components["schemas"]["RuleValidationError"][];
         };
+        /**
+         * RunStatus
+         * @enum {string}
+         */
+        RunStatus: "running" | "succeeded" | "failed" | "partial";
         /** ScraperRunRead */
         ScraperRunRead: {
             /**
@@ -3166,6 +3745,17 @@ export interface components {
          * @enum {string}
          */
         Severity: "hard" | "soft";
+        /** Source */
+        Source: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Quote */
+            quote: string;
+            /** Url */
+            url?: string | null;
+        };
         /** SourceAdminRead */
         SourceAdminRead: {
             /**
@@ -3247,6 +3837,21 @@ export interface components {
             /** Detail */
             detail?: string | null;
         };
+        /** SourceHealthCount */
+        SourceHealthCount: {
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Health */
+            health: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Last Success At */
+            last_success_at?: string | null;
+            /** Tenders */
+            tenders: number;
+        };
         /** SourceRead */
         SourceRead: {
             /**
@@ -3305,6 +3910,28 @@ export interface components {
              * Format: uuid
              */
             org_id: string;
+        };
+        /**
+         * SyncState
+         * @description What the sync control shows, and what pressing it did.
+         *
+         *     The same shape answers both the poll and the press, so the interface has one
+         *     thing to render rather than a status and a result that can disagree.
+         */
+        SyncState: {
+            /** Portals */
+            portals: components["schemas"]["PortalSyncState"][];
+            /** Running */
+            running: boolean;
+            /** Retry After Seconds */
+            retry_after_seconds: number;
+            /** Cooldown Seconds */
+            cooldown_seconds: number;
+            /**
+             * Queued
+             * @default []
+             */
+            queued: string[];
         };
         /**
          * TaxonomiesRead
@@ -3535,6 +4162,27 @@ export interface components {
             /** To Email */
             to_email: string;
         };
+        /** TurnInput */
+        TurnInput: {
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Text */
+            text: string;
+            /**
+             * Language
+             * @default auto
+             * @enum {string}
+             */
+            language: "auto" | "en" | "bn";
+            /** Page */
+            page?: string | null;
+            artifact?: components["schemas"]["AnalyzeInput"] | null;
+            /** Active Artifact */
+            active_artifact?: ("capabilities" | "eligibility" | "calculation" | "checklist" | "timeline" | "scenario") | null;
+        };
         /** UnreadCount */
         UnreadCount: {
             /** Unread */
@@ -3546,6 +4194,46 @@ export interface components {
          * @enum {string}
          */
         Urgency: "expired" | "critical" | "high" | "normal" | "low" | "unknown";
+        /** UserAdminRead */
+        UserAdminRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Superuser */
+            is_superuser: boolean;
+            /** Email Verified */
+            email_verified: boolean;
+            /** Last Login At */
+            last_login_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Organizations */
+            organizations?: string[];
+        };
+        /**
+         * UserAdminUpdate
+         * @description Only the two flags platform staff have any business changing here.
+         *
+         *     Names, emails and passwords belong to the person who owns the account; an
+         *     operator needing to suspend one does not need to be able to rewrite it.
+         */
+        UserAdminUpdate: {
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Superuser */
+            is_superuser?: boolean | null;
+        };
         /** UserRead */
         UserRead: {
             /**
@@ -3611,6 +4299,16 @@ export interface components {
         VerifyEmailRequest: {
             /** Token */
             token: string;
+        };
+        /** VoiceTicket */
+        VoiceTicket: {
+            /** Ticket */
+            ticket: string;
+            /**
+             * Expires In
+             * @default 30
+             */
+            expires_in: number;
         };
     };
     responses: never;
@@ -4052,6 +4750,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    capabilities_api_v1_assistant_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Capabilities"];
+                };
+            };
+        };
+    };
+    list_conversations_api_v1_assistant_conversations_get: {
+        parameters: {
+            query?: {
+                tender_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_conversation_api_v1_assistant_conversations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_api_v1_assistant_conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_conversation_api_v1_assistant_conversations__conversation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    turn_api_v1_assistant_conversations__conversation_id__turns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TurnInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_ticket_api_v1_assistant_conversations__conversation_id__voice_ticket_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceTicket"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4964,6 +5872,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceRead"][];
+                };
+            };
+        };
+    };
+    sync_status_api_v1_sources_sync_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncState"];
+                };
+            };
+        };
+    };
+    sync_sources_api_v1_sources_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncState"];
                 };
             };
         };
@@ -6023,6 +6971,26 @@ export interface operations {
             };
         };
     };
+    list_adapters_api_v1_admin_adapters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string[];
+                };
+            };
+        };
+    };
     get_source_api_v1_admin_sources__source_id__get: {
         parameters: {
             query?: never;
@@ -6508,6 +7476,201 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_v1_admin_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Overview"];
+                };
+            };
+        };
+    };
+    list_organizations_api_v1_admin_organizations_get: {
+        parameters: {
+            query?: {
+                /** @description Match name or slug */
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationAdminRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_admin_users_get: {
+        parameters: {
+            query?: {
+                /** @description Match email or name */
+                q?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdminRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_api_v1_admin_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description User identifier */
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserAdminUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserAdminRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_limits_api_v1_admin_limits_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Limits"];
+                };
+            };
+        };
+    };
+    put_limits_api_v1_admin_limits_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Limits"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Limits"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_limits_api_v1_admin_limits_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Limits"];
                 };
             };
         };

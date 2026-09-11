@@ -27,7 +27,7 @@ from app.core.time import utcnow
 from app.db.session import session_scope
 from app.ingestion.adapters import ADAPTERS, NoticeRef, build_adapter
 from app.ingestion.service import UpsertOutcome, upsert_tender
-from app.jobs.queue import get_queue
+from app.jobs.queue import QUEUE_SCRAPE, get_queue
 from app.jobs.runs import RunStatus, ScraperRun
 from app.jobs.tasks.matching import enqueue_processing
 from app.jobs.tracking import tracked_job
@@ -249,6 +249,32 @@ async def _finish(
     await session.flush()
 
 
+async def enqueue_scrape_source(source_id: UUID, code: str) -> str | None:
+    """Put one portal on the scrape queue, and say whether it went.
+
+    Deduplicated on the source, so a second request while a pass is queued or
+    running is a no-op rather than a second visit to the portal. Every caller
+    that starts a scrape goes through here — the cron dispatch, the operator's
+    per-source button and the members' sync — so there is one dedupe convention
+    rather than three that have to agree.
+
+    Returns the job id, or ``None`` when the job was already queued or Redis is
+    unreachable; a caller that reports "queued" must only do so if it was.
+    """
+    try:
+        queue = await get_queue()
+        job = await queue.enqueue_job(
+            "scrape_source",
+            str(source_id),
+            _queue_name=QUEUE_SCRAPE,
+            _job_id=f"scrape:{source_id}",
+        )
+    except Exception as exc:  # pragma: no cover - Redis down must not 500
+        logger.warning("scrape_enqueue_failed", source=code, error=str(exc))
+        return None
+    return job.job_id if job else None
+
+
 async def _enqueue_update_notice(tender_id: str) -> None:
     """Tell organizations bidding on this tender that the portal changed it."""
     try:
@@ -284,17 +310,8 @@ async def scrape_all_sources(ctx: dict[str, Any]) -> dict[str, Any]:
     for source in sources:
         if source.adapter_key not in ADAPTERS:
             continue
-        try:
-            queue = await get_queue()
-            await queue.enqueue_job(
-                "scrape_source",
-                str(source.id),
-                _queue_name="arq:queue:scrape",
-                _job_id=f"scrape:{source.id}",
-            )
+        if await enqueue_scrape_source(source.id, source.code):
             queued += 1
-        except Exception as exc:
-            logger.warning("scrape_enqueue_failed", source=source.code, error=str(exc))
 
     logger.info("scrape_dispatch", sources=len(sources), queued=queued)
     return {"sources": len(sources), "queued": queued}

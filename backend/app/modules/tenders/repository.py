@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.pagination import PageParams
 from app.core.time import utcnow
+from app.jobs.runs import ScraperRun
 from app.modules.tenders.models import (
     Tender,
     TenderExtraction,
@@ -122,3 +123,24 @@ async def count_closing_within(session: AsyncSession, *, days: int, filters: Ten
 async def list_sources(session: AsyncSession) -> list[TenderSource]:
     rows = await session.execute(select(TenderSource).order_by(TenderSource.code))
     return list(rows.scalars().all())
+
+
+async def latest_scraper_runs(
+    session: AsyncSession, source_ids: list[UUID]
+) -> dict[UUID, ScraperRun]:
+    """The newest run for each of these portals, if any has ever run.
+
+    One query rather than one per portal: the sync control polls this every few
+    seconds while a pass is in flight, and a per-source query would multiply
+    that by however many portals exist.
+    """
+    if not source_ids:
+        return {}
+
+    runs = await session.scalars(
+        select(ScraperRun)
+        .where(ScraperRun.source_id.in_(source_ids))
+        .distinct(ScraperRun.source_id)
+        .order_by(ScraperRun.source_id, ScraperRun.started_at.desc())
+    )
+    return {run.source_id: run for run in runs.all()}

@@ -70,12 +70,20 @@ export function TendersTable({
   sort,
   descending,
   onSort,
+  emptyState,
 }: {
   tenders: TenderSummary[]
   isLoading?: boolean
   sort: TenderSort
   descending: boolean
   onSort: (key: TenderSort) => void
+  /**
+   * What no rows means here. The table cannot tell the difference between a
+   * filter that excluded everything and a pool that has never been filled, and
+   * the two need opposite answers — one says broaden the search, the other has
+   * to offer the pull. The caller knows which, so the caller says.
+   */
+  emptyState?: React.ReactNode
 }) {
   const { isVisible, isSelected, activeId, setActiveId } = useDataTableContext()
   const onKeyDown = useDataTableKeyboard()
@@ -103,15 +111,17 @@ export function TendersTable({
 
   if (tenders.length === 0) {
     return (
-      <Empty size="compact">
-        <EmptyHeader>
-          <EmptySignal />
-          <EmptyTitle>No notices match these filters</EmptyTitle>
-          <EmptyDescription>
-            Try a broader search term, or clear one of the filters above.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      emptyState ?? (
+        <Empty size="compact">
+          <EmptyHeader>
+            <EmptySignal />
+            <EmptyTitle>No notices match these filters</EmptyTitle>
+            <EmptyDescription>
+              Try a broader search term, or clear one of the filters above.
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )
     )
   }
 

@@ -10,6 +10,7 @@ from uuid import UUID
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.jobs.runs import RunStatus
 from app.modules.tenders.models import ProcurementCategory, SourceHealth, TenderStatus
 
 
@@ -25,6 +26,48 @@ class SourceRead(BaseModel):
     last_run_at: datetime | None = None
     last_success_at: datetime | None = None
     consecutive_failures: int
+
+
+class PortalSyncState(BaseModel):
+    """One portal, as the sync control needs to describe it.
+
+    ``last_run_at`` on its own cannot tell a waiting person whether anything is
+    happening — a timestamp from four hours ago looks the same whether a pass is
+    running right now or the portal has been silent since. So the run in flight
+    is reported separately from the last one that finished.
+    """
+
+    id: UUID
+    code: str
+    name: str
+    enabled: bool
+    health: SourceHealth
+    running: bool
+    """A pass over this portal is in flight."""
+    last_run_at: datetime | None = None
+    last_success_at: datetime | None = None
+    last_status: RunStatus | None = None
+    last_notices_added: int | None = None
+    """Notices the last finished pass added, so "it worked" is a number."""
+
+
+class SyncState(BaseModel):
+    """What the sync control shows, and what pressing it did.
+
+    The same shape answers both the poll and the press, so the interface has one
+    thing to render rather than a status and a result that can disagree.
+    """
+
+    portals: list[PortalSyncState]
+    running: bool
+    """Any portal is mid-pass."""
+    retry_after_seconds: int
+    """Seconds until a sync may be started. ``0`` means now."""
+    cooldown_seconds: int
+    """The configured gap, so the interface can say how long the wait will be."""
+    queued: list[str] = []
+    """Portal codes this request put on the queue. Empty on a poll, and empty on
+    a press that was refused or found every portal already running."""
 
 
 class TenderSummary(BaseModel):

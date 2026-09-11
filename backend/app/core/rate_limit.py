@@ -78,3 +78,51 @@ async def limit_org_work(
             "Give the last one a moment to finish."
         ),
     )
+
+
+async def claim_cooldown(key: str, *, seconds: int) -> int:
+    """Take a shared cooldown, or report how long until it is free.
+
+    Distinct from :func:`enforce_rate_limit` in what the caller can say
+    afterwards. A counter knows only that you are over the line, which makes for
+    a button that refuses without explaining; this returns the seconds left, so
+    the interface can show a countdown and the person can see the control is
+    working as designed rather than broken.
+
+    Returns ``0`` when the cooldown was claimed and the work should go ahead.
+
+    A missing Redis returns ``0`` as well. This is not the usual "availability
+    beats enforcement" trade — the queue is Redis too, so whatever the caller
+    was about to enqueue is going to fail on its own and say so honestly.
+    """
+    redis_key = f"cooldown:{key}"
+    try:
+        redis = await get_queue()
+        claimed = await redis.set(redis_key, "1", ex=seconds, nx=True)
+        if claimed:
+            return 0
+        remaining = await redis.ttl(redis_key)
+    except Exception as exc:  # pragma: no cover - the enqueue behind this reports it
+        logger.warning("cooldown_unavailable", key=key, error=str(exc))
+        return 0
+    # Redis answers -2 for a key that is gone — it expired in the moment between
+    # the failed claim and this read, so the caller may try again at once — and
+    # -1 for one with no expiry, which nothing here sets but which must not be
+    # reported as a countdown that never ends.
+    if remaining is None:
+        return seconds
+    remaining = int(remaining)
+    if remaining == -2:
+        return 0
+    return seconds if remaining < 0 else remaining
+
+
+async def cooldown_remaining(key: str) -> int:
+    """Seconds until ``key`` is free, without taking it. ``0`` means now."""
+    try:
+        redis = await get_queue()
+        remaining = await redis.ttl(f"cooldown:{key}")
+    except Exception as exc:  # pragma: no cover - reading state must never 500
+        logger.warning("cooldown_unavailable", key=key, error=str(exc))
+        return 0
+    return 0 if remaining is None or remaining < 0 else int(remaining)

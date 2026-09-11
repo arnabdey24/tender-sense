@@ -48,6 +48,17 @@ const RAIL_BY_GRADE = {
  * produce, and the grade rail lets the eye group runs of the same grade
  * without reading a letter on every line.
  */
+/**
+ * Why a shortlist is empty, in one sentence, in one place.
+ *
+ * Today and the dashboard's "new today" segment describe the same morning, and
+ * had drifted into two different explanations of it — one of which promised
+ * that matches would arrive on their own, which on a pool nobody has pulled is
+ * a promise nothing will keep.
+ */
+export const NOTHING_NEW_DESCRIPTION =
+  "Strong matches appear here as new notices are read and graded. An empty morning means nothing cleared the bar since yesterday — or the portals have not been pulled yet."
+
 export function MatchList({
   matches,
   isLoading,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { applyEvent } from "./messages"
+
+import { applyEvent, initialScrollPosition } from "./messages"
 import { consumeEvents } from "./api"
 import type { AssistantEvent } from "./schemas"
 
@@ -30,5 +31,18 @@ describe("assistant conversation events", () => {
 
   it("does not claim success after a truncated connection", async () => {
     await expect(consumeEvents(new Response(`data: ${JSON.stringify(event("text", { text: "Partial" }))}\n\n`), () => {})).rejects.toThrow("interrupted")
+  })
+})
+
+
+describe("where the panel opens", () => {
+  it("puts a fresh conversation at the top, so the greeting is read", () => {
+    // The bug this pins: the scroller defaults to "end" whatever autoScroll
+    // says, and a short window made that visible as a half-cut sentence.
+    expect(initialScrollPosition(0)).toBe("start")
+  })
+
+  it("resumes a conversation with history at its latest message", () => {
+    expect(initialScrollPosition(4)).toBe("end")
   })
 })

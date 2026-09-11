@@ -4,8 +4,12 @@ import { ArrowRightIcon } from "lucide-react"
 import { PageHeader } from "@/components/layout/PageHeader"
 import { Button } from "@/components/ui/button"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
-import { MatchList } from "@/features/matches/MatchList"
+import {
+  MatchList,
+  NOTHING_NEW_DESCRIPTION,
+} from "@/features/matches/MatchList"
 import { useTodayShortlist } from "@/features/matches/api"
+import { PortalSyncButton } from "@/features/sources/PortalSync"
 
 export const Route = createFileRoute("/_app/app/today")({
   component: TodayPage,
@@ -21,14 +25,23 @@ function TodayPage() {
         title="Today"
         description="Strong matches that arrived since yesterday. Only S and A grades that are not already ruled out — the point of a shortlist is that it is short."
         actions={
-          <Button
-            variant="outline"
-            render={<Link to="/app/matches" />}
-            nativeButton={false}
-          >
-            All matches
-            <ArrowRightIcon data-icon="inline-end" />
-          </Button>
+          <>
+            {/*
+              Sync sits to the left of the navigation deliberately. In a
+              right-aligned group the rightmost control reads as the most
+              prominent, and on this page that belongs to where the reader is
+              going next, not to the plumbing that fills the pool.
+            */}
+            <PortalSyncButton size="default" variant="outline" />
+            <Button
+              variant="outline"
+              render={<Link to="/app/matches" />}
+              nativeButton={false}
+            >
+              All matches
+              <ArrowRightIcon data-icon="inline-end" />
+            </Button>
+          </>
         }
       />
 
@@ -45,7 +58,7 @@ function TodayPage() {
           matches={shortlist.data?.items ?? []}
           isLoading={shortlist.isPending}
           emptyTitle="Nothing new today"
-          emptyDescription="New strong matches will appear here as tenders are ingested."
+          emptyDescription={NOTHING_NEW_DESCRIPTION}
         />
       </section>
     </>

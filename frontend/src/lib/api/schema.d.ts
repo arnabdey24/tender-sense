@@ -3927,6 +3927,8 @@ export interface components {
             retry_after_seconds: number;
             /** Cooldown Seconds */
             cooldown_seconds: number;
+            /** Pool Size */
+            pool_size: number;
             /**
              * Queued
              * @default []

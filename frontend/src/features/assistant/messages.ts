@@ -64,3 +64,19 @@ export function applyEvent(
       )
     : result
 }
+
+
+/**
+ * Where a conversation opens.
+ *
+ * A greeting is read from the top; a conversation with history is resumed at
+ * its end. The scroller's own default is "end" regardless, which on a window
+ * short enough for the greeting to overflow opened the panel on a half-cut
+ * sentence — and did it invisibly on a tall screen, where the end and the start
+ * are the same place.
+ */
+export function initialScrollPosition(
+  messageCount: number
+): "start" | "end" {
+  return messageCount > 0 ? "end" : "start"
+}

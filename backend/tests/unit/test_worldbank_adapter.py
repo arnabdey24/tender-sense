@@ -20,10 +20,10 @@ from app.ingestion.adapters.base import NoticeRef, RawDocument
 from app.ingestion.adapters.worldbank import (
     DETAIL_URL,
     WorldBankAdapter,
-    _country_code,
     _html_to_text,
     _parse_date,
 )
+from app.ingestion.countries import country_code as _country_code
 from app.modules.tenders.models import DocumentKind, ProcurementCategory, TenderStatus
 
 FIXTURE = Path(__file__).parent.parent / "fixtures" / "worldbank" / "listing.json"

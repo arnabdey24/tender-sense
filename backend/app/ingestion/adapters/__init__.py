@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Any
 
 # Imported for their registration side effect; `build_adapter` resolves by key.
+from app.ingestion.adapters import adb as _adb  # noqa: F401
 from app.ingestion.adapters import egp_bd as _egp_bd  # noqa: F401
 from app.ingestion.adapters import egp_bd_playwright as _egp_bd_playwright  # noqa: F401
 from app.ingestion.adapters import worldbank as _worldbank  # noqa: F401

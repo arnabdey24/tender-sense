@@ -25,6 +25,7 @@ from selectolax.parser import HTMLParser
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.ingestion.countries import country_code
 from app.ingestion.adapters.base import (
     NoticeRef,
     RawDocument,
@@ -73,33 +74,6 @@ _CATEGORIES: dict[str, ProcurementCategory] = {
 #: A notice type that describes something already decided is not biddable.
 _CLOSED_NOTICE_TYPES = frozenset({"contract award", "award notice", "cancellation notice"})
 
-#: ISO codes for the countries this project actually deals with. The endpoint
-#: returns names, and mapping only what we know keeps a wrong guess out of a
-#: country-eligibility rule.
-_COUNTRY_CODES: dict[str, str] = {
-    "bangladesh": "BD",
-    "india": "IN",
-    "nepal": "NP",
-    "sri lanka": "LK",
-    "pakistan": "PK",
-    "bhutan": "BT",
-    "maldives": "MV",
-    "afghanistan": "AF",
-    "myanmar": "MM",
-    "indonesia": "ID",
-    "philippines": "PH",
-    "vietnam": "VN",
-    "kenya": "KE",
-    "nigeria": "NG",
-    "ethiopia": "ET",
-    "tanzania": "TZ",
-    "uganda": "UG",
-    "ghana": "GH",
-    "egypt": "EG",
-    "morocco": "MA",
-}
-
-
 def _parse_date(value: Any) -> datetime | None:
     """The portal writes dates as `08-Sep-2026`, sometimes with a time."""
     if not value or not isinstance(value, str):
@@ -119,12 +93,6 @@ def _html_to_text(value: Any) -> str | None:
         return None
     text = HTMLParser(value).text(separator=" ", strip=True)
     return " ".join(text.split()) or None
-
-
-def _country_code(name: Any) -> str | None:
-    if not name or not isinstance(name, str):
-        return None
-    return _COUNTRY_CODES.get(name.strip().lower())
 
 
 def _sector_names(value: Any) -> list[str]:
@@ -289,7 +257,7 @@ class WorldBankAdapter:
             ),
             description=description,
             procuring_entity=row.get("contact_organization") or row.get("project_name"),
-            country=_country_code(row.get("project_ctry_name")),
+            country=country_code(row.get("project_ctry_name")),
             procurement_method=row.get("procurement_method_name"),
             procurement_category=_CATEGORIES.get(
                 str(row.get("procurement_group") or "").upper(),

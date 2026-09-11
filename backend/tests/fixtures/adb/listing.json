@@ -1,0 +1,434 @@
+{
+ "response": {
+  "docs": [
+   {
+    "ds_date_closing": "2026-10-26T12:00:00Z",
+    "ds_date_posted": "2026-09-09T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175406:en",
+    "ss_closing_date_formatted": "26 Oct 2026",
+    "ss_date_formatted": "09 Sep 2026",
+    "ss_file_url": "/sites/default/files/tenders/ifb-ocb-ict-01-integrated-software-development-taxpayer-services1.pdf",
+    "ss_url": "/node/1175406",
+    "tm_X3b_en_approval_number": [
+     "4530"
+    ],
+    "tm_X3b_en_country": [
+     "Lao People's Democratic Republic"
+    ],
+    "tm_X3b_en_project_number": [
+     "57267-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Public sector management"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Integrated Software Development for Taxpayer services through digital transformation, Computerized Accounting and E-Invoicing, Data analytics, Supply of Cloud and IT Equipment, Cloud and Network Migration and Capacity Building"
+    ],
+    "tm_X3b_en_type": [
+     "Invitation for Bids"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-10-07T12:00:00Z",
+    "ds_date_posted": "2026-09-09T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175426:en",
+    "ss_closing_date_formatted": "07 Oct 2026",
+    "ss_date_formatted": "09 Sep 2026",
+    "ss_file_url": "/sites/default/files/tenders/tha4785-cw-02-ifb.pdf",
+    "ss_url": "/node/1175426",
+    "tm_X3b_en_approval_number": [
+     "4785"
+    ],
+    "tm_X3b_en_country": [
+     "Thailand"
+    ],
+    "tm_X3b_en_project_number": [
+     "56095-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Health"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Climate-smart Health Services System Enhancement Project"
+    ],
+    "tm_X3b_en_type": [
+     "Invitation for Bids"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-10-23T12:00:00Z",
+    "ds_date_posted": "2026-09-09T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175571:en",
+    "ss_closing_date_formatted": "23 Oct 2026",
+    "ss_date_formatted": "09 Sep 2026",
+    "ss_file_url": "/sites/default/files/tenders/60434-001-kaz-cw1-ks-dbm-ifb.pdf",
+    "ss_url": "/node/1175571",
+    "tm_X3b_en_project_number": [
+     "60434-002"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Design, Construction, and Performance-Based Maintenance of Kyzylorda-Saksaulsk Project"
+    ],
+    "tm_X3b_en_type": [
+     "Invitation for Bids"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-10-23T12:00:00Z",
+    "ds_date_posted": "2026-09-09T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175576:en",
+    "ss_closing_date_formatted": "23 Oct 2026",
+    "ss_date_formatted": "09 Sep 2026",
+    "ss_file_url": "/sites/default/files/tenders/60434-002-kaz-cw01bs-bdm-ifb.pdf",
+    "ss_url": "/node/1175576",
+    "tm_X3b_en_project_number": [
+     "60434-002"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Design, Construction, and Performance-Based Maintenance of Beineu-Saksaulsk Project"
+    ],
+    "tm_X3b_en_type": [
+     "Invitation for Bids"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-10-02T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175886:en",
+    "ss_closing_date_formatted": "02 Oct 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=F096AE4B4E8650F17B05AE6939F6F9D365EDCF40835BBF08175A49A2B4D7B8E2",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175886",
+    "tm_X3b_en_country": [
+     "Regional"
+    ],
+    "tm_X3b_en_project_number": [
+     "49407-005"
+    ],
+    "tm_X3b_en_sector": [
+     "Multisector"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "KGZ:  Power Systems Firm (Wind PPP Project)"
+    ],
+    "tm_X3b_en_type": [
+     "Firm"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-19T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1170551:en",
+    "ss_closing_date_formatted": "19 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=93919B545B7B94995CA902EC4C0C25620DE43A7B3503B860E39355631290893A",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1170551",
+    "tm_X3b_en_country": [
+     "Regional"
+    ],
+    "tm_X3b_en_project_number": [
+     "58325-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Water and other urban infrastructure and services"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Sukkur Heat Adaptation Investment Planning Specialist/Team Leader"
+    ],
+    "tm_X3b_en_type": [
+     "Individual"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-17T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175891:en",
+    "ss_closing_date_formatted": "17 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=A8C3AFB1DEC516AE1869C348BBA4EF0E4236B1CE0EF8E5A174B7FD37C0A538C0",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175891",
+    "tm_X3b_en_country": [
+     "Regional"
+    ],
+    "tm_X3b_en_project_number": [
+     "56083-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Education"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Education and Skills Data and Policy Analyst"
+    ],
+    "tm_X3b_en_type": [
+     "Individual"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-10-02T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175896:en",
+    "ss_closing_date_formatted": "02 Oct 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=E1B545EE89B0137BD0E27EEF09ED85001C13B52A79CE57C21BFB7219054A2B12",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175896",
+    "tm_X3b_en_country": [
+     "Regional"
+    ],
+    "tm_X3b_en_project_number": [
+     "48335-002"
+    ],
+    "tm_X3b_en_sector": [
+     "Transport"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Artificial Intelligence in the Transport Sector in Central Asia Regional Economic Cooperation Countries"
+    ],
+    "tm_X3b_en_type": [
+     "Firm"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-19T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1170586:en",
+    "ss_closing_date_formatted": "19 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=D2BBFEE83B455A8630A072DEBBF270E8BD3D73F21E34C81EF4C1C0884F0D218A",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1170586",
+    "tm_X3b_en_country": [
+     "Regional"
+    ],
+    "tm_X3b_en_project_number": [
+     "58325-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Water and other urban infrastructure and services"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Senior Sukkur Climate Resilient Urban Development Specialist"
+    ],
+    "tm_X3b_en_type": [
+     "Individual"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-10-12T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175901:en",
+    "ss_closing_date_formatted": "12 Oct 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=953BAA916B71E1129B4DF4D0B1D0BD57863142BAB8E06155EE989017179B41AB",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175901",
+    "tm_X3b_en_country": [
+     "China, People's Republic of"
+    ],
+    "tm_X3b_en_project_number": [
+     "55261-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Finance"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Research on the Integration and Promotion of Post-harvest Storage and Preservation Techniques for Tropical and Subtropical Fruits"
+    ],
+    "tm_X3b_en_type": [
+     "Firm"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-10-02T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175906:en",
+    "ss_closing_date_formatted": "02 Oct 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=E6ECFF22BC46D0751674CBFCAE80D466CDDBF574D045EE9D49201B709A065DD1",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175906",
+    "tm_X3b_en_country": [
+     "India"
+    ],
+    "tm_X3b_en_project_number": [
+     "60175-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Education"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "School Education"
+    ],
+    "tm_X3b_en_type": [
+     "Firm"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-17T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175911:en",
+    "ss_closing_date_formatted": "17 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=2F30BBBD3E88EF96B38137A5792AEF878CD97CEA7DD601FE5A6FAE5FB5E44132",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175911",
+    "tm_X3b_en_country": [
+     "Regional"
+    ],
+    "tm_X3b_en_project_number": [
+     "37909-041"
+    ],
+    "tm_X3b_en_sector": [
+     "Finance"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Technical Assistance (TA) - Comprehensive Review of Trade Finance Business of Fiji Development Bank (FDB) in Republic of Fiji"
+    ],
+    "tm_X3b_en_type": [
+     "Individual"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-17T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175916:en",
+    "ss_closing_date_formatted": "17 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=D9B0CA1B7ECCC236346DC30C732BC3507BA751A27D0F90E1EB79DAF7723BCBFE",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175916",
+    "tm_X3b_en_country": [
+     "India"
+    ],
+    "tm_X3b_en_project_number": [
+     "57235-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Public sector management"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Strengthening Domestic Resource Mobilization and Public Financial Management"
+    ],
+    "tm_X3b_en_type": [
+     "Individual"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-17T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175921:en",
+    "ss_closing_date_formatted": "17 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=87F187E151EFA8BE207649EC3FB1C2B1E34A185B4A7F4CCD6217D7E15B9BBA2C",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175921",
+    "tm_X3b_en_country": [
+     "Bangladesh"
+    ],
+    "tm_X3b_en_project_number": [
+     "57341-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Industry and trade"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "Knowledge Support for LDC Graduation and Improving Investment Climate - Public Infrastructure Asset Management Specialist (Water and Drainage)"
+    ],
+    "tm_X3b_en_type": [
+     "Individual"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-28T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1168626:en",
+    "ss_closing_date_formatted": "28 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=CE905955F691CEDCE8880D2D47921EF845F5D200DFFF97D8C93D8BDCF843189E",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1168626",
+    "tm_X3b_en_country": [
+     "Uzbekistan"
+    ],
+    "tm_X3b_en_project_number": [
+     "59386-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Industry and trade"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "On-Demand Analytical Services for External Trade Development"
+    ],
+    "tm_X3b_en_type": [
+     "Firm"
+    ]
+   },
+   {
+    "ds_date_closing": "2026-09-17T12:00:00Z",
+    "ds_date_posted": "2026-09-11T12:00:00Z",
+    "id": "3y8wre-tender_search_index-entity:node/1175926:en",
+    "ss_closing_date_formatted": "17 Sep 2026",
+    "ss_csrn_url": "https://selfservice.adb.org/OA_HTML/adb/xxcrs/jsp/ADBCmsCsrnDerHomepage.jsp?csrnKey=0A0C0F288C27B32316DE4B3D0E8C2614871B6B8A9330EC3900EDCC81525648D9",
+    "ss_date_formatted": "11 Sep 2026",
+    "ss_url": "/node/1175926",
+    "tm_X3b_en_country": [
+     "Regional"
+    ],
+    "tm_X3b_en_project_number": [
+     "55119-001"
+    ],
+    "tm_X3b_en_sector": [
+     "Transport"
+    ],
+    "tm_X3b_en_status": [
+     "Active"
+    ],
+    "tm_X3b_en_title": [
+     "E-Mobility Support and Investment Platform for Asia and the Pacific (website)"
+    ],
+    "tm_X3b_en_type": [
+     "Individual"
+    ]
+   }
+  ],
+  "numFound": 462,
+  "start": 0
+ }
+}

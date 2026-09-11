@@ -46,6 +46,25 @@ DEFAULT_PORTALS: list[dict[str, Any]] = [
         },
     },
     {
+        "code": "adb",
+        "name": "ADB procurement notices",
+        "adapter_key": "adb",
+        "base_url": "https://searchcloud-2-ap-southeast-1.searchstax.com",
+        "country": None,
+        "schedule_cron": "0 4,16 * * *",
+        "config": {
+            "select_path": "/29847/tenders-11959/emselect",
+            "rows": 100,
+            # Active only. The index holds every notice since 2015 and would
+            # otherwise bury the pool in ones that closed years ago.
+            "filter": "tm_X3b_en_status:Active",
+            # ADB's public read key, theirs to rotate. Held here rather than in
+            # code so a portal that starts refusing us can be fixed from the
+            # admin console instead of a deploy.
+            "token": "2a076eb3a48fd68fc78506c1a16a5d5000da76e4",
+        },
+    },
+    {
         "code": "wb",
         "name": "World Bank procurement notices",
         "adapter_key": "worldbank",

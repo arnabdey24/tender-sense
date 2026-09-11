@@ -47,7 +47,14 @@ function TodayPage() {
 
       {/* The list is the page. Wrapping it in a card put a second border around
           content that already separates itself with rules. */}
-      <section className="max-w-4xl">
+      {/*
+        `max-w-4xl` left roughly 300px of dead gutter on a 1484px screen while
+        the rows inside it truncated their own titles. A list of notices is not
+        prose: it is scanned, the deadline and the grade are read together with
+        the title, and the measure that suits a paragraph starves a row. It
+        takes the width the rest of the workspace takes.
+      */}
+      <section className="max-w-5xl">
         <div className="mb-3 flex items-baseline gap-2 border-b pb-3">
           <h2 className="font-heading text-base font-medium tabular-nums">
             {shortlist.isPending ? "Loading…" : `${total} to look at`}

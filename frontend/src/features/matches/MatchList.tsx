@@ -64,11 +64,22 @@ export function MatchList({
   isLoading,
   emptyTitle = "No matches yet",
   emptyDescription = "Once your profile is set up, graded tenders appear here.",
+  denseEmpty = false,
 }: {
   matches: Match[]
   isLoading?: boolean
   emptyTitle?: string
   emptyDescription?: string
+  /**
+   * Say it in a line rather than a panel.
+   *
+   * Where this list *is* the page, an empty state is the only content and has
+   * earned the room. On the dashboard it is one of several things, and a
+   * shortlist being empty is the ordinary case rather than an exception — an
+   * icon and three centred lines took 280px of the first screen there and
+   * pushed the charts, which had data, off the bottom of it.
+   */
+  denseEmpty?: boolean
 }) {
   if (isLoading) {
     return (
@@ -84,6 +95,18 @@ export function MatchList({
           </div>
         ))}
       </div>
+    )
+  }
+
+  if (matches.length === 0 && denseEmpty) {
+    return (
+      <p className="flex items-baseline gap-2 border-t py-4 text-sm text-muted-foreground">
+        <EmptySignal size={16} className="shrink-0 self-center" />
+        <span className="shrink-0 font-medium whitespace-nowrap text-foreground">
+          {emptyTitle}
+        </span>
+        <span className="min-w-0 truncate">{emptyDescription}</span>
+      </p>
     )
   }
 

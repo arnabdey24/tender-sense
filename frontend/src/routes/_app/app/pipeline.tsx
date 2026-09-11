@@ -21,7 +21,14 @@ function PipelinePage() {
 
       {/* The page said what it was three times in 400px — description, card
           header, empty state. The page description says it; the count counts. */}
-      <section className="max-w-4xl">
+      {/*
+        `max-w-4xl` left roughly 300px of dead gutter on a 1484px screen while
+        the rows inside it truncated their own titles. A list of notices is not
+        prose: it is scanned, the deadline and the grade are read together with
+        the title, and the measure that suits a paragraph starves a row. It
+        takes the width the rest of the workspace takes.
+      */}
+      <section className="max-w-5xl">
         <div className="mb-3 border-b pb-3">
           <h2 className="font-heading text-base font-medium tabular-nums">
             {pipeline.isPending

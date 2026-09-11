@@ -16,6 +16,8 @@ export class VoiceSession {
   private socket?: WebSocket
   private stream?: MediaStream
   private audio?: AudioContext
+  /** Half a sample, waiting for the byte that completes it. */
+  private pendingByte: number | null = null
   private capture?: AudioWorkletNode
   private sources = new Set<AudioBufferSourceNode>()
   private nextPlayback = 0
@@ -164,8 +166,35 @@ export class VoiceSession {
   private play(encoded: string) {
     if (!this.audio || !this.outputGain || this.stopped) return
     const raw = atob(encoded)
-    const bytes = Uint8Array.from(raw, (c) => c.charCodeAt(0))
-    const view = new DataView(bytes.buffer)
+    const arrived = Uint8Array.from(raw, (c) => c.charCodeAt(0))
+
+    /*
+     * A 16-bit sample is two bytes, and a chunk boundary does not respect that.
+     *
+     * When a chunk arrives with an odd number of bytes the last byte is half a
+     * sample. Dropping it puts every sample in the *next* chunk one byte out of
+     * phase — each one then built from the high byte of one sample and the low
+     * byte of the next, which is not noise but a loud periodic waveform. That
+     * is the horn: a sustained buzz in the middle of speech, on a stream that
+     * is otherwise clean.
+     *
+     * So the odd byte waits for the byte that completes it.
+     */
+    let bytes = arrived
+    if (this.pendingByte !== null) {
+      bytes = new Uint8Array(arrived.length + 1)
+      bytes[0] = this.pendingByte
+      bytes.set(arrived, 1)
+      this.pendingByte = null
+    }
+    if (bytes.length % 2 === 1) {
+      this.pendingByte = bytes[bytes.length - 1]
+      bytes = bytes.subarray(0, bytes.length - 1)
+    }
+    // An empty chunk is not an error, but `createBuffer(1, 0, …)` throws.
+    if (bytes.length === 0) return
+
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
     const buffer = this.audio.createBuffer(1, bytes.length / 2, 24000)
     const channel = buffer.getChannelData(0)
     let energy = 0
@@ -221,6 +250,10 @@ export class VoiceSession {
     this.sources.clear()
     this.nextPlayback = 0
     this.speaking = false
+    // An interruption discards the rest of that utterance, so a half sample
+    // held from it has nothing to complete it — carrying it into whatever is
+    // said next would put that stream out of phase instead.
+    this.pendingByte = null
   }
   private fail(message: string) {
     if (this.stopped) return

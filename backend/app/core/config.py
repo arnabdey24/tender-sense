@@ -120,6 +120,16 @@ class Settings(BaseSettings):
     scraper_user_agent: str = "TenderSenseBot/1.0 (+https://tendersense.local/bot)"
     scraper_request_delay_seconds: float = 2.0
     scraper_max_pages_per_run: int = 20
+    scrape_job_timeout_seconds: int = 10_800
+    """How long one portal's pass may run before the worker cancels it.
+
+    Three hours, not one. A full e-GP pass fetches a detail page per notice
+    behind a politeness delay, and at twenty pages of a hundred that is
+    comfortably more than an hour — so the previous hour-long ceiling cancelled
+    a legitimate pass most times it ran. The cancellation is handled now and
+    costs nothing already ingested, but a pass that completes is still worth
+    far more than one that is killed two thirds of the way through.
+    """
     source_sync_cooldown_seconds: int = 600
     """Shortest gap between hand-started portal syncs, across the whole deployment.
 

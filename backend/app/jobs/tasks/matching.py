@@ -26,6 +26,7 @@ from app.ai.schemas import EXTRACTION_PROMPT_VERSION, EXTRACTION_SCHEMA_VERSION
 from app.core.logging import get_logger
 from app.core.time import utcnow
 from app.db.session import session_scope
+from app.jobs.tracking import tracked_job
 from app.modules.matching.embedding_store import (
     safe_sync_tender_embeddings,
     sync_profile_embeddings,
@@ -297,3 +298,43 @@ async def rematch_org(
 
     logger.info("org_rematched", **result)
     return result
+
+
+@tracked_job
+async def process_unprocessed_tenders(ctx: dict[str, Any], limit: int = 2000) -> dict[str, Any]:
+    """Queue the pipeline for notices that are in the pool but never ran through it.
+
+    The repair for a gap that should no longer open: a scrape used to queue its
+    work only after the whole pass finished, so a run cancelled by the worker's
+    job timeout left everything it had committed sitting in the pool with
+    nothing scheduled to extract, embed or match it. On one deployment that was
+    1,122 notices — a full tender list, no matches, an empty dashboard, and no
+    failed job anywhere to explain it.
+
+    Ingestion queues per notice now, so this should find nothing. It stays
+    because "should find nothing" is exactly the claim worth having a control
+    for, and because a pool that fell behind for any other reason — Redis down
+    while a scrape ran, a queue flushed by hand — is repaired the same way.
+
+    Idempotent: the pipeline is deduplicated per tender, so queuing one that is
+    already queued costs nothing.
+    """
+    from app.modules.tenders.models import Tender, TenderExtraction
+
+    async with session_scope() as session:
+        rows = await session.scalars(
+            select(Tender.id)
+            .outerjoin(TenderExtraction, TenderExtraction.tender_id == Tender.id)
+            .where(TenderExtraction.id.is_(None))
+            .order_by(Tender.first_seen_at.desc())
+            .limit(limit)
+        )
+        tender_ids = [str(tender_id) for tender_id in rows.all()]
+
+    queued = 0
+    for tender_id in tender_ids:
+        if await enqueue_processing(tender_id):
+            queued += 1
+
+    logger.info("backfill_processing", found=len(tender_ids), queued=queued)
+    return {"found": len(tender_ids), "queued": queued}

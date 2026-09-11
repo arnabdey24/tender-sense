@@ -224,6 +224,8 @@ async def enqueue_reprocess(
 #: queue runs everything from matching to mail.
 TRIGGERABLE_JOBS: dict[str, str] = {
     "scrape_all_sources": QUEUE_DEFAULT,
+    # The repair for notices that reached the pool but never the pipeline.
+    "process_unprocessed_tenders": QUEUE_DEFAULT,
     # Retained so an operator's bookmarked call keeps working post-rename.
     "scrape_due_sources": QUEUE_DEFAULT,
     "close_expired_tenders": QUEUE_DEFAULT,

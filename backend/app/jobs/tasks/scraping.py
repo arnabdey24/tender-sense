@@ -14,6 +14,7 @@ us off, which takes the whole product with it.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 from typing import Any
 from uuid import UUID
@@ -21,6 +22,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.logging import get_logger
 from app.core.observability import record_source_health
 from app.core.time import utcnow
@@ -130,8 +132,8 @@ async def scrape_source(
 
     pages = limit_pages or int(config.get("max_pages", 20))
     consecutive_failures = 0
-    new_tender_ids: list[str] = []
-    amended_tender_ids: list[str] = []
+    result["queued"] = 0
+    result["amended"] = 0
     fatal: str | None = None
 
     try:
@@ -177,11 +179,29 @@ async def scrape_source(
                     result["updated"] += 1
                     # Only the upsert knows an amendment happened; by the time
                     # the pipeline sees the row it looks like any other notice.
-                    amended_tender_ids.append(str(outcome.tender_id))
+                    await _enqueue_update_notice(str(outcome.tender_id))
+                    result["amended"] += 1
                 else:
                     result["unchanged"] += 1
+
+                # Queued here, beside the commit that created the row, rather
+                # than from a list walked after the loop.
+                #
+                # A pass over e-GP took an hour, hit the worker's job timeout
+                # and was cancelled — after committing 1,122 notices one at a
+                # time and before reaching the enqueue at the end. The notices
+                # were in the pool and nothing was ever queued to extract,
+                # embed or match them, so every organization on the deployment
+                # had a full tender list, no matches and an empty dashboard,
+                # with no failed job anywhere to explain it.
+                #
+                # Work that is already durable deserves to be followed
+                # immediately: the queue is idempotent per tender, so the cost
+                # of enqueueing early is nothing and the cost of enqueueing
+                # late is everything committed so far.
                 if outcome.needs_processing:
-                    new_tender_ids.append(str(outcome.tender_id))
+                    await enqueue_processing(str(outcome.tender_id))
+                    result["queued"] += 1
             except Exception as exc:
                 result["failed"] += 1
                 logger.warning(
@@ -190,8 +210,32 @@ async def scrape_source(
                     notice_id=ref.external_id,
                     error=str(exc)[:200],
                 )
+    except asyncio.CancelledError:
+        # The worker's job timeout cancels the task, and a cancellation that
+        # is not handled leaves the run row saying "running" for ever: the
+        # health never updates, and the sync control reports a pass in flight
+        # that nothing will ever finish. Record the outcome, then re-raise so
+        # the worker still sees a cancelled job rather than a completed one.
+        async with session_scope() as session:
+            await _finish(
+                session,
+                run_id,
+                result,
+                status=RunStatus.FAILED,
+                error=f"Cancelled after the worker's {settings.scrape_job_timeout_seconds}s "
+                "job timeout. Notices already committed were queued for processing.",
+            )
+            fresh = await session.get(TenderSource, UUID(source_id))
+            if fresh is not None:
+                await _record_health(session, fresh, succeeded=False, ran_at=started)
+        logger.warning("scrape_cancelled", source=source_code, **result)
+        raise
     except Exception as exc:
-        fatal = str(exc)[:500]
+        # `str(exc)` is empty for a bare timeout, which produced failed runs
+        # carrying no reason at all — the one thing a run record exists to
+        # supply. The type is never empty, so it leads.
+        detail = str(exc).strip()
+        fatal = f"{type(exc).__name__}: {detail}"[:500] if detail else type(exc).__name__
         logger.warning("scrape_failed", source=source_code, error=fatal)
 
     succeeded = fatal is None
@@ -211,15 +255,6 @@ async def scrape_source(
                 fresh.cursor = {"last_run_at": started.isoformat()}
                 await session.flush()
 
-    # Enqueue rather than process inline: the scrape worker runs one job at a
-    # time, and holding it open through extraction would stall the next portal.
-    for tender_id in new_tender_ids:
-        await enqueue_processing(tender_id)
-    for tender_id in amended_tender_ids:
-        await _enqueue_update_notice(tender_id)
-
-    result["queued"] = len(new_tender_ids)
-    result["amended"] = len(amended_tender_ids)
     result["status"] = status.value
     if fatal:
         result["error"] = fatal

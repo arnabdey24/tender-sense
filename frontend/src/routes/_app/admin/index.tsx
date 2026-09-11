@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import {
   ActivityIcon,
+  Building2Icon,
   CoinsIcon,
+  DatabaseIcon,
   ListChecksIcon,
   MailIcon,
   SatelliteDishIcon,
@@ -192,13 +194,21 @@ function OverviewPage() {
 
       <ConsoleSection
         title="The pool"
+        icon={DatabaseIcon}
         caption="Shared across every tenant. A pool that stops growing is the first symptom of a portal that has stopped answering."
       >
-        <div className="grid gap-3 sm:grid-cols-2">
+        {/*
+          Two cards spanning 1,180px to hold one number each read as a page
+          that has run out of things to say. Three of the deployment's pool
+          facts are already here — the third was hiding as a footnote under the
+          first — so they take a column each and the row closes.
+        */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Stat label="Notices held" value={data.tenders.toLocaleString()} />
           <Stat
-            label="Notices held"
-            value={data.tenders.toLocaleString()}
-            detail={`${data.tenders_open.toLocaleString()} still open`}
+            label="Still open"
+            value={data.tenders_open.toLocaleString()}
+            detail={`${(data.tenders - data.tenders_open).toLocaleString()} closed or withdrawn`}
           />
           <Stat
             label="Added in 24h"
@@ -209,12 +219,12 @@ function OverviewPage() {
                 : undefined
             }
           />
-
         </div>
       </ConsoleSection>
 
       <ConsoleSection
         title="Portals"
+        icon={SatelliteDishIcon}
         caption="Where the notices come from, and when each last answered."
         action={
           <Link
@@ -225,62 +235,66 @@ function OverviewPage() {
           </Link>
         }
       >
-        <div className="overflow-x-auto">
-          <Table density="compact">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Portal</TableHead>
-                <TableHead>Health</TableHead>
-                <TableHead>Last success</TableHead>
-                <TableHead numeric>Notices</TableHead>
+        <Table density="compact" fixed>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Portal</TableHead>
+              <TableHead className="w-32">Health</TableHead>
+              <TableHead className="w-36">Last success</TableHead>
+              <TableHead numeric className="w-24">Notices</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(data.sources ?? []).map((source) => (
+              <TableRow key={source.code}>
+                <TableCell>
+                  <div className="truncate font-medium">{source.name}</div>
+                  <div className="truncate font-mono text-xs text-muted-foreground">
+                    {source.code}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {/*
+                    A disabled source is not an unhealthy one. `manual` holds
+                    hand-entered notices and is never scraped, so reporting it
+                    as "ok · never" put a permanent non-event beside the
+                    portals that actually answer.
+                  */}
+                  {source.enabled ? (
+                    <Badge
+                      variant={
+                        source.health === "ok"
+                          ? "success"
+                          : source.health === "degraded"
+                            ? "warning"
+                            : "destructive"
+                      }
+                    >
+                      {source.health}
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">not scraped</Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-sm text-muted-foreground">
+                  {!source.enabled
+                    ? "—"
+                    : source.last_success_at
+                      ? timeAgo(source.last_success_at)
+                      : "Never"}
+                </TableCell>
+                <TableCell numeric>
+                  {source.tenders.toLocaleString()}
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(data.sources ?? []).map((source) => (
-                <TableRow key={source.code}>
-                  <TableCell className="font-medium">{source.name}</TableCell>
-                  <TableCell>
-                    {/*
-                      A disabled source is not an unhealthy one. `manual` holds
-                      hand-entered notices and is never scraped, so reporting it
-                      as "ok · never" put a permanent non-event beside the
-                      portals that actually answer.
-                    */}
-                    {source.enabled ? (
-                      <Badge
-                        variant={
-                          source.health === "ok"
-                            ? "success"
-                            : source.health === "degraded"
-                              ? "warning"
-                              : "destructive"
-                        }
-                      >
-                        {source.health}
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline">not scraped</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {!source.enabled
-                      ? "—"
-                      : source.last_success_at
-                        ? timeAgo(source.last_success_at)
-                        : "Never"}
-                  </TableCell>
-                  <TableCell numeric>
-                    {source.tenders.toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+            ))}
+          </TableBody>
+        </Table>
       </ConsoleSection>
 
       <ConsoleSection
         title="Tenants and accounts"
+        icon={Building2Icon}
         caption="Every organization on this deployment, and everyone who can sign in to one."
       >
         <div className="grid gap-3 sm:grid-cols-2">

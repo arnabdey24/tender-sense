@@ -52,7 +52,7 @@ describe("scheduling a live audio stream", () => {
 
   it("absorbs jitter that would previously have opened a gap", () => {
     // A chunk arriving 80ms late is well inside the lead.
-    let { head } = schedule(0, 10, 480)
+    const { head } = schedule(0, 10, 480)
     const late = schedule(head, 10.1, 480)
 
     expect(late.underrun).toBe(false)

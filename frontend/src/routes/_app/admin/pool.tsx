@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import {
+  DatabaseIcon,
   PlusIcon,
   RefreshCwIcon,
   RotateCcwIcon,
@@ -107,69 +108,67 @@ function Pool() {
             {tenders.data.total > items.length &&
               ` · showing the first ${items.length}`}
           </p>
-          <div className="overflow-x-auto">
-            <Table density="compact">
-              <TableHeader sticky>
-                <TableRow>
-                  <TableHead>Notice</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Closes</TableHead>
-                  <TableHead className="text-right">Repair</TableHead>
+          <Table density="compact" fixed viewport="max-h-[60vh]" label="The tender pool">
+            <TableHeader sticky>
+              <TableRow>
+                <TableHead>Notice</TableHead>
+                <TableHead className="w-24">Source</TableHead>
+                <TableHead className="w-28">Closes</TableHead>
+                <TableHead className="w-[17rem] text-right">Repair</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((tender) => (
+                <TableRow key={tender.id}>
+                  <TableCell>
+                    <div className="truncate font-medium">{tender.title}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {tender.procuring_entity ?? "No buyer recorded"} ·{" "}
+                      <span className="tabular-nums">
+                        {tender.external_id}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {sourceShort(tender.source_code)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground tabular-nums">
+                    {formatDate(tender.deadline_at)}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={reprocess.isPending}
+                        onClick={() =>
+                          reprocess.mutate({ tenderId: tender.id })
+                        }
+                      >
+                        <RefreshCwIcon /> Reprocess
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={reprocess.isPending}
+                        title="Re-parse the stored payload first. Fetches nothing."
+                        onClick={() =>
+                          reprocess.mutate({
+                            tenderId: tender.id,
+                            reparse: true,
+                          })
+                        }
+                      >
+                        <RotateCcwIcon /> Re-parse
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((tender) => (
-                  <TableRow key={tender.id}>
-                    <TableCell className="max-w-md">
-                      <div className="truncate font-medium">{tender.title}</div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {tender.procuring_entity ?? "No buyer recorded"} ·{" "}
-                        <span className="tabular-nums">
-                          {tender.external_id}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {sourceShort(tender.source_code)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground tabular-nums">
-                      {formatDate(tender.deadline_at)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={reprocess.isPending}
-                          onClick={() =>
-                            reprocess.mutate({ tenderId: tender.id })
-                          }
-                        >
-                          <RefreshCwIcon /> Reprocess
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={reprocess.isPending}
-                          title="Re-parse the stored payload first. Fetches nothing."
-                          onClick={() =>
-                            reprocess.mutate({
-                              tenderId: tender.id,
-                              reparse: true,
-                            })
-                          }
-                        >
-                          <RotateCcwIcon /> Re-parse
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+              ))}
+            </TableBody>
+          </Table>
         </>
       )}
     </div>
@@ -456,6 +455,7 @@ function PoolPage() {
     <div className="flex flex-col gap-6">
       <ConsoleSection
         title="The pool"
+        icon={DatabaseIcon}
         caption="Shared by every tenant. Reprocess re-runs extraction and matching; re-parse goes back to the stored payload and fetches nothing."
       >
         <Pool />
@@ -469,6 +469,7 @@ function PoolPage() {
       */}
       <ConsoleSection
         title="Add by hand"
+        icon={PlusIcon}
         caption="One notice, or many from a JSON or CSV document. Adding the same notice twice updates it rather than duplicating it."
       >
         {sources.isPending ? (

@@ -5,6 +5,9 @@ function Table({
   className,
   scroll = true,
   density = "default",
+  fixed = false,
+  viewport,
+  label,
   ...props
 }: React.ComponentProps<"table"> & {
   /**
@@ -16,12 +19,50 @@ function Table({
    */
   density?: "default" | "compact"
   /**
-   * Wrap in a horizontally scrolling container. Opt out when the columns are
-   * designed to fit: `overflow-x: auto` forces `overflow-y` to `auto` too,
-   * which makes the container a scroll root and stops a sticky header from
-   * ever sticking to the page.
+   * Fix the column widths instead of letting content decide them.
+   *
+   * Auto layout sizes each column to its widest cell, so four columns holding
+   * the same kind of number come out 93, 86, 137 and 90 wide, and one long
+   * error message takes 708 of 1,180 and starves everything beside it. Worse,
+   * the widths move when the data does — a column is a different size on the
+   * next refresh. Fixed layout means the header decides, once, and a row is
+   * the same shape every time it is read.
+   *
+   * Carries a min-width, because the two together are a trap without it: on a
+   * phone the fixed columns already exceed the screen, the table is still
+   * `w-full`, and the remainder left for the one flexible column goes
+   * negative — so the identity column collapses to nothing and its header
+   * label prints on top of the next one. The floor makes the container scroll
+   * instead. Override it with a `min-w-*` class for a table with more columns
+   * than the default assumes.
+   */
+  fixed?: boolean
+  /**
+   * Wrap in a horizontally scrolling container.
+   *
+   * `overflow-x: auto` forces `overflow-y` to `auto` too, so this container is
+   * always a scroll root — which is where a sticky header has to measure from.
+   * That is handled below rather than left to the caller: getting it wrong
+   * does not make the header un-sticky, it pushes it *down* over the first
+   * rows, because sticky clamps the element to at least `top` from its
+   * scrollport and a content-height container never scrolls back.
    */
   scroll?: boolean
+  /**
+   * Cap the height so the rows scroll inside the table instead of the page.
+   *
+   * A log of twenty-five rows is a thousand pixels: the column labels leave
+   * the screen after the fourth one and every row after that is read without
+   * them. Bounding the container gives the sticky header something to stick
+   * to, and keeps the section heading and its filters in view while the rows
+   * move. Any Tailwind max-height class.
+   *
+   * Requires `label`: a region that scrolls has to be reachable from the
+   * keyboard, and a tab stop with no accessible name announces as "group".
+   */
+  viewport?: string
+  /** Names the scrollable region. Required whenever `viewport` is set. */
+  label?: string
 }) {
   const table = (
     <table
@@ -29,7 +70,11 @@ function Table({
       data-density={density}
       className={cn(
         "w-full caption-bottom text-sm",
+        fixed && "table-fixed min-w-[44rem]",
         density === "compact" && "[--row-pad-y:0.3125rem]",
+        // No container: the page scrolls, so a sticky header has to clear the
+        // 56px app header that is already pinned there.
+        !scroll && "[--table-sticky-top:3.5rem]",
         className
       )}
       {...props}
@@ -39,7 +84,24 @@ function Table({
   if (!scroll) return table
 
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      data-slot="table-container"
+      // A bounded region scrolls, and a region that scrolls has to be
+      // operable without a pointer: without the tab stop a keyboard-only
+      // operator can reach the buttons inside the rows but never the rows
+      // below the fold that hold none.
+      {...(viewport
+        ? { tabIndex: 0, role: "region" as const, "aria-label": label }
+        : {})}
+      className={cn(
+        // This element is the scrollport, so the header measures from its own
+        // top edge, not from the app header's.
+        "relative w-full overflow-x-auto [--table-sticky-top:0px]",
+        viewport,
+        viewport &&
+          "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+      )}
+    >
       {table}
     </div>
   )
@@ -60,10 +122,10 @@ function TableHeader({
       className={cn(
         "[&_tr]:border-b",
         // A collapsed border vanishes under a sticky row, so the hairline is
-        // drawn as an inset shadow on the cells instead. `top-14` is the app
-        // header's 56px.
+        // drawn as an inset shadow on the cells instead. The offset comes from
+        // whichever ancestor is the scrollport, set by `Table`.
         sticky &&
-          "sticky top-14 z-20 [&_tr]:border-b-0 [&_th]:bg-surface-sunken [&_th]:shadow-[inset_0_-1px_0_var(--border)]",
+          "sticky top-[var(--table-sticky-top,3.5rem)] z-20 [&_tr]:border-b-0 [&_th]:bg-surface-sunken [&_th]:shadow-[inset_0_-1px_0_var(--border)]",
         className
       )}
       {...props}

@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react"
 import type * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -18,12 +19,24 @@ import { cn } from "@/lib/utils"
  */
 export function ConsoleSection({
   title,
+  icon: Icon,
   caption,
   action,
   className,
   children,
 }: {
   title: string
+  /**
+   * A 2D glyph for the subsystem this section reports on.
+   *
+   * Six sections of identical grey text is a wall an operator has to read to
+   * navigate. The icon is the same vocabulary as the sidebar entry that led
+   * here, so the page confirms where you are before you have read a word of
+   * it. Neutral chip, never a coloured one: the colour on these pages belongs
+   * to health, and a decorative tint would compete with the one signal that
+   * has to be noticed.
+   */
+  icon?: LucideIcon
   /** One line. If it needs a paragraph, it belongs in the runbook. */
   caption?: React.ReactNode
   action?: React.ReactNode
@@ -50,7 +63,15 @@ export function ConsoleSection({
         needs the full sentence has the runbook; one scanning for a failure has
         the heading.
       */}
-      <div className="flex items-baseline gap-3">
+      <div className="flex items-center gap-3">
+        {Icon ? (
+          <span
+            aria-hidden
+            className="flex size-7 shrink-0 items-center justify-center rounded-md bg-surface-sunken ring-1 ring-foreground/5"
+          >
+            <Icon className="size-4 text-muted-foreground" strokeWidth={1.75} />
+          </span>
+        ) : null}
         <h2 className="shrink-0 font-heading text-base font-medium">{title}</h2>
         {caption ? (
           <p className="hidden min-w-0 flex-1 truncate text-sm text-muted-foreground md:block">

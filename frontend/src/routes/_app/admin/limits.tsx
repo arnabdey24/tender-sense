@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
-import { RotateCcwIcon } from "lucide-react"
+import {
+  CoinsIcon,
+  KeyRoundIcon,
+  RotateCcwIcon,
+  SatelliteDishIcon,
+} from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 
 import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import { Button } from "@/components/ui/button"
@@ -37,9 +43,15 @@ type Field = {
  * because that is the judgement being made — a sign-in throttle is not "20", it
  * is how many colleagues can be locked out of one office before someone calls.
  */
-const GROUPS: { title: string; caption: string; fields: Field[] }[] = [
+const GROUPS: {
+  title: string
+  icon: LucideIcon
+  caption: string
+  fields: Field[]
+}[] = [
   {
     title: "Portals",
+    icon: SatelliteDishIcon,
     caption:
       "How often the portals may be asked for notices by hand. The tender pool is shared, so this is one limit across the whole deployment rather than one per tenant.",
     fields: [
@@ -59,6 +71,7 @@ const GROUPS: { title: string; caption: string; fields: Field[] }[] = [
   },
   {
     title: "Model spend",
+    icon: CoinsIcon,
     caption:
       "The daily ceiling on what the assistant and the matching pipeline may consume, and what one organization may take of it.",
     fields: [
@@ -84,6 +97,7 @@ const GROUPS: { title: string; caption: string; fields: Field[] }[] = [
   },
   {
     title: "Signing in",
+    icon: KeyRoundIcon,
     caption:
       "Guessing is cheap, so sign-in is throttled. Too tight and a real office sharing one address locks itself out; too loose and a password is worth guessing at.",
     fields: [
@@ -159,6 +173,7 @@ function LimitsPage() {
       {GROUPS.map((group) => (
         <ConsoleSection
           key={group.title}
+          icon={group.icon}
           title={group.title}
           caption={group.caption}
         >

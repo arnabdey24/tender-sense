@@ -1,6 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
-import { PlayIcon, PlusIcon, RefreshCwIcon, RotateCcwIcon } from "lucide-react"
+import {
+  HistoryIcon,
+  PlayIcon,
+  PlusIcon,
+  RefreshCwIcon,
+  RotateCcwIcon,
+  SatelliteDishIcon,
+} from "lucide-react"
 
 import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import {
@@ -199,14 +206,14 @@ function Portals() {
         actually doing here: comparing portals against each other on health and
         on when they last answered.
       */}
-      <Table density="compact">
+      <Table density="compact" fixed className="min-w-[57rem]">
         <TableHeader>
           <TableRow>
             <TableHead>Portal</TableHead>
-            <TableHead>Adapter</TableHead>
-            <TableHead>Last success</TableHead>
-            <TableHead className="text-center">Scraped</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            <TableHead className="w-32">Adapter</TableHead>
+            <TableHead className="w-36">Last success</TableHead>
+            <TableHead className="w-24 text-center">Scraped</TableHead>
+            <TableHead className="w-[19rem] text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -294,51 +301,41 @@ function RunHistory() {
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table density="compact">
-        <TableHeader sticky>
-          <TableRow>
-            <TableHead>Started</TableHead>
-            <TableHead>Portal</TableHead>
-            <TableHead>Result</TableHead>
-            <TableHead numeric>Seen</TableHead>
-            <TableHead numeric>New</TableHead>
-            <TableHead numeric>Updated</TableHead>
-            <TableHead numeric>Lost</TableHead>
+    <Table density="compact" fixed viewport="max-h-[26rem]" label="Recent portal runs" className="min-w-[56rem]">
+      <TableHeader sticky>
+        <TableRow>
+          <TableHead className="w-28">Started</TableHead>
+          <TableHead className="w-64">Portal</TableHead>
+          <TableHead>Result</TableHead>
+          <TableHead numeric className="w-20">Seen</TableHead>
+          <TableHead numeric className="w-20">New</TableHead>
+          <TableHead numeric className="w-20">Updated</TableHead>
+          <TableHead numeric className="w-20">Lost</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {runs.data.slice(0, 25).map((run) => (
+          <TableRow key={run.id}>
+            <TableCell className="text-sm">{timeAgo(run.started_at)}</TableCell>
+            <TableCell className="truncate text-sm">
+              {portal.get(run.source_id) ?? "a portal since removed"}
+            </TableCell>
+            <TableCell>
+              <span className="text-sm capitalize">{run.status}</span>
+              {run.error && (
+                <div className="truncate text-xs text-muted-foreground">
+                  {run.error}
+                </div>
+              )}
+            </TableCell>
+            <TableCell numeric>{run.notices_seen}</TableCell>
+            <TableCell numeric>{run.created}</TableCell>
+            <TableCell numeric>{run.updated}</TableCell>
+            <TableCell numeric>{run.failed}</TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {runs.data.slice(0, 25).map((run) => (
-            <TableRow key={run.id}>
-              <TableCell className="text-sm">{timeAgo(run.started_at)}</TableCell>
-              <TableCell className="text-sm">
-                {portal.get(run.source_id) ?? "a portal since removed"}
-              </TableCell>
-              <TableCell>
-                <span className="text-sm capitalize">{run.status}</span>
-                {run.error && (
-                  <div className="max-w-md truncate text-xs text-muted-foreground">
-                    {run.error}
-                  </div>
-                )}
-              </TableCell>
-              <TableCell numeric>
-                {run.notices_seen}
-              </TableCell>
-              <TableCell numeric>
-                {run.created}
-              </TableCell>
-              <TableCell numeric>
-                {run.updated}
-              </TableCell>
-              <TableCell numeric>
-                {run.failed}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   )
 }
 
@@ -347,6 +344,7 @@ function SourcesPage() {
     <div className="flex flex-col gap-6">
       <ConsoleSection
         title="Portals"
+        icon={SatelliteDishIcon}
         caption="Members see health and can start a sync under Settings. This is where a portal is registered, retuned or taken out of the schedule."
       >
         <Portals />
@@ -354,6 +352,7 @@ function SourcesPage() {
 
       <ConsoleSection
         title="Recent runs"
+        icon={HistoryIcon}
         caption="A scraper that quietly stops returning notices looks exactly like a quiet portal. These records are the difference."
       >
         <RunHistory />
@@ -365,7 +364,7 @@ function SourcesPage() {
         and the thing they came for. Collapsed, the page opens on what is
         watched rather than on what is occasionally added.
       */}
-      <ConsoleSection title="Register a portal">
+      <ConsoleSection icon={PlusIcon} title="Register a portal">
         <Collapsible>
           <CollapsibleTrigger
             render={

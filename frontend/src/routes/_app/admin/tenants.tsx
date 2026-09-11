@@ -56,14 +56,14 @@ function Organizations({ q }: { q: string }) {
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table density="compact">
         <TableHeader>
           <TableRow>
             <TableHead>Organization</TableHead>
-            <TableHead>Country</TableHead>
-            <TableHead className="text-right">People</TableHead>
+            <TableHead numeric>People</TableHead>
             <TableHead>Last decision</TableHead>
             <TableHead>Joined</TableHead>
+            <TableHead>State</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -71,17 +71,16 @@ function Organizations({ q }: { q: string }) {
             <TableRow key={org.id}>
               <TableCell>
                 <div className="font-medium">{org.name}</div>
+                {/* Country was its own column and blank on four rows in five.
+                    It joins the identifying line, where an absent value costs
+                    nothing instead of a column of dashes. */}
                 <div className="text-xs text-muted-foreground">
-                  {org.slug}
-                  {!org.is_active && " · suspended"}
+                  {[org.slug, org.country ? countryName(org.country) : null]
+                    .filter(Boolean)
+                    .join(" · ")}
                 </div>
               </TableCell>
-              <TableCell className="text-sm">
-                {countryName(org.country)}
-              </TableCell>
-              <TableCell className="text-right tabular-nums">
-                {org.members}
-              </TableCell>
+              <TableCell numeric>{org.members}</TableCell>
               {/*
                 A tenant with people in it and no decisions ever recorded is
                 the shape of one that signed up and bounced — worth seeing
@@ -92,6 +91,24 @@ function Organizations({ q }: { q: string }) {
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {timeAgo(org.created_at)}
+              </TableCell>
+              {/*
+                The state an operator is actually looking for. A tenant with
+                nobody in it, or with people and no decision ever recorded, is
+                the shape of one that signed up and bounced — and that was
+                previously only visible by reading two columns and doing the
+                arithmetic. Said in a word, and never in colour alone.
+              */}
+              <TableCell>
+                {!org.is_active ? (
+                  <Badge variant="destructive">Suspended</Badge>
+                ) : org.members === 0 ? (
+                  <Badge variant="outline">Empty</Badge>
+                ) : org.last_activity_at ? (
+                  <Badge variant="success">Active</Badge>
+                ) : (
+                  <Badge variant="warning">Dormant</Badge>
+                )}
               </TableCell>
             </TableRow>
           ))}
@@ -118,7 +135,7 @@ function Accounts({ q }: { q: string }) {
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      <Table density="compact">
         <TableHeader>
           <TableRow>
             <TableHead>Account</TableHead>

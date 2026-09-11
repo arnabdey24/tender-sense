@@ -4,8 +4,17 @@ import { cn } from "cn"
 function Table({
   className,
   scroll = true,
+  density = "default",
   ...props
 }: React.ComponentProps<"table"> & {
+  /**
+   * How much air a row gets.
+   *
+   * `compact` is for a console: an operator scanning for the one abnormal row
+   * wants more rows in view, and the reading distance is a desk rather than a
+   * phone. `default` stays for surfaces a customer reads.
+   */
+  density?: "default" | "compact"
   /**
    * Wrap in a horizontally scrolling container. Opt out when the columns are
    * designed to fit: `overflow-x: auto` forces `overflow-y` to `auto` too,
@@ -17,7 +26,12 @@ function Table({
   const table = (
     <table
       data-slot="table"
-      className={cn("w-full caption-bottom text-sm", className)}
+      data-density={density}
+      className={cn(
+        "w-full caption-bottom text-sm",
+        density === "compact" && "[--row-pad-y:0.3125rem]",
+        className
+      )}
       {...props}
     />
   )
@@ -96,12 +110,20 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   )
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+function TableHead({
+  className,
+  numeric = false,
+  ...props
+}: React.ComponentProps<"th"> & {
+  /** A column of figures: right-aligned, so the digits line up to be compared. */
+  numeric?: boolean
+}) {
   return (
     <th
       data-slot="table-head"
       className={cn(
         "group/head h-9 px-2 text-left align-middle text-[11px] font-medium tracking-[0.04em] uppercase whitespace-nowrap text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        numeric && "text-right",
         className
       )}
       {...props}
@@ -109,7 +131,20 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   )
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+function TableCell({
+  className,
+  numeric = false,
+  ...props
+}: React.ComponentProps<"td"> & {
+  /**
+   * A figure rather than a word.
+   *
+   * Right-aligned and tabular together, because either alone fails: ragged
+   * digits cannot be compared down a column, and proportional figures shift
+   * the column every time a count crosses a power of ten.
+   */
+  numeric?: boolean
+}) {
   return (
     <td
       data-slot="table-cell"
@@ -118,6 +153,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
         // above, so switching density is one attribute flip, not a re-render
         // of class strings on every cell.
         "px-2 py-[var(--row-pad-y,0.5rem)] align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        numeric && "text-right tabular-nums",
         className
       )}
       {...props}

@@ -199,7 +199,7 @@ function Portals() {
         actually doing here: comparing portals against each other on health and
         on when they last answered.
       */}
-      <Table>
+      <Table density="compact">
         <TableHeader>
           <TableRow>
             <TableHead>Portal</TableHead>
@@ -295,16 +295,16 @@ function RunHistory() {
 
   return (
     <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
+      <Table density="compact">
+        <TableHeader sticky>
           <TableRow>
             <TableHead>Started</TableHead>
             <TableHead>Portal</TableHead>
             <TableHead>Result</TableHead>
-            <TableHead className="text-right">Seen</TableHead>
-            <TableHead className="text-right">New</TableHead>
-            <TableHead className="text-right">Updated</TableHead>
-            <TableHead className="text-right">Lost</TableHead>
+            <TableHead numeric>Seen</TableHead>
+            <TableHead numeric>New</TableHead>
+            <TableHead numeric>Updated</TableHead>
+            <TableHead numeric>Lost</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -322,16 +322,16 @@ function RunHistory() {
                   </div>
                 )}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.notices_seen}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.created}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.updated}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell numeric>
                 {run.failed}
               </TableCell>
             </TableRow>

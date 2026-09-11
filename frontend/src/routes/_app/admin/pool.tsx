@@ -108,8 +108,8 @@ function Pool() {
               ` · showing the first ${items.length}`}
           </p>
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+            <Table density="compact">
+              <TableHeader sticky>
                 <TableRow>
                   <TableHead>Notice</TableHead>
                   <TableHead>Source</TableHead>

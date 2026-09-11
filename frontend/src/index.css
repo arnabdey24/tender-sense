@@ -132,7 +132,16 @@
   --muted-foreground: oklch(0.505 0.015 250);
   --accent: oklch(0.957 0.012 245);
   --accent-foreground: oklch(0.33 0.1 245);
-  --destructive: oklch(0.55 0.2 27);
+  /*
+   * Two steps darker, for the same reason the other status tokens moved: as
+   * 12px ink on a 15% tint of itself it measured 4.05 against a bar of 4.5.
+   * It went unseen in the earlier sweep because no failed job was on screen
+   * to render the badge — a reminder that a contrast pass is only as good as
+   * the states it happens to be looking at.
+   *
+   * Dark keeps its own lighter step, which already passes.
+   */
+  --destructive: oklch(0.5 0.21 27);
   --destructive-foreground: oklch(0.99 0.01 27);
   --border: oklch(0.917 0.006 245);
   --input: oklch(0.917 0.006 245);

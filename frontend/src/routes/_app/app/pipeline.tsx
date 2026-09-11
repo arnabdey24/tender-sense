@@ -39,11 +39,31 @@ function PipelinePage() {
           </h2>
         </div>
         <ApiErrorAlert error={pipeline.error} />
+        {/*
+          Split on the decision, because that is what the page is about.
+          A flat run of rows sorted by deadline answers "when", and the
+          question a bid manager brings here is "what have we actually
+          committed to" — two bids due this month is a different week from
+          five things still being weighed. Deadline order survives inside
+          each run, so nothing is lost.
+        */}
         <MatchList
           matches={pipeline.data?.items ?? []}
           isLoading={pipeline.isPending}
           emptyTitle="Nothing in the pipeline yet"
           emptyDescription="Mark a tender as a bid or a hold and it collects here."
+          groups={[
+            {
+              key: "bid",
+              label: "Bidding",
+              match: (m) => m.recommendation === "bid",
+            },
+            {
+              key: "hold",
+              label: "Still deciding",
+              match: (m) => m.recommendation !== "bid",
+            },
+          ]}
         />
       </section>
     </>

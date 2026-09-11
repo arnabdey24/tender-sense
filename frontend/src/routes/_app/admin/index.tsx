@@ -226,13 +226,13 @@ function OverviewPage() {
         }
       >
         <div className="overflow-x-auto">
-          <Table>
+          <Table density="compact">
             <TableHeader>
               <TableRow>
                 <TableHead>Portal</TableHead>
                 <TableHead>Health</TableHead>
                 <TableHead>Last success</TableHead>
-                <TableHead className="text-right">Notices</TableHead>
+                <TableHead numeric>Notices</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -269,7 +269,7 @@ function OverviewPage() {
                         ? timeAgo(source.last_success_at)
                         : "Never"}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell numeric>
                     {source.tenders.toLocaleString()}
                   </TableCell>
                 </TableRow>

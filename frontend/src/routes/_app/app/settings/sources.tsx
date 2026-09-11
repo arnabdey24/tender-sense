@@ -17,6 +17,8 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Spinner } from "@/components/ui/spinner"
+import { useTriggerJob } from "@/features/admin/api"
 import {
   Table,
   TableBody,
@@ -128,6 +130,7 @@ function SourceTable() {
 
 function OperatorControls() {
   const sources = useAdminSources(true)
+  const syncAll = useTriggerJob()
   const runSource = useRunSource()
   const checkSource = useCheckSource()
   const reparseSource = useReparseSource()
@@ -137,6 +140,35 @@ function OperatorControls() {
   return (
     <div className="flex flex-col gap-4">
       <ApiErrorAlert error={sources.error} />
+
+      {/*
+        The cron visits the portals four times a day, which leaves two moments
+        with no control for them: the first pull on a fresh deployment, where
+        waiting for 02:00 means an empty product, and the hour after a portal
+        publishes something you already know is there. Scraping every portal by
+        hand, one button at a time, was the only way to cover either.
+
+        It queues the same dispatch the cron calls — one job per portal on a
+        queue capped at one at a time, so this stays as polite to an old portal
+        as the schedule is.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-sunken p-3 ring-1 ring-foreground/10">
+        <div className="min-w-0">
+          <p className="text-sm font-medium">Sync every portal now</p>
+          <p className="text-sm text-muted-foreground">
+            For a first pull, or when you need today&rsquo;s notices before the
+            next scheduled run at 02:00, 08:00, 14:00 or 20:00.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          disabled={syncAll.isPending}
+          onClick={() => syncAll.mutate("scrape_all_sources")}
+        >
+          {syncAll.isPending ? <Spinner /> : <RefreshCwIcon />}
+          Sync now
+        </Button>
+      </div>
       {sources.data?.map((source) => (
         <div
           key={source.id}
@@ -261,7 +293,7 @@ function SourcesSettingsPage() {
           <>
             <PageSection
               title="Operator controls"
-              caption="Replaying re-parses pages already stored — it fetches nothing, which is what makes it safe to run against a portal that has started refusing us."
+              caption="Syncing visits the portals; replaying re-parses pages already stored and fetches nothing, which is what makes it safe to run against a portal that has started refusing us."
             >
               <OperatorControls />
             </PageSection>

@@ -70,6 +70,13 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
 
+  /* Surface ramp. Light mode had card and background 0.006 apart, so nothing
+     read as layered; these are the steps that make elevation legible. */
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-raised: var(--surface-raised);
+  --color-row-hover: var(--row-hover);
+  --color-row-selected: var(--row-selected);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -109,7 +116,9 @@
   --brand-800: oklch(0.348 0.092 245);
   --brand-900: oklch(0.292 0.07 245);
 
-  --background: oklch(0.994 0.002 245);
+  /* The page ground sits below card, not level with it. Raising card alone
+     cannot work when the ground is already 0.994 — the ground has to drop. */
+  --background: oklch(0.985 0.003 245);
   --foreground: oklch(0.185 0.012 250);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.185 0.012 250);
@@ -129,7 +138,7 @@
   --input: oklch(0.917 0.006 245);
   --ring: oklch(0.48 0.13 245);
 
-  --sidebar: oklch(0.978 0.004 245);
+  --sidebar: oklch(0.972 0.005 245);
   --sidebar-foreground: oklch(0.185 0.012 250);
   --sidebar-primary: oklch(0.48 0.13 245);
   --sidebar-primary-foreground: oklch(0.99 0.005 245);
@@ -163,6 +172,16 @@
   --info: oklch(0.52 0.1 200);
   --info-foreground: oklch(0.99 0.005 200);
 
+  /* Surfaces, deepest to highest. A well is cut into a card; a card rises off
+     the ground; the ground sits below the chrome. Four steps, all visible. */
+  --surface-sunken: oklch(0.958 0.006 245);
+  --surface-raised: oklch(1 0 0);
+
+  /* Row states are their own tokens, not opacity maths on --muted, so hover
+     stays legible once a row already sits on a sunken or raised surface. */
+  --row-hover: oklch(0.962 0.006 245);
+  --row-selected: oklch(0.945 0.019 245);
+
   /* Depth: every level carries an offset and a blur. No zero-offset halos. */
   --elevation-xs: 0 1px 2px -1px oklch(0.185 0.012 250 / 0.09);
   --elevation-sm:
@@ -179,7 +198,7 @@
     0 10px 20px -10px oklch(0.185 0.012 250 / 0.1);
 
   /* Translucent chrome. A material, used where content passes underneath. */
-  --material-chrome: oklch(0.994 0.002 245 / 0.72);
+  --material-chrome: oklch(0.985 0.003 245 / 0.72);
   --material-panel: oklch(1 0 0 / 0.86);
   --material-blur: 20px;
   --material-saturate: 180%;
@@ -242,6 +261,14 @@
   --warning-foreground: oklch(0.19 0.03 70);
   --info: oklch(0.74 0.11 200);
   --info-foreground: oklch(0.17 0.03 200);
+
+  /* Dark already stepped background -> sidebar -> card -> popover; what it
+     lacked was a level *below* the ground for wells and table headers. */
+  --surface-sunken: oklch(0.156 0.011 250);
+  --surface-raised: oklch(0.216 0.014 250);
+
+  --row-hover: oklch(0.246 0.014 250);
+  --row-selected: oklch(0.288 0.032 245);
 
   /* Dark needs deeper, wider shadows to read at all, plus a lit top edge. */
   --elevation-xs: 0 1px 2px -1px oklch(0 0 0 / 0.5);
@@ -345,6 +372,39 @@
 }
 
 @layer utilities {
+  /*
+   * Density is one variable, set once on a table container and inherited by
+   * every row inside it. Rows read it; they do not each carry a size class,
+   * so switching density is a single attribute flip rather than a re-render
+   * of class strings down the tree.
+   */
+  [data-density="comfortable"] {
+    --row-pad-y: 0.6875rem;
+    --row-gap-y: 0.25rem;
+  }
+
+  [data-density="compact"] {
+    --row-pad-y: 0.3125rem;
+    --row-gap-y: 0.0625rem;
+  }
+
+  .row-pad-y {
+    padding-block: var(--row-pad-y, 0.6875rem);
+  }
+
+  /*
+   * Hidden at compact density, because the second line is what makes a row
+   * tall. Scanning 60 rows and reading 20 are different tasks and the same
+   * markup serves both.
+   *
+   * This only ever *removes* the line. An earlier version set the display
+   * value itself, which silently overrode the element's own `flex` and
+   * collapsed a gapped meta row into run-together text.
+   */
+  [data-density="compact"] .row-meta {
+    display: none;
+  }
+
   /* Translucency as a specific effect: chrome that content scrolls beneath. */
   .material-chrome {
     background-color: var(--material-chrome);
@@ -509,6 +569,54 @@
   animation: assistant-voice-rotate 4s linear infinite;
 }
 
+/*
+ * The panel used to open on a static orb, which read as a picture of the
+ * assistant rather than the assistant. This is a single authored moment: the
+ * orb gathers itself as the panel arrives and then rests. No fill mode, so
+ * once it ends the base rule resumes and amplitude still drives the scale.
+ */
+.assistant-orb[data-intro] .assistant-orb-core {
+  animation: assistant-orb-wake 1500ms var(--motion-ease-out);
+}
+
+.assistant-orb[data-intro] .assistant-orb-ring {
+  animation: assistant-orb-ring-in 1500ms var(--motion-ease-out);
+}
+
+.assistant-orb[data-intro] .assistant-orb-ring-second {
+  animation-delay: 160ms;
+}
+
+/*
+ * The orb answers a pointer. It is the assistant's face, and a face that does
+ * not react to being approached reads as a picture of one.
+ */
+.assistant-orb:hover .assistant-orb-core {
+  transform: scale(calc(0.98 + var(--voice-level) * 0.18));
+  filter: saturate(1.12);
+}
+
+.assistant-orb:hover .assistant-orb-ring {
+  transform: scale(calc(1 + var(--voice-level) * 0.35));
+}
+
+.assistant-orb .assistant-orb-ring {
+  transition:
+    transform 220ms var(--motion-ease-out),
+    border-color 220ms var(--motion-ease-out);
+}
+
+/*
+ * While a voice session is connected, idle is not "nothing is happening" —
+ * the line is open and the assistant is waiting on you. Ambient motion here
+ * is reporting that state, which is the only thing motion is allowed to do.
+ * Slower than the listening morph so the two never read as the same thing.
+ */
+.assistant-orb[data-live][data-state="idle"] .assistant-orb-core,
+.assistant-orb[data-live][data-state="permission"] .assistant-orb-core {
+  animation: assistant-voice-morph 4.5s ease-in-out infinite alternate;
+}
+
 .assistant-orb[data-state="muted"] {
   filter: grayscale(1);
   opacity: 0.6;
@@ -524,6 +632,41 @@
   }
   to {
     border-radius: 60% 40% 44% 56%;
+  }
+}
+
+@keyframes assistant-orb-wake {
+  from {
+    transform: scale(0.7) rotate(-8deg);
+    opacity: 0;
+    border-radius: 50%;
+  }
+  35% {
+    transform: scale(1.06) rotate(2deg);
+    opacity: 1;
+    border-radius: 52% 48% 56% 44%;
+  }
+  /* A second, smaller swell rather than a stretched single one: the orb
+     settles into its resting shape instead of easing to a stop. */
+  65% {
+    transform: scale(0.94) rotate(-1deg);
+    border-radius: 40% 60% 44% 56%;
+  }
+  to {
+    transform: scale(0.9) rotate(0deg);
+    opacity: 1;
+    border-radius: 44% 56% 60% 40%;
+  }
+}
+
+@keyframes assistant-orb-ring-in {
+  from {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 1;
   }
 }
 
@@ -556,5 +699,11 @@
   .assistant-panel {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* The launcher's lift is a transform, so it needs saying separately. */
+  .assistant-launcher button {
+    transition: none !important;
+    transform: none !important;
   }
 }

@@ -133,6 +133,9 @@ async def voice_socket(socket: WebSocket) -> None:
             raise ValueError("Unsupported language")
         # Picking a language narrows the recogniser to it; "auto" still only ever
         # offers the product's two, never the whole set it would guess across.
+        # Not `allowed`: that name is already bound to the CORS origin set at
+        # the top of this function, and reusing it here made the two read as
+        # one thing while giving the checker a set and a list for one variable.
         language_codes = list(settings.assistant_voice_languages)
         if language != "auto":
             prefix = "bn" if language == "bn" else "en"

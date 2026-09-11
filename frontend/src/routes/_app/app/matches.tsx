@@ -3,7 +3,8 @@ import { XIcon } from "lucide-react"
 import { z } from "zod"
 
 import { PageHeader } from "@/components/layout/PageHeader"
-import { Button } from "@/components/ui/button"
+import { Paginator } from "@/components/layout/Paginator"
+import { usePersistentState } from "@/hooks/use-persistent-state"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { MatchList } from "@/features/matches/MatchList"
 import {
@@ -13,7 +14,6 @@ import {
 } from "@/features/matches/api"
 import { TenderFilterSelect } from "@/features/tenders/TenderFilterSelect"
 
-const PAGE_SIZE = 25
 
 const searchSchema = z.object({
   grade: z.enum(["S", "A", "B", "C"]).optional(),
@@ -67,6 +67,8 @@ function MatchesPage() {
     })
   }
 
+  const [pageSize, setPageSize] = usePersistentState("matches:page-size", 10)
+
   const query: MatchQuery = {
     grade: search.grade,
     eligibility: search.eligibility,
@@ -74,7 +76,7 @@ function MatchesPage() {
     sort: search.sort ?? "similarity",
     descending: (search.sort ?? "similarity") !== "deadline_at",
     page: search.page ?? 1,
-    page_size: PAGE_SIZE,
+    page_size: pageSize,
   }
 
   const matches = useMatches(query)
@@ -104,7 +106,6 @@ function MatchesPage() {
 
   const total = matches.data?.total ?? 0
   const page = search.page ?? 1
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <>
@@ -211,31 +212,21 @@ function MatchesPage() {
           isLoading={matches.isPending}
         />
 
-        {pageCount > 1 ? (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Page {page} of {pageCount}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setSearch({ page: page - 1 })}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pageCount}
-                onClick={() => setSearch({ page: page + 1 })}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        ) : null}
+        <Paginator
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          noun="match"
+          onPage={(next) => {
+            setSearch({ page: next === 1 ? undefined : next })
+            window.scrollTo({ top: 0 })
+          }}
+          onPageSize={(size) => {
+            setPageSize(size)
+            // The old page number can point past the end of the resized set.
+            setSearch({ page: undefined })
+          }}
+        />
       </div>
     </>
   )

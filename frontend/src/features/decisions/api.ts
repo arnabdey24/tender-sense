@@ -97,3 +97,62 @@ export function useClearDecision(
     },
   })
 }
+
+/**
+ * One decision applied to many tenders.
+ *
+ * There is no bulk endpoint and this does not need one: the per-tender route
+ * is a `PUT` and therefore idempotent, so a fan-out is safe to retry and
+ * cannot double-record. Failures are collected rather than thrown — marking
+ * twenty notices and having the nineteenth fail should still save the other
+ * nineteen, and the toast has to say so honestly rather than reporting a
+ * clean success or a total failure.
+ */
+export function useRecordDecisions(): UseMutationResult<
+  { saved: number; failed: number },
+  ApiError,
+  { tenderIds: string[]; decision: Decision; note?: string }
+> {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ tenderIds, decision, note }) => {
+      const results = await Promise.allSettled(
+        tenderIds.map((tenderId) =>
+          unwrap(
+            api.PUT("/api/v1/tenders/{tender_id}/decision", {
+              params: { path: { tender_id: tenderId } },
+              body: { decision, note: note ?? null },
+            })
+          )
+        )
+      )
+      const failed = results.filter((r) => r.status === "rejected").length
+      return { saved: results.length - failed, failed }
+    },
+    onSuccess: ({ saved, failed }, { decision }) => {
+      void queryClient.invalidateQueries({ queryKey: qk.decisions.all() })
+      void queryClient.invalidateQueries({ queryKey: qk.matches.all() })
+      if (failed === 0) {
+        toast.add({
+          type: "success",
+          title: `${saved} marked as ${decision}`,
+        })
+        return
+      }
+      toast.add({
+        type: failed === saved + failed ? "error" : "warning",
+        title:
+          saved === 0
+            ? `Could not mark ${failed} notice${failed === 1 ? "" : "s"}`
+            : `${saved} marked as ${decision}, ${failed} failed`,
+        description: "The ones that failed are still unmarked. Try them again.",
+      })
+    },
+    onError: (error) =>
+      toast.add({
+        type: "error",
+        title: "Could not save the decisions",
+        description: error.message,
+      }),
+  })
+}

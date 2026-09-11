@@ -35,23 +35,72 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { useMatchStats } from "@/features/matches/api"
+import { useUnreadCount } from "@/features/notifications/api"
 import { signOut } from "@/lib/auth/session"
 import { useAuthStore } from "@/lib/auth/store"
 
-const NAV_ITEMS = [
-  { title: "Dashboard", to: "/app/dashboard", icon: LayoutDashboardIcon },
-  { title: "Today", to: "/app/today", icon: CalendarCheckIcon },
-  { title: "Matches", to: "/app/matches", icon: TargetIcon },
-  { title: "Tenders", to: "/app/tenders", icon: FileTextIcon },
-  { title: "Pipeline", to: "/app/pipeline", icon: KanbanIcon },
-  { title: "Notifications", to: "/app/notifications", icon: BellIcon },
-  { title: "Settings", to: "/app/settings", icon: SettingsIcon },
+/**
+ * Seven items in one undifferentiated list made the daily work and the
+ * once-a-month settings look equally important. They are split by how often
+ * a bid manager touches them: the triage loop first, then the things that
+ * configure it.
+ */
+const NAV_GROUPS = [
+  {
+    label: "Workspace",
+    items: [
+      { title: "Dashboard", to: "/app/dashboard", icon: LayoutDashboardIcon, count: "none" },
+      { title: "Today", to: "/app/today", icon: CalendarCheckIcon, count: "newToday" },
+      { title: "Matches", to: "/app/matches", icon: TargetIcon, count: "matches" },
+      { title: "Tenders", to: "/app/tenders", icon: FileTextIcon, count: "none" },
+      { title: "Pipeline", to: "/app/pipeline", icon: KanbanIcon, count: "none" },
+    ],
+  },
+  {
+    label: "Manage",
+    items: [
+      { title: "Notifications", to: "/app/notifications", icon: BellIcon, count: "unread" },
+      { title: "Settings", to: "/app/settings", icon: SettingsIcon, count: "none" },
+    ],
+  },
 ] as const
+
+type CountKind = "none" | "matches" | "newToday" | "unread"
+
+/**
+ * A count beside the destination it belongs to.
+ *
+ * Rendered as its own component, and only where there is an active org, so
+ * the queries behind it are never issued on the org-less account screen where
+ * they would answer 403. Ink, never brand — a status count is not an action.
+ */
+function NavCount({ kind }: { kind: CountKind }) {
+  const stats = useMatchStats()
+  const unread = useUnreadCount()
+
+  const value =
+    kind === "matches"
+      ? stats.data?.total
+      : kind === "newToday"
+        ? stats.data?.new_today
+        : kind === "unread"
+          ? unread.data?.unread
+          : undefined
+
+  if (!value) return null
+  return (
+    <SidebarMenuBadge className="text-muted-foreground">
+      {value > 99 ? "99+" : value}
+    </SidebarMenuBadge>
+  )
+}
 
 //: Platform staff only. Kept out of NAV_ITEMS so it never renders for a
 //: customer, who would only get a redirect from it anyway.
@@ -90,10 +139,15 @@ export function AppSidebar() {
         {/*
           The collapse control lives here, not in the page header, so the
           breadcrumb can start on the content column's gutter instead of being
-          pushed 45px right by a button sitting in the reading line. Collapsing
-          hides it; the rail and Cmd/Ctrl+B bring the sidebar back.
+          pushed 45px right by a button sitting in the reading line.
+
+          It used to hide itself once collapsed, on the reasoning that the rail
+          and Cmd/Ctrl+B bring the sidebar back. Both are real, and neither is
+          visible: the rail is a four-pixel strip nobody finds by looking, so
+          collapsing the sidebar left no way back that a person could see. The
+          header stacks into the 48px rail instead and keeps the control.
         */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:gap-0.5">
           <SidebarMenu className="min-w-0 flex-1">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -107,7 +161,7 @@ export function AppSidebar() {
                   size={26}
                   className="size-6.5! text-primary group-data-[collapsible=icon]:size-5!"
                 />
-                <div className="flex min-w-0 flex-col gap-0.5 leading-none">
+                <div className="flex min-w-0 flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
                   <span className="font-semibold tracking-[-0.012em]">
                     Tender<span className="text-primary">Sense</span>
                   </span>
@@ -118,28 +172,41 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <SidebarTrigger className="shrink-0 group-data-[collapsible=icon]:hidden" />
+          <SidebarTrigger className="shrink-0" />
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {NAV_ITEMS.map((item) => (
-                <SidebarMenuItem key={item.to}>
-                  <SidebarMenuButton
-                    tooltip={item.title}
-                    isActive={pathname.startsWith(item.to)}
-                    render={<Link to={item.to} />}
-                  >
-                    <item.icon />
-                    <span>{item.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-              {user?.is_superuser && (
+        {NAV_GROUPS.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      isActive={pathname.startsWith(item.to)}
+                      render={<Link to={item.to} />}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                    {activeOrg && item.count !== "none" ? (
+                      <NavCount kind={item.count} />
+                    ) : null}
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
+
+        {user?.is_superuser && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     tooltip={STAFF_NAV.title}
@@ -150,10 +217,10 @@ export function AppSidebar() {
                     <span>{STAFF_NAV.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              )}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>

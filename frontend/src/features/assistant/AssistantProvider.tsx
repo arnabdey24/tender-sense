@@ -83,6 +83,7 @@ import { useAuthStore } from "@/lib/auth/store"
 import { qk } from "@/lib/api/query-keys"
 import { useTender, useTenders } from "@/features/tenders/api"
 import { useMatch } from "@/features/matches/api"
+import { useDraggableCorner } from "@/hooks/use-draggable-corner"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { AssistantContext } from "./context"
@@ -389,6 +390,16 @@ function AssistantSession({
   const [mobileTab, setMobileTab] = useState("conversation")
   const [selected, setSelected] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
+  /**
+   * Bumped whenever a fresh conversation starts, and used as the welcome
+   * orb's key so it remounts and replays its wake.
+   *
+   * Pressing New conversation on a chat that is already empty is a no-op by
+   * definition — there is nothing to clear — and with no visible response it
+   * reads as a broken button. Replaying the orb answers the press: yes, this
+   * is a new conversation.
+   */
+  const [chatEpoch, setChatEpoch] = useState(0)
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [artifact, setArtifact] = useState<Artifact | null>(null)
@@ -412,6 +423,14 @@ function AssistantSession({
   const previewTimer = useRef<ReturnType<typeof setInterval> | undefined>(
     undefined
   )
+  // Matches the CSS anchor the launcher shipped with, so a reader who never
+  // drags it sees no change.
+  const launcher = useDraggableCorner({
+    storageKey: "assistant-launcher:offset",
+    defaultOffset: { right: 24, bottom: 24 },
+    size: { width: 56, height: 56 },
+  })
+
   const live = !["idle", "error"].includes(voiceState)
   const enabled = active && capabilities.data?.enabled !== false
 
@@ -490,10 +509,21 @@ function AssistantSession({
     setMessages(result.messages)
     setArtifact(result.messages.flatMap((m) => m.artifacts).at(-1) ?? null)
   }
-  async function selectTender(id: string, fresh = false) {
+  /**
+   * Point the panel at a tender, or at the workspace.
+   *
+   * `null` is the workspace conversation — about the shortlist rather than one
+   * notice — and is the state the panel opens in from the launcher, so this
+   * has to accept it. It used to take a bare `string`, which is what made the
+   * New conversation button dead on exactly the conversation most people
+   * start in.
+   */
+  async function selectTender(id: string | null, fresh = false) {
     setOpen(true)
     setPicking(false)
     setHistory(null)
+    // `fresh` is the whole point of the New conversation button, so it must
+    // never be short-circuited by "you are already on this tender".
     if (id === selected && !fresh) return
     stop()
     endVoice()
@@ -501,11 +531,12 @@ function AssistantSession({
     setSelected(id)
     setConversation(null)
     setMessages([])
+    setChatEpoch((n) => n + 1)
     setArtifact(null)
     setError(null)
     setLoading(true)
     try {
-      const recent = fresh ? [] : await getConversations(id)
+      const recent = fresh ? [] : await getConversations(id ?? undefined)
       if (recent[0]) await restore(recent[0].id, selectionEpoch)
     } catch (cause) {
       if (epoch.current === selectionEpoch)
@@ -741,7 +772,7 @@ function AssistantSession({
                   <MessageScrollerItem messageId="welcome">
                     <div className="flex flex-col gap-6 pt-5 pb-3">
                       <div className="flex flex-col items-start gap-4">
-                        <VoiceOrb />
+                        <VoiceOrb key={chatEpoch} intro />
                         <div>
                           <h2 className="text-2xl leading-tight font-medium tracking-[-0.02em]">
                             Let’s talk it through.
@@ -1086,20 +1117,53 @@ function AssistantSession({
       {enabled && (
         <>
           {!open && (
-            <div className="assistant-launcher">
-              {/* A labelled pill covers the content beneath it on a phone, so
-                  below `sm` the launcher is the icon alone. */}
+            <div
+              className="assistant-launcher"
+              style={{
+                right: launcher.offset.right,
+                bottom: launcher.offset.bottom,
+              }}
+            >
+              {/*
+                48px sat under the comfortable target size for a control that
+                floats over content and is reached one-handed on a phone. 56px,
+                still icon-only — the label is on the button's accessible name,
+                not printed beside it.
+
+                It is also draggable, because a fixed corner button always
+                covers *something*: the last row of a table, the pagination, a
+                form's submit. Rather than guess which corner is safe, the
+                reader moves it and it stays moved. A press that does not
+                travel is still a click, so activation is unaffected, and
+                keyboard users are untouched — the drag is pointer-only.
+              */}
               <Button
                 size="lg"
                 aria-label={
                   live ? "Return to live conversation" : "Ask TenderSense"
                 }
-                className="relative size-12 rounded-full p-0 shadow-lg"
-                onClick={() => setOpen(true)}
+                title="Ask TenderSense — drag to move"
+                className={cn(
+                  "group/launcher relative size-14 touch-none rounded-full p-0 shadow-lg",
+                  // It should look pressable before it is pressed: the button
+                  // lifts under a pointer and gives under one.
+                  "transition-[transform,box-shadow] duration-[var(--motion-base)] ease-(--motion-ease-out)",
+                  "hover:scale-105 hover:shadow-xl active:scale-95 active:duration-[var(--motion-fast)]",
+                  launcher.dragging
+                    ? "scale-105 cursor-grabbing shadow-xl"
+                    : "cursor-grab"
+                )}
+                {...launcher.handlers}
+                onClick={() => {
+                  // Swallow the click that ends a drag; open on a real press.
+                  if (launcher.consumeDrag()) return
+                  setOpen(true)
+                }}
+                onDoubleClick={launcher.reset}
               >
-                <MessageCircleIcon className="size-5" />
+                <MessageCircleIcon className="size-6! transition-transform duration-[var(--motion-base)] ease-(--motion-ease-out) group-hover/launcher:-rotate-6" />
                 {live && (
-                  <span className="absolute top-1 right-1 size-2.5 rounded-full bg-success ring-2 ring-primary" />
+                  <span className="absolute top-1.5 right-1.5 size-2.5 rounded-full bg-success ring-2 ring-primary" />
                 )}
               </Button>
               {live && (
@@ -1175,7 +1239,11 @@ function AssistantSession({
                   size="icon-sm"
                   aria-label="New conversation"
                   disabled={busy || live || loading}
-                  onClick={() => selected && void selectTender(selected, true)}
+                  // No truthiness guard on `selected`: null is the workspace
+                  // conversation, not "nothing selected", and guarding on it
+                  // meant this button did nothing at all in the state the
+                  // panel opens in.
+                  onClick={() => void selectTender(selected, true)}
                 >
                   <PlusIcon />
                 </Button>

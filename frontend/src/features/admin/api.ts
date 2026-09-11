@@ -50,7 +50,11 @@ export function useTriggerJob() {
     mutationFn: (job) =>
       unwrap(api.POST("/api/v1/admin/jobs/trigger", { body: { job } })),
     onSuccess: (_result, job) => {
-      toast.add({ type: "success", title: `${job} queued` })
+      toast.add({
+        type: "success",
+        title: `${JOB_LABELS[job] ?? job} queued`,
+        description: "It runs on the worker; the run appears below when it finishes.",
+      })
       void queryClient.invalidateQueries({ queryKey: qk.admin.all() })
     },
     onError: (error) =>
@@ -94,7 +98,7 @@ export function useRetryEmail() {
  * allowlist; this is the subset worth a button.
  */
 export const TRIGGERABLE_JOBS = [
-  { job: "scrape_due_sources", label: "Scrape all sources" },
+  { job: "scrape_all_sources", label: "Scrape all sources" },
   { job: "digest_dispatcher", label: "Send due digests" },
   { job: "deadline_reminder_sweep", label: "Sweep deadlines" },
   { job: "pump_email_outbox", label: "Flush the mail queue" },
@@ -103,3 +107,8 @@ export const TRIGGERABLE_JOBS = [
   { job: "mark_source_health", label: "Check source health" },
   { job: "purge_orphan_blobs", label: "Purge orphaned payloads" },
 ] as const
+
+/** So a toast can say "Scrape all sources queued" rather than the identifier. */
+const JOB_LABELS: Record<string, string> = Object.fromEntries(
+  TRIGGERABLE_JOBS.map((entry) => [entry.job, entry.label])
+)

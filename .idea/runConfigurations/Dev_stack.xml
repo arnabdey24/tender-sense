@@ -1,0 +1,8 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Dev stack" type="CompoundRunConfigurationType">
+    <toRun name="API (uvicorn)" type="PythonConfigurationType" />
+    <toRun name="Worker (arq)" type="PythonConfigurationType" />
+    <toRun name="Frontend (vite)" type="js.build_tools.npm" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -5,12 +5,46 @@ import {
   TriangleAlertIcon,
 } from "lucide-react"
 
+import { Link } from "@tanstack/react-router"
+
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { countdown, timeAgo } from "@/lib/data/time"
 import { cn } from "@/lib/utils"
 import type { PortalSyncState } from "@/features/sources/api"
-import { usePortalSync } from "@/features/sources/use-portal-sync"
+import {
+  usePortalSync,
+  PROFILE_SYNC_THRESHOLD,
+} from "@/features/sources/use-portal-sync"
+
+/**
+ * Why a sync will not produce grades for this organization.
+ *
+ * The pool is shared, so the pull is still worth making and the button still
+ * works — the notices arrive for everyone. What it cannot do is grade them
+ * here, because matching compares a notice against the profile's embeddings
+ * and a thin profile has none. Pressing a button and seeing nothing appear is
+ * indistinguishable from a broken sync, so it says which it is.
+ */
+export function ThinProfileNotice({ score }: { score: number | undefined }) {
+  return (
+    <p className="flex items-start gap-2 text-xs text-pretty text-muted-foreground">
+      <TriangleAlertIcon className="mt-px size-3.5 shrink-0 text-warning" />
+      <span>
+        Your capability profile is {score ?? 0}% complete. Notices will arrive,
+        but none will be graded for your organization until it reaches{" "}
+        {PROFILE_SYNC_THRESHOLD}%.{" "}
+        <Link
+          to="/app/settings/profile"
+          className="font-medium underline underline-offset-2"
+        >
+          Finish the profile
+        </Link>
+        .
+      </span>
+    </p>
+  )
+}
 
 /** The control on its own, for a page that already has its own framing. */
 export function PortalSyncButton({
@@ -87,7 +121,16 @@ function PortalLine({ portal }: { portal: PortalSyncState }) {
  * or the portal has been silent since, so the two are shown apart.
  */
 export function PortalSyncPanel({ className }: { className?: string }) {
-  const { state, running, waiting, disabled, label, press } = usePortalSync()
+  const {
+    state,
+    running,
+    waiting,
+    disabled,
+    label,
+    press,
+    profileThin,
+    completeness,
+  } = usePortalSync()
 
   return (
     <div
@@ -110,6 +153,12 @@ export function PortalSyncPanel({ className }: { className?: string }) {
           {label}
         </Button>
       </div>
+
+      {profileThin ? (
+        <div className="mt-3">
+          <ThinProfileNotice score={completeness} />
+        </div>
+      ) : null}
 
       {state?.portals.length ? (
         <div className="mt-3 divide-y border-t pt-1">

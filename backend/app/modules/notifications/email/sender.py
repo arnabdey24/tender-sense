@@ -52,7 +52,7 @@ def build_message(email: EmailOutbox) -> EmailMessage:
 
 
 class SmtpSender:
-    """Delivers through the configured SMTP relay (Mailpit in development)."""
+    """Delivers through the configured SMTP relay (Gmail by default)."""
 
     async def send(self, email: EmailOutbox) -> str | None:
         message = build_message(email)

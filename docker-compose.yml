@@ -12,13 +12,17 @@ x-backend-env: &backend-env
   REDIS_PORT: "6379"
   APP_URL: ${APP_URL:-http://localhost:5173}
   BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173}
-  SMTP_HOST: ${SMTP_HOST:-mailpit}
-  SMTP_PORT: ${SMTP_PORT:-1025}
+  SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+  SMTP_PORT: ${SMTP_PORT:-587}
   # A relay that wants credentials gets none unless these are passed through,
   # and the failure is a rejected connection at send time rather than at boot.
+  # Gmail always wants them: the password is a 16-character App Password, not
+  # the account password, and the account needs 2-step verification on.
   SMTP_USER: ${SMTP_USER:-}
   SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-  SMTP_STARTTLS: ${SMTP_STARTTLS:-false}
+  # 587 is STARTTLS. Gmail also answers on 465, which is SSL from the first
+  # byte — that is SMTP_SSL=true and SMTP_STARTTLS=false.
+  SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
   SMTP_SSL: ${SMTP_SSL:-false}
   EMAIL_FROM: ${EMAIL_FROM:-TenderSense <no-reply@tendersense.local>}
   EMAIL_REPLY_TO: ${EMAIL_REPLY_TO:-}

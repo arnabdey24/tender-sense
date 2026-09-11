@@ -34,8 +34,14 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       proxy: {
-        "/api": { target: apiTarget, changeOrigin: true, ws: true },
-        "/openapi.json": { target: apiTarget, changeOrigin: true },
+        // `changeOrigin` stays false so the API sees the browser's own Host.
+        // It builds absolute URLs from the request — the Google OAuth
+        // redirect_uri among them — and rewriting Host to the proxy target
+        // made that redirect_uri point at the API port, which is not where
+        // the browser is and not what production does. Behind Caddy the SPA
+        // and the API share an origin; this keeps dev the same shape.
+        "/api": { target: apiTarget, changeOrigin: false, ws: true },
+        "/openapi.json": { target: apiTarget, changeOrigin: false },
       },
     },
   }

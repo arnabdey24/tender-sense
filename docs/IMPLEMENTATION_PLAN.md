@@ -1021,6 +1021,46 @@ retyping nine fields. `useUpdateProject` ships, and the dialog now serves both
 paths — they differ only in which mutation they end with — with a pencil on
 each row and a form that opens on what is stored.
 
+**Separating the manual sync from the scheduled one.** *(planned — the
+threshold warning below it has shipped; the rest has not)*
+
+Requested after an organization pressed Sync now, watched 44 notices arrive,
+and saw nothing graded. The pull and the grading are one job today, so
+"nothing happened" and "nothing could be graded for you" look identical.
+
+What already exists and does not need building: `cron(scrape_all_sources,
+hour={2, 8, 14, 20})` is the six-hourly pass, and `process_tender` already ends
+in `notify_instant`, so a new match already raises an alert.
+
+What changes: a manual sync should analyse only for the organization that
+pressed it, while still storing what it scraped for everyone. So
+`sync_sources` takes the requesting org, `scrape_source` carries it, and
+`process_tender` gains an `only_org_id` that narrows `orgs_with_profiles` to
+one tenant.
+
+**The trap that makes this more than a parameter.** `needs_processing` is
+decided at upsert: new or amended. A notice stored by an org-scoped manual sync
+is, on the next scheduled pass, neither — so nothing would ever enqueue it for
+the other tenants and it would stay ungraded for them permanently. Passing the
+org through without closing this converts a transient stranding into a
+designed one. The fix is a marker on the tender — `analysed_at`, null until a
+pass has matched it for every tenant — which the six-hourly cron sweeps:
+`process_tender` for anything still null. That is a migration, and it is the
+reason this is planned rather than done.
+
+**The threshold, shipped.** `PROFILE_SYNC_THRESHOLD = 50` in
+`features/sources/use-portal-sync.ts`. Under it, the sync panel carries a
+warning naming the score and linking to the profile; the button still works,
+because the pool is shared and the notices are worth pulling for every other
+tenant. Blocking it would let one empty profile deny a whole deployment its
+notices, including the auto-sync that fills an empty pool on a fresh install.
+
+Worth recording: completeness and *scorability* are not the same. Only
+overview, services, sectors+geographies and past projects produce embeddings;
+turnover and certifications are worth 20 points between them and produce none.
+A profile can score 20 and match nothing, which is why the warning names a
+score rather than claiming the profile is empty.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

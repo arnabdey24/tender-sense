@@ -9,8 +9,8 @@ The statement is the same insert-only, ``code``-keyed upsert: a portal an
 operator has retuned through ``PATCH /admin/sources/{id}`` is never overwritten,
 and on a fresh database where 0012 just inserted it this is a no-op.
 
-Revision ID: 0014_adb_portal
-Revises: 0013_platform_settings
+Revision ID: 0016_adb_portal
+Revises: 0015_profile_welcome_sync
 """
 
 from __future__ import annotations
@@ -24,8 +24,8 @@ from alembic import op
 from app.core.ids import new_id
 from app.ingestion.portals import DEFAULT_SOURCES
 
-revision: str = "0014_adb_portal"
-down_revision: str | None = "0013_platform_settings"
+revision: str = "0016_adb_portal"
+down_revision: str | None = "0015_profile_welcome_sync"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 

@@ -18,6 +18,19 @@ function memberSession() {
   }
 }
 
+/** One project already on the profile, for the list and edit paths. */
+const storedProject = {
+  id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  title: "District hospital network",
+  client: "DGHS",
+  sector: "healthcare",
+  country: "BD",
+  value: 45000000,
+  currency: "BDT",
+  started_on: "2024-01-01",
+  completed_on: "2025-03-31",
+}
+
 describe("capability profile", () => {
   it("offers somewhere to put the past projects it scores", async () => {
     await renderRoute("/app/settings/profile", { session: session() })
@@ -52,7 +65,7 @@ describe("capability profile", () => {
 
     const dialog = await screen.findByRole("dialog")
     await user.type(
-      within(dialog).getByLabelText("What the contract was"),
+      within(dialog).getByLabelText("Title"),
       "Core network upgrade"
     )
     await user.type(within(dialog).getByLabelText("Client"), "DGHS")
@@ -95,7 +108,7 @@ describe("capability profile", () => {
 
     const dialog = await screen.findByRole("dialog")
     await user.type(
-      within(dialog).getByLabelText("What the contract was"),
+      within(dialog).getByLabelText("Title"),
       "Rural fibre rollout"
     )
     await user.click(
@@ -126,7 +139,7 @@ describe("capability profile", () => {
 
     const dialog = await screen.findByRole("dialog")
     await user.type(
-      within(dialog).getByLabelText("What the contract was"),
+      within(dialog).getByLabelText("Title"),
       "Backwards project"
     )
     await user.type(within(dialog).getByLabelText("Started"), "2025-06-01")
@@ -143,22 +156,7 @@ describe("capability profile", () => {
   it("lists what is already recorded and offers to remove it", async () => {
     server.use(
       http.get("*/api/v1/profile", () =>
-        HttpResponse.json({
-          ...profile,
-          past_projects: [
-            {
-              id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
-              title: "District hospital network",
-              client: "DGHS",
-              sector: "healthcare",
-              country: "BD",
-              value: 45000000,
-              currency: "BDT",
-              started_on: "2024-01-01",
-              completed_on: "2025-03-31",
-            },
-          ],
-        })
+        HttpResponse.json({ ...profile, past_projects: [storedProject] })
       )
     )
 
@@ -173,6 +171,54 @@ describe("capability profile", () => {
     expect(
       screen.getByRole("button", { name: "Remove District hospital network" })
     ).toBeInTheDocument()
+  })
+
+  it("edits a stored project in place rather than making a second one", async () => {
+    const user = userEvent.setup()
+    const put = vi.fn()
+    server.use(
+      http.get("*/api/v1/profile", () =>
+        HttpResponse.json({ ...profile, past_projects: [storedProject] })
+      ),
+      http.put("*/api/v1/profile/projects/:id", async ({ request, params }) => {
+        const body = await request.json()
+        put({ id: params.id, body })
+        return HttpResponse.json({ id: params.id, ...(body as object) })
+      })
+    )
+
+    await renderRoute("/app/settings/profile", { session: session() })
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Edit District hospital network",
+      })
+    )
+
+    // The form opens on what is stored, not on a blank slate.
+    const dialog = await screen.findByRole("dialog")
+    const title = within(dialog).getByLabelText("Title")
+    expect(title).toHaveValue("District hospital network")
+    expect(within(dialog).getByLabelText("Client")).toHaveValue("DGHS")
+
+    await user.clear(title)
+    await user.type(title, "District hospital core network")
+    await user.click(
+      within(dialog).getByRole("button", { name: /^save project$/i })
+    )
+
+    await waitFor(() =>
+      expect(put).toHaveBeenCalledWith({
+        id: storedProject.id,
+        body: expect.objectContaining({
+          title: "District hospital core network",
+          // Untouched fields survive the round trip; PUT replaces the whole row.
+          client: "DGHS",
+          sector: "healthcare",
+          country: "BD",
+          value: 45000000,
+        }),
+      })
+    )
   })
 
   it("hides the whole section from a plain member", async () => {

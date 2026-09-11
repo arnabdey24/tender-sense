@@ -98,8 +98,26 @@ async def match_stats(ctx: CurrentOrg, db: DbSession, filters: Filters) -> Match
         closing_within_7_days=await repo.count_closing_within(
             db, org_id=ctx.org_id, days=7, filters=filters
         ),
+        # Counted under the shortlist's own criteria, not the feed's.
+        #
+        # These two numbers are read together — the dashboard puts this count on
+        # the tab whose panel is `/matches/today`, which shows S and A grades
+        # that are not already ruled out. Counting every grade meant the tab
+        # promised three and the panel correctly showed none, which reads as a
+        # broken page rather than as two defensible definitions of "new".
+        # A tab counts what it will show.
         new_today=await repo.count_since(
-            db, org_id=ctx.org_id, moment=local_midnight, filters=filters
+            db,
+            org_id=ctx.org_id,
+            moment=local_midnight,
+            filters=filters.model_copy(
+                update={
+                    "grade": filters.grade or [MatchGrade.S, MatchGrade.A],
+                    "eligibility": filters.eligibility
+                    or [EligibilityStatus.ELIGIBLE, EligibilityStatus.NEEDS_VERIFICATION],
+                    "open_only": True,
+                }
+            ),
         ),
     )
 

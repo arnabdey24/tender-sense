@@ -73,9 +73,11 @@ export function MatchCharts({
 }) {
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
-        <Skeleton className="h-52 rounded-xl" />
-        <Skeleton className="h-52 rounded-xl" />
+      <div className="@container">
+        <div className="grid gap-4 @2xl:grid-cols-2">
+          <Skeleton className="h-52 rounded-xl" />
+          <Skeleton className="h-52 rounded-xl" />
+        </div>
       </div>
     )
   }
@@ -96,8 +98,13 @@ export function MatchCharts({
     return null
   }
 
+  // A container query, not a viewport one: these panels sit in a full-width
+  // section on one page and in a narrow sidebar column on another, and `md:`
+  // cannot tell those apart — it would put two charts side by side in a 380px
+  // column because the window happens to be wide.
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="@container">
+      <div className="grid gap-4 @2xl:grid-cols-2">
       <Panel
         title="Deadline runway"
         hint="When the open matches close, so the week can be planned."
@@ -168,6 +175,7 @@ export function MatchCharts({
           </BarChart>
         </ChartContainer>
       </Panel>
+      </div>
     </div>
   )
 }

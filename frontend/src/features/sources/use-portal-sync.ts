@@ -124,6 +124,10 @@ export function useAutoSyncEmptyPool(enabled = true): void {
 
   React.useEffect(() => {
     if (!enabled || attemptedThisSession || !data) return
+    // The deployment's own answer, editable from the operations console: an
+    // operator who would rather nothing happened without being asked can say
+    // so, and this is the one place that acts without being asked.
+    if (!data.auto_sync) return
     if (data.pool_size !== 0) return
     if (data.running || data.retry_after_seconds > 0) return
     if (sync.isPending) return

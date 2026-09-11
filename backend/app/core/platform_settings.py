@@ -58,6 +58,9 @@ class Limits(BaseModel):
         le=86_400,
         description="Shortest gap between hand-started portal syncs, deployment-wide.",
     )
+    auto_sync_empty_pool: bool = Field(
+        description="Whether an empty pool pulls the portals by itself when the app is opened.",
+    )
     ai_daily_token_budget: int = Field(
         ge=0, description="Model tokens per day across every tenant. 0 disables the cap."
     )
@@ -81,6 +84,7 @@ class Limits(BaseModel):
     def from_environment(cls) -> Limits:
         return cls(
             source_sync_cooldown_seconds=settings.source_sync_cooldown_seconds,
+            auto_sync_empty_pool=settings.auto_sync_empty_pool,
             ai_daily_token_budget=settings.ai_daily_token_budget,
             assistant_daily_turn_limit=settings.assistant_daily_turn_limit,
             assistant_daily_voice_seconds=settings.assistant_daily_voice_seconds,

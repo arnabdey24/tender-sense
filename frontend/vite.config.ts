@@ -44,5 +44,23 @@ export default defineConfig(({ mode }) => {
         "/openapi.json": { target: apiTarget, changeOrigin: false },
       },
     },
+    /*
+     * `preview` serves the built bundle, and it needs the same proxy as `dev`
+     * so the production output can be driven against a real API.
+     *
+     * Without it the only way to see built CSS was to deploy, and built CSS is
+     * where this project's sharpest bug so far lived: Tailwind emits utilities
+     * in a different order than the dev server does, so an override that won
+     * in development lost in production and the assistant panel sat shifted by
+     * half its own size on the deployed site alone.
+     */
+    preview: {
+      port: 5190,
+      strictPort: true,
+      proxy: {
+        "/api": { target: apiTarget, changeOrigin: true, ws: true },
+        "/openapi.json": { target: apiTarget, changeOrigin: true },
+      },
+    },
   }
 })

@@ -18,6 +18,7 @@ from typing import Any
 
 from arq import cron
 
+from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
 from app.core.observability import init_sentry
 
@@ -42,7 +43,11 @@ from app.jobs.tasks.maintenance import (
     purge_orphan_blobs,
     refresh_fx_rates,
 )
-from app.jobs.tasks.matching import process_tender, rematch_org
+from app.jobs.tasks.matching import (
+    process_tender,
+    process_unprocessed_tenders,
+    rematch_org,
+)
 from app.jobs.tasks.notifications import (
     alert_sources_down,
     deadline_reminder_sweep,
@@ -77,6 +82,7 @@ DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
     process_tender,
     rematch_org,
     reprocess_tender,
+    process_unprocessed_tenders,
     generate_explanations,
     scrape_all_sources,
     # Registered only so a job queued under the old name before the rename
@@ -165,7 +171,7 @@ class ScrapeWorkerSettings:
     on_startup = startup
     on_shutdown = shutdown
     max_jobs = 1
-    job_timeout = 3600
+    job_timeout = settings.scrape_job_timeout_seconds
     max_tries = 3
     #: Results are not kept, and that is load-bearing rather than tidy.
     #:

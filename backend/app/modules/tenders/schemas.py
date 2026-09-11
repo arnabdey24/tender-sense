@@ -65,6 +65,11 @@ class SyncState(BaseModel):
     """Seconds until a sync may be started. ``0`` means now."""
     cooldown_seconds: int
     """The configured gap, so the interface can say how long the wait will be."""
+    auto_sync: bool
+    """Whether this deployment pulls an empty pool by itself.
+
+    Carried here rather than read from a second endpoint, because the control
+    that would act on it is already rendering this payload."""
     pool_size: int
     """Notices held, across every portal.
 

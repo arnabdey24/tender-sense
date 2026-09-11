@@ -192,44 +192,63 @@ function DashboardPage() {
 
       <SetupStrip />
 
-      <section className="flex flex-col gap-3">
-        <TriageTabs
-          active={active}
-          onChange={setActive}
-          stats={stats.data}
-          isLoading={stats.isPending}
-        />
+      {/*
+        Two columns from `xl`, one below it.
 
-        <ApiErrorAlert error={source.error} />
+        The queue leads and keeps the wider column — that much is unchanged, and
+        deliberately so: this surface refuses the dashboard habit of stacking
+        aggregate tiles above the work. What changed is the axis the supporting
+        content uses. "How the pool looks" described the pool from *below* a
+        list that is often empty, so on a 1484x858 screen the charts began at
+        860px and were cut off by the fold: the one region with data in it was
+        the one region you had to scroll to reach, under a 280px panel that said
+        there was nothing to see.
 
-        <MatchList
-          matches={items}
-          isLoading={source.isPending}
-          emptyTitle={segment.empty.title}
-          emptyDescription={segment.empty.description}
-        />
+        Context belongs beside the thing it is context for. The charts move into
+        a narrower second column and stick while the queue scrolls, so the shape
+        of the pool stays legible while you work down the list. Below `xl` there
+        is no second column to give, and the stack returns.
+      */}
+      <div className="grid grid-cols-1 items-start gap-8 xl:grid-cols-12">
+        <section className="flex min-w-0 flex-col gap-3 xl:col-span-8">
+          <TriageTabs
+            active={active}
+            onChange={setActive}
+            stats={stats.data}
+            isLoading={stats.isPending}
+          />
 
-        {items.length > 0 ? (
-          <div className="flex justify-end border-t pt-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              render={<Link to={active === "new" ? "/app/today" : "/app/matches"} />}
-              nativeButton={false}
-            >
-              {active === "new" ? "See everything new" : "Open all matches"}
-              <ArrowRightIcon data-icon="inline-end" />
-            </Button>
-          </div>
-        ) : null}
-      </section>
+          <ApiErrorAlert error={source.error} />
 
-      {/* Below the queue on purpose: these describe the pool, they are not
-          the day's decisions. */}
-      <section>
-        <SectionHeader title="How the pool looks" />
-        <MatchCharts stats={stats.data} isLoading={stats.isPending} />
-      </section>
+          <MatchList
+            matches={items}
+            isLoading={source.isPending}
+            emptyTitle={segment.empty.title}
+            emptyDescription={segment.empty.description}
+            denseEmpty
+          />
+
+          {items.length > 0 ? (
+            <div className="flex justify-end border-t pt-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                render={<Link to={active === "new" ? "/app/today" : "/app/matches"} />}
+                nativeButton={false}
+              >
+                {active === "new" ? "See everything new" : "Open all matches"}
+                <ArrowRightIcon data-icon="inline-end" />
+              </Button>
+            </div>
+          ) : null}
+        </section>
+
+        <section className="min-w-0 xl:sticky xl:top-20 xl:col-span-4">
+          <SectionHeader title="How the pool looks" />
+          <MatchCharts stats={stats.data} isLoading={stats.isPending} />
+        </section>
+      </div>
+
     </>
   )
 }

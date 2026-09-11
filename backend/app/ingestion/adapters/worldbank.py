@@ -32,6 +32,7 @@ from app.ingestion.adapters.base import (
     TenderIn,
     register_adapter,
 )
+from app.ingestion.retry import with_retry
 from app.modules.tenders.models import DocumentKind, ProcurementCategory, TenderStatus
 
 logger = get_logger(__name__)
@@ -50,6 +51,13 @@ FIELDS = (
 )
 
 PAGE_SIZE = 100
+
+
+def _field_list(config: dict[str, Any]) -> str:
+    """The `fl` parameter, however the source row spelled it."""
+    value = config.get("fl") or config.get("fields") or FIELDS
+    return value if isinstance(value, str) else ",".join(str(part) for part in value)
+
 
 #: The portal's own group codes. Anything unrecognised stays UNKNOWN rather
 #: than being guessed into a category a rule might then filter on.
@@ -162,7 +170,12 @@ class WorldBankAdapter:
             "os": offset,
             "srt": "noticedate",
             "order": "desc",
-            "fl": self.config.get("fl", FIELDS),
+            # Two spellings because the seeded configuration has always said
+            # `fields` while this read `fl`, so the stored list was silently
+            # ignored and every deployment quietly used the default below. The
+            # portal's own parameter name is `fl`; `fields` is accepted so the
+            # rows already in production mean what they appear to mean.
+            "fl": _field_list(self.config),
         }
 
     async def list_notices(
@@ -184,10 +197,19 @@ class WorldBankAdapter:
 
         try:
             for page in range(limit_pages):
-                response = await client.get(
-                    f"{self.base_url}{LISTING_PATH}", params=self._params(page * rows_per_page)
-                )
-                response.raise_for_status()
+
+                async def fetch(page: int = page) -> httpx.Response:
+                    got = await client.get(
+                        f"{self.base_url}{LISTING_PATH}",
+                        params=self._params(page * rows_per_page),
+                    )
+                    got.raise_for_status()
+                    return got
+
+                # A page that times out used to cost the rest of the pass; the
+                # endpoint answers in under half a second when it answers at
+                # all, so a blip is exactly what a retry is for.
+                response = await with_retry(fetch, what="worldbank listing")
                 payload = response.json()
                 notices = payload.get("procnotices") or []
                 if not notices:

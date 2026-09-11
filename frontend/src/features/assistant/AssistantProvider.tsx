@@ -96,7 +96,7 @@ import {
   getConversation,
   getConversations,
 } from "./api"
-import { applyEvent } from "./messages"
+import { applyEvent, initialScrollPosition } from "./messages"
 import {
   artifactSchema,
   type AnalysisRequest,
@@ -798,15 +798,25 @@ function AssistantSession({
         </div>
       ) : (
         /*
-          Auto-scroll pins the viewport to the bottom — which, on an empty
-          conversation, means pinning it past the greeting. On a short window
-          the orb, the welcome and the "বাংলা বা English" line all sat above
-          the fold, so the panel opened on a half-cut sentence and four
-          suggestion buttons with no visible reason for being there. There is
-          nothing to follow until something has been said, so following starts
-          when it has.
+          Two separate things put an empty panel at the bottom of its own
+          greeting, and fixing only the first left the bug alive on short
+          windows.
+
+          `autoScroll` follows new content, and following nothing means sitting
+          at the end — so it starts when there is something to follow.
+
+          `defaultScrollPosition` is the one that actually bit: it defaults to
+          "end", independent of autoScroll, and it is applied on mount. A tall
+          window hides it, because the greeting fits and the end *is* the start;
+          under about 520px of viewport the content overflows and the panel
+          opens on a half-cut sentence above four suggestion buttons with no
+          visible reason for being there. A greeting is read from the top; a
+          conversation with history is resumed at its end.
         */
-        <MessageScrollerProvider autoScroll={messages.length > 0}>
+        <MessageScrollerProvider
+          autoScroll={messages.length > 0}
+          defaultScrollPosition={initialScrollPosition(messages.length)}
+        >
           <MessageScroller className="flex-1">
             <MessageScrollerViewport>
               <MessageScrollerContent className="p-5">
@@ -1239,7 +1249,22 @@ function AssistantSession({
               showCloseButton={false}
               showOverlay={mode === "workspace"}
               className={cn(
-                "assistant-panel flex flex-col gap-0 overflow-hidden p-0",
+                // `top-auto left-auto translate-none` are not decoration: the
+                // dialog's own base classes centre it with `top-1/2 left-1/2
+                // -translate-x-1/2 -translate-y-1/2`, and `index.css` tried to
+                // undo that in a rule that sits in the same `@layer utilities`
+                // as the utilities themselves. Same layer, same specificity, so
+                // source order decides — and the production build emits the
+                // utility last while the dev server happened to emit it first.
+                // The panel was therefore correct in development and shifted by
+                // half its own size on the deployed site: 210px left, 370px up,
+                // its header off the top of the window.
+                //
+                // Naming the conflict in the class list instead means the
+                // merger drops the centring classes before they ever reach the
+                // DOM, so there is nothing left to win or lose a cascade.
+                "assistant-panel top-auto left-auto translate-none",
+                "flex flex-col gap-0 overflow-hidden p-0",
                 mode === "workspace"
                   ? "assistant-panel-workspace"
                   : mode === "expanded"

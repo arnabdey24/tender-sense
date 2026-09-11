@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
 import { Spinner } from "@/components/ui/spinner"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import {
@@ -25,6 +26,8 @@ type Field = {
   label: string
   help: string
   unit?: string
+  /** A switch rather than a number. */
+  toggle?: boolean
 }
 
 /**
@@ -45,6 +48,12 @@ const GROUPS: { title: string; caption: string; fields: Field[] }[] = [
         label: "Shortest gap between hand-started syncs",
         unit: "seconds",
         help: "Lower it to demonstrate a fresh deployment filling up; raise it if a portal starts refusing us. 0 allows a pull on every press.",
+      },
+      {
+        key: "auto_sync_empty_pool",
+        label: "Pull the portals automatically when the pool is empty",
+        toggle: true,
+        help: "On, a deployment with nothing in the pool starts one pull by itself when somebody opens the app — once per tab, never while a pass is running, never inside the cooldown. Worth turning off once the pool is filled and you would rather nothing happened without being asked.",
       },
     ],
   },
@@ -149,28 +158,43 @@ function LimitsPage() {
           <div className="flex flex-col gap-5">
             {group.fields.map((field) => (
               <div key={field.key} className="flex flex-col gap-1.5">
-                <Label htmlFor={field.key}>{field.label}</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id={field.key}
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    className="max-w-40 tabular-nums"
-                    value={String(draft[field.key])}
-                    onChange={(event) =>
-                      setDraft({
-                        ...draft,
-                        [field.key]: Number(event.target.value),
-                      })
-                    }
-                  />
-                  {field.unit ? (
-                    <span className="text-sm text-muted-foreground">
-                      {field.unit}
-                    </span>
-                  ) : null}
-                </div>
+                {field.toggle ? (
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id={field.key}
+                      checked={Boolean(draft[field.key])}
+                      onCheckedChange={(checked) =>
+                        setDraft({ ...draft, [field.key]: checked })
+                      }
+                    />
+                    <Label htmlFor={field.key}>{field.label}</Label>
+                  </div>
+                ) : (
+                  <>
+                    <Label htmlFor={field.key}>{field.label}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id={field.key}
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        className="max-w-40 tabular-nums"
+                        value={String(draft[field.key])}
+                        onChange={(event) =>
+                          setDraft({
+                            ...draft,
+                            [field.key]: Number(event.target.value),
+                          })
+                        }
+                      />
+                      {field.unit ? (
+                        <span className="text-sm text-muted-foreground">
+                          {field.unit}
+                        </span>
+                      ) : null}
+                    </div>
+                  </>
+                )}
                 <p className="max-w-prose text-pretty text-xs text-muted-foreground">
                   {field.help}
                 </p>

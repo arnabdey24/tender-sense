@@ -2521,6 +2521,11 @@ export interface components {
              */
             source_sync_cooldown_seconds: number;
             /**
+             * Auto Sync Empty Pool
+             * @description Whether an empty pool pulls the portals by itself when the app is opened.
+             */
+            auto_sync_empty_pool: boolean;
+            /**
              * Ai Daily Token Budget
              * @description Model tokens per day across every tenant. 0 disables the cap.
              */
@@ -3927,6 +3932,8 @@ export interface components {
             retry_after_seconds: number;
             /** Cooldown Seconds */
             cooldown_seconds: number;
+            /** Auto Sync */
+            auto_sync: boolean;
             /** Pool Size */
             pool_size: number;
             /**

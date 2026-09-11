@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from datetime import timedelta
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundError
 from app.core.pagination import Page, PageParams
 from app.core.platform_settings import get_limits
@@ -119,9 +122,29 @@ async def get_facets(session: AsyncSession, filters: TenderFilters) -> TenderFac
 SYNC_COOLDOWN_KEY = "portal-sync"
 
 
+def _stale(run: Any) -> bool:
+    """Whether a run that still says "running" can possibly still be running.
+
+    It cannot, past the worker's own job timeout — the job was cancelled, and
+    something stopped the record being closed: a worker killed mid-job, a
+    container replaced under it, an out-of-memory. The scrape task handles its
+    own cancellation now, but nothing can handle being killed, and one stranded
+    row is enough to make the sync control say "Syncing…" for ever on every
+    screen that shows it. So the reader decides, and the record catches up when
+    the nightly sweep reaches it.
+
+    Twice the timeout, not once: a pass still inside its budget deserves the
+    benefit of the doubt, and the cost of waiting is a stale label rather than
+    a wrong action.
+    """
+    grace = timedelta(seconds=settings.scrape_job_timeout_seconds * 2)
+    return bool(run.started_at) and utcnow() - run.started_at > grace
+
+
 async def _sync_state(session: AsyncSession, *, retry_after: int, queued: list[str]) -> SyncState:
     """Every portal's sync position, from the source rows and their newest run."""
-    cooldown = (await get_limits(session)).source_sync_cooldown_seconds
+    limits = await get_limits(session)
+    cooldown = limits.source_sync_cooldown_seconds
     sources = await repo.list_sources(session)
     latest = await repo.latest_scraper_runs(session, [source.id for source in sources])
 
@@ -132,7 +155,7 @@ async def _sync_state(session: AsyncSession, *, retry_after: int, queued: list[s
             # control that listed it would be offering to scrape nothing.
             continue
         run = latest.get(source.id)
-        running = run is not None and run.status is RunStatus.RUNNING
+        running = run is not None and run.status is RunStatus.RUNNING and not _stale(run)
         finished = None if running else run
         portals.append(
             PortalSyncState(
@@ -154,6 +177,7 @@ async def _sync_state(session: AsyncSession, *, retry_after: int, queued: list[s
         running=any(portal.running for portal in portals),
         retry_after_seconds=retry_after,
         cooldown_seconds=cooldown,
+        auto_sync=limits.auto_sync_empty_pool,
         pool_size=await repo.count_tenders(session),
         queued=queued,
     )

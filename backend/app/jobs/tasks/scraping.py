@@ -86,6 +86,62 @@ async def _record_health(
     await session.flush()
 
 
+async def _fetch_one(adapter: Any, ref: NoticeRef) -> tuple[list[Any], Any]:
+    """One notice's detail and its normalised form, for gathering in a batch."""
+    documents = await adapter.fetch_detail(ref)
+    return documents, adapter.normalize(ref, documents)
+
+
+async def _store_one(
+    *,
+    source_id: str,
+    source_code: str,
+    ref: NoticeRef,
+    data: Any,
+    documents: list[Any],
+    result: dict[str, Any],
+) -> None:
+    """Commit one notice and queue whatever it earns.
+
+    One notice per transaction: an unparseable record must cost one record, not
+    the page it arrived on. And the pipeline is queued here, beside the commit
+    that created the row, rather than from a list walked after the loop — a
+    pass cancelled at the job timeout once left 1,122 committed notices with
+    nothing scheduled to extract, embed or match any of them.
+    """
+    try:
+        async with session_scope() as session:
+            fresh_source = await session.get(TenderSource, UUID(source_id))
+            if fresh_source is None:
+                return
+            outcome = await upsert_tender(
+                session, source=fresh_source, data=data, documents=documents
+            )
+
+        if outcome.outcome is UpsertOutcome.CREATED:
+            result["created"] += 1
+        elif outcome.outcome is UpsertOutcome.UPDATED:
+            result["updated"] += 1
+            # Only the upsert knows an amendment happened; by the time the
+            # pipeline sees the row it looks like any other notice.
+            await _enqueue_update_notice(str(outcome.tender_id))
+            result["amended"] += 1
+        else:
+            result["unchanged"] += 1
+
+        if outcome.needs_processing:
+            await enqueue_processing(str(outcome.tender_id))
+            result["queued"] += 1
+    except Exception as exc:
+        result["failed"] += 1
+        logger.warning(
+            "notice_not_stored",
+            source=source_code,
+            notice_id=ref.external_id,
+            error=f"{type(exc).__name__}: {exc}"[:200],
+        )
+
+
 @tracked_job
 async def scrape_source(
     ctx: dict[str, Any], source_id: str, limit_pages: int | None = None
@@ -144,72 +200,64 @@ async def scrape_source(
             refs.append(ref)
         result["notices_seen"] = len(refs)
 
-        for ref in refs:
-            try:
-                documents = await adapter.fetch_detail(ref)
-                data = adapter.normalize(ref, documents)
-            except Exception as exc:
-                consecutive_failures += 1
-                result["failed"] += 1
-                logger.warning(
-                    "notice_failed",
-                    source=source_code,
-                    notice_id=ref.external_id,
-                    error=str(exc)[:200],
-                )
-                if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
-                    fatal = f"Gave up after {consecutive_failures} consecutive failures."
-                    break
-                continue
+        # Details are fetched in bounded batches rather than one at a time.
+        #
+        # The cost of a pass is dominated by the politeness delay between
+        # requests, not by the portal's latency: two thousand notices at two
+        # seconds each is over an hour of deliberate waiting, which is what put
+        # e-GP past the job timeout. Fetching `concurrency` of them at once
+        # divides that wait without shortening it for any single request.
+        #
+        # The default is 1, which is exactly the behaviour this replaces. It is
+        # opt-in per source because the right number is a property of the
+        # portal, not of us — and the failure this whole module is shaped
+        # around is a portal deciding we are abusive.
+        concurrency = max(1, int(config.get("request_concurrency", 1)))
 
-            consecutive_failures = 0
-            try:
-                # One notice per transaction: an unparseable record must cost
-                # one record, not the page it arrived on.
-                async with session_scope() as session:
-                    fresh_source = await session.get(TenderSource, UUID(source_id))
-                    if fresh_source is None:
-                        break
-                    outcome = await upsert_tender(
-                        session, source=fresh_source, data=data, documents=documents
+        for batch_start in range(0, len(refs), concurrency):
+            batch = refs[batch_start : batch_start + concurrency]
+            fetched = await asyncio.gather(
+                *(_fetch_one(adapter, ref) for ref in batch), return_exceptions=True
+            )
+
+            # `return_exceptions=True` collects cancellation as a value rather
+            # than propagating it, which would quietly turn "the worker stopped
+            # this job" into "a few notices failed" and leave the run recorded
+            # as a partial success. Cancellation is re-raised before anything
+            # else in the batch is considered.
+            for outcome_or_error in fetched:
+                if isinstance(outcome_or_error, asyncio.CancelledError):
+                    raise outcome_or_error
+
+            for ref, outcome_or_error in zip(batch, fetched, strict=True):
+                if isinstance(outcome_or_error, BaseException):
+                    failure = outcome_or_error
+                    consecutive_failures += 1
+                    result["failed"] += 1
+                    logger.warning(
+                        "notice_failed",
+                        source=source_code,
+                        notice_id=ref.external_id,
+                        error=f"{type(failure).__name__}: {failure}"[:200],
                     )
-                if outcome.outcome is UpsertOutcome.CREATED:
-                    result["created"] += 1
-                elif outcome.outcome is UpsertOutcome.UPDATED:
-                    result["updated"] += 1
-                    # Only the upsert knows an amendment happened; by the time
-                    # the pipeline sees the row it looks like any other notice.
-                    await _enqueue_update_notice(str(outcome.tender_id))
-                    result["amended"] += 1
-                else:
-                    result["unchanged"] += 1
+                    if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                        fatal = f"Gave up after {consecutive_failures} consecutive failures."
+                        break
+                    continue
 
-                # Queued here, beside the commit that created the row, rather
-                # than from a list walked after the loop.
-                #
-                # A pass over e-GP took an hour, hit the worker's job timeout
-                # and was cancelled — after committing 1,122 notices one at a
-                # time and before reaching the enqueue at the end. The notices
-                # were in the pool and nothing was ever queued to extract,
-                # embed or match them, so every organization on the deployment
-                # had a full tender list, no matches and an empty dashboard,
-                # with no failed job anywhere to explain it.
-                #
-                # Work that is already durable deserves to be followed
-                # immediately: the queue is idempotent per tender, so the cost
-                # of enqueueing early is nothing and the cost of enqueueing
-                # late is everything committed so far.
-                if outcome.needs_processing:
-                    await enqueue_processing(str(outcome.tender_id))
-                    result["queued"] += 1
-            except Exception as exc:
-                result["failed"] += 1
-                logger.warning(
-                    "notice_not_stored",
-                    source=source_code,
-                    notice_id=ref.external_id,
-                    error=str(exc)[:200],
+                documents, data = outcome_or_error
+                await _store_one(
+                    source_id=source_id,
+                    source_code=source_code,
+                    ref=ref,
+                    data=data,
+                    documents=documents,
+                    result=result,
                 )
+                consecutive_failures = 0
+            if fatal:
+                break
+
     except asyncio.CancelledError:
         # The worker's job timeout cancels the task, and a cancellation that
         # is not handled leaves the run row saying "running" for ever: the

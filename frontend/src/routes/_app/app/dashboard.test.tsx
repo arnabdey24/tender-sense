@@ -60,6 +60,17 @@ describe("the dashboard on a deployment with an empty pool", () => {
     expect(presses).not.toHaveBeenCalled()
   })
 
+  it("does not start one when the operator has switched it off", async () => {
+    // The console's own setting. Acting without being asked is exactly the
+    // behaviour an operator should be able to decline without a redeploy.
+    const presses = watchSync({ pool_size: 0, auto_sync: false })
+
+    await renderRoute("/app/dashboard", { session: session() })
+    await screen.findByRole("heading", { name: "Dashboard" })
+
+    expect(presses).not.toHaveBeenCalled()
+  })
+
   it("does not start one inside the cooldown", async () => {
     // Ten people opening an empty dashboard at nine in the morning must produce
     // one pull between them, not ten.

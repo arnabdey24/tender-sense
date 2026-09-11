@@ -32,6 +32,7 @@ from app.ingestion.adapters.base import (
     TenderIn,
     register_adapter,
 )
+from app.ingestion.retry import with_retry
 from app.modules.tenders.models import DocumentKind, ProcurementCategory, TenderStatus
 
 logger = get_logger(__name__)
@@ -196,10 +197,19 @@ class WorldBankAdapter:
 
         try:
             for page in range(limit_pages):
-                response = await client.get(
-                    f"{self.base_url}{LISTING_PATH}", params=self._params(page * rows_per_page)
-                )
-                response.raise_for_status()
+
+                async def fetch(page: int = page) -> httpx.Response:
+                    got = await client.get(
+                        f"{self.base_url}{LISTING_PATH}",
+                        params=self._params(page * rows_per_page),
+                    )
+                    got.raise_for_status()
+                    return got
+
+                # A page that times out used to cost the rest of the pass; the
+                # endpoint answers in under half a second when it answers at
+                # all, so a blip is exactly what a retry is for.
+                response = await with_retry(fetch, what="worldbank listing")
                 payload = response.json()
                 notices = payload.get("procnotices") or []
                 if not notices:

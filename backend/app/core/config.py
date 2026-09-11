@@ -130,6 +130,16 @@ class Settings(BaseSettings):
     costs nothing already ingested, but a pass that completes is still worth
     far more than one that is killed two thirds of the way through.
     """
+    auto_sync_empty_pool: bool = True
+    """Whether an empty pool starts one pull by itself when someone opens the app.
+
+    On for a fresh deployment, where the alternative is a new organization
+    staring at a dashboard with nothing on it and no reason to know which
+    control would fix that. Worth switching off once the pool is filled and the
+    schedule is doing its job — it is one press either way, and an operator who
+    would rather nothing happened without being asked should be able to have
+    that without a redeploy.
+    """
     source_sync_cooldown_seconds: int = 600
     """Shortest gap between hand-started portal syncs, across the whole deployment.
 

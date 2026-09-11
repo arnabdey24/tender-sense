@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import { SearchIcon } from "lucide-react"
 
-import { PageSection } from "@/components/layout/PageSection"
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -215,19 +215,19 @@ function TenantsPage() {
         />
       </div>
 
-      <PageSection
+      <ConsoleSection
         title="Organizations"
         caption="Every tenant on this deployment. Nothing here crosses the boundary between them — these are counts and dates, not their matches or decisions."
       >
         <Organizations q={q} />
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
+      <ConsoleSection
         title="Accounts"
         caption="Everyone who can sign in. Staff reach this console; members do not."
       >
         <Accounts q={q} />
-      </PageSection>
+      </ConsoleSection>
     </div>
   )
 }

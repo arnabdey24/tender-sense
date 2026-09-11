@@ -22,13 +22,15 @@ function PipelinePage() {
       {/* The page said what it was three times in 400px — description, card
           header, empty state. The page description says it; the count counts. */}
       {/*
-        `max-w-4xl` left roughly 300px of dead gutter on a 1484px screen while
-        the rows inside it truncated their own titles. A list of notices is not
-        prose: it is scanned, the deadline and the grade are read together with
-        the title, and the measure that suits a paragraph starves a row. It
-        takes the width the rest of the workspace takes.
+        No artificial measure. `max-w-4xl` left ~300px of dead gutter on a wide
+        screen while the rows inside it truncated their own titles — the page
+        was narrower than its content needed and wider than it used. A list of
+        notices is a dense panel, not prose: it is scanned, the grade and the
+        deadline are read together with the title, and the design system's
+        65–75ch rule is explicitly for prose, with dense panels free to run
+        wider. The width goes to the rows.
       */}
-      <section className="max-w-5xl">
+      <section>
         <div className="mb-3 border-b pb-3">
           <h2 className="font-heading text-base font-medium tabular-nums">
             {pipeline.isPending

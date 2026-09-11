@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
 import { RotateCcwIcon } from "lucide-react"
 
-import { PageSection } from "@/components/layout/PageSection"
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -150,7 +150,7 @@ function LimitsPage() {
       </p>
 
       {GROUPS.map((group) => (
-        <PageSection
+        <ConsoleSection
           key={group.title}
           title={group.title}
           caption={group.caption}
@@ -201,7 +201,7 @@ function LimitsPage() {
               </div>
             ))}
           </div>
-        </PageSection>
+        </ConsoleSection>
       ))}
 
       <div className="flex flex-wrap items-center gap-3 border-t pt-6">

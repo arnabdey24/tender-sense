@@ -1,8 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
-import { RefreshCwIcon, RotateCcwIcon, SearchIcon } from "lucide-react"
+import {
+  PlusIcon,
+  RefreshCwIcon,
+  RotateCcwIcon,
+  SearchIcon,
+  UploadIcon,
+} from "lucide-react"
 
-import { PageSection } from "@/components/layout/PageSection"
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -442,35 +453,56 @@ function PoolPage() {
   }))
 
   return (
-    <div className="flex flex-col gap-8">
-      <PageSection
+    <div className="flex flex-col gap-6">
+      <ConsoleSection
         title="The pool"
-        caption="Every notice on this deployment, shared by every tenant. Reprocess re-runs extraction and matching; re-parse goes back to the payload stored at ingestion and asks the portal for nothing."
+        caption="Shared by every tenant. Reprocess re-runs extraction and matching; re-parse goes back to the stored payload and fetches nothing."
       >
         <Pool />
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
-        title="Add a notice"
-        caption="For one that arrived as a PDF, or that a portal published and withdrew before the scraper saw it. It goes through the same upsert the scrapers use, so it is indistinguishable downstream."
+      {/*
+        Both of these are occasional: a notice that arrived as a PDF, a file
+        someone was sent. They were stacked above the pool table an operator
+        reads daily, and between them they pushed the page past 1,900px of
+        scrolling. Collapsed, the page opens on the pool.
+      */}
+      <ConsoleSection
+        title="Add by hand"
+        caption="One notice, or many from a JSON or CSV document. Adding the same notice twice updates it rather than duplicating it."
       >
         {sources.isPending ? (
-          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-10 w-full" />
         ) : (
-          <AddNotice sources={options} />
-        )}
-      </PageSection>
+          <div className="flex flex-wrap gap-2">
+            <Collapsible className="w-full">
+              <CollapsibleTrigger
+                render={
+                  <Button variant="outline" size="sm">
+                    <PlusIcon /> Add one notice
+                  </Button>
+                }
+              />
+              <CollapsibleContent className="pt-4">
+                <AddNotice sources={options} />
+              </CollapsibleContent>
+            </Collapsible>
 
-      <PageSection
-        title="Import many"
-        caption="A JSON array or a CSV document. Adding the same notice twice updates it rather than duplicating it, so re-running a corrected file is safe."
-      >
-        {sources.isPending ? (
-          <Skeleton className="h-40 w-full" />
-        ) : (
-          <Import sources={options} />
+            <Collapsible className="w-full">
+              <CollapsibleTrigger
+                render={
+                  <Button variant="outline" size="sm">
+                    <UploadIcon /> Import many
+                  </Button>
+                }
+              />
+              <CollapsibleContent className="pt-4">
+                <Import sources={options} />
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         )}
-      </PageSection>
+      </ConsoleSection>
     </div>
   )
 }

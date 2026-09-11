@@ -91,11 +91,26 @@ export function sanitizeRedirect(redirect?: string | null): string | null {
  * membership go to onboarding — every `/app/*` screen is org-scoped.
  */
 export function postAuthDestination(
-  payload: Pick<SessionPayload, "memberships">,
+  payload: Pick<SessionPayload, "memberships"> & {
+    user?: SessionPayload["user"] | null
+  },
   redirect?: string | null
 ): string {
-  if ((payload.memberships?.length ?? 0) === 0) return "/onboarding"
-  return sanitizeRedirect(redirect) ?? "/app/dashboard"
+  const explicit = sanitizeRedirect(redirect)
+  if (explicit) return explicit
+  if ((payload.memberships?.length ?? 0) > 0) return "/app/dashboard"
+
+  /*
+   * Platform staff are not a company, and asking them to invent one is the
+   * wrong first screen.
+   *
+   * Membership of an organization and staff of the platform are unrelated:
+   * an operator made from the command line has no organization at all, and
+   * needs none to do the job. This sent them to onboarding, so the first thing
+   * a new superuser saw was "Create your organization" — a form that would put
+   * a fictional company in the tenant list they are there to administer.
+   */
+  return payload.user?.is_superuser ? "/admin" : "/onboarding"
 }
 
 /** Where the browser should be sent to begin Google sign-in. */

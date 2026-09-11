@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { CheckCircle2Icon, TriangleAlertIcon } from "lucide-react"
 
-import { PageSection } from "@/components/layout/PageSection"
+import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -113,7 +113,7 @@ function OverviewPage() {
     <div className="flex flex-col gap-8">
       <Verdict data={data} />
 
-      <PageSection
+      <ConsoleSection
         title="The pool"
         caption="Shared across every tenant. A pool that stops growing is the first symptom of a portal that has stopped answering."
       >
@@ -142,9 +142,9 @@ function OverviewPage() {
             }
           />
         </div>
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
+      <ConsoleSection
         title="Portals"
         caption="Where the notices come from, and when each last answered."
         action={
@@ -208,9 +208,9 @@ function OverviewPage() {
             </TableBody>
           </Table>
         </div>
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
+      <ConsoleSection
         title="Tenants and accounts"
         caption="Every organization on this deployment, and everyone who can sign in to one."
       >
@@ -226,9 +226,9 @@ function OverviewPage() {
             detail={`${data.users_active.toLocaleString()} active`}
           />
         </div>
-      </PageSection>
+      </ConsoleSection>
 
-      <PageSection
+      <ConsoleSection
         title="Queues"
         caption="A job that fails quietly and mail that never leaves look identical from inside the app. These are where they show."
       >
@@ -241,7 +241,7 @@ function OverviewPage() {
           <Stat label="Mail waiting" value={String(data.email_queued)} />
           <Stat label="Mail gave up" value={String(data.email_failed)} />
         </div>
-      </PageSection>
+      </ConsoleSection>
     </div>
   )
 }

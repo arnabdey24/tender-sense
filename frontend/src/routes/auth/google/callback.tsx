@@ -71,8 +71,8 @@ export function GoogleCallbackPanel({
         )
         return
       }
-      const { memberships } = useAuthStore.getState()
-      await navigate({ href: postAuthDestination({ memberships }, redirect) })
+      const { memberships, user } = useAuthStore.getState()
+      await navigate({ href: postAuthDestination({ memberships, user }, redirect) })
     })()
   }, [status, redirect, navigate, queryClient])
 

@@ -1,6 +1,6 @@
 [project]
 name = "tendersense-backend"
-version = "1.1.1"
+version = "1.2.0"
 description = "TenderSense — tender discovery and matching SaaS"
 requires-python = ">=3.12,<3.13"
 dependencies = [

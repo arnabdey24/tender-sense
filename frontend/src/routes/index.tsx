@@ -3,6 +3,7 @@ import {
   ArrowRightIcon,
   CheckCircle2Icon,
   HelpCircleIcon,
+  QuoteIcon,
 } from "lucide-react"
 
 import { Logo } from "@/components/brand/Logo"
@@ -32,6 +33,19 @@ const SAMPLE = {
     { label: "Published", value: "3 days ago" },
     { label: "Similarity", value: "0.74" },
   ],
+  /**
+   * The line the turnover rule was decided against, in the script the notice
+   * was published in. Notices arrive in Bangla, English or a mix of the two,
+   * and the product reads them where they are — a capability a Bangladeshi
+   * bidder has every reason to want proof of before trusting a grade.
+   */
+  evidence: {
+    quote:
+      "দরপত্রদাতার বিগত তিন বছরের গড় বার্ষিক টার্নওভার ন্যূনতম ৩,০০,০০,০০০ টাকা হইতে হইবে।",
+    gloss:
+      "Average annual turnover over the last three years must be at least ৳ 3,00,00,000.",
+    field: "Qualification requirements, clause 12(b)",
+  },
   rules: [
     {
       status: "met" as const,
@@ -79,12 +93,59 @@ const PIPELINE = [
   },
 ] as const
 
-const GRADES = [
+/**
+ * The argument the page was missing.
+ *
+ * Both alternatives are real things a firm evaluates this against, and the
+ * distinction is the product's recorded positioning rather than a claim
+ * invented for a marketing page: a keyword service has no model of the
+ * company, and a fluent summary is not an audit trail. Stated as what each
+ * kind of tool can and cannot answer, so a reader can check it rather than
+ * take it — which is the same standard the product holds itself to.
+ */
+const ALTERNATIVES: {
+  name: string
+  answers: string
+  cannot: string
+  /** TenderSense's own column. Marked by ink weight, never by a tinted card. */
+  own?: boolean
+}[] = [
+  {
+    name: "A keyword alert",
+    answers: "Whether a notice contains the words you registered.",
+    cannot:
+      "Tell you that your turnover is below the floor, or that the wording moved and your term no longer matches.",
+  },
+  {
+    name: "A general-purpose assistant",
+    answers: "A fluent summary of whatever you paste into it.",
+    cannot:
+      "Show which rule failed, against which line of the notice, under which version of your profile — or give the same answer twice.",
+  },
+  {
+    name: "TenderSense",
+    answers:
+      "A grade, a recommendation, and the evidence for both: the quoted line, the rule result, the profile version.",
+    cannot:
+      "Read the bidding documents. Where a requirement appears only in an attachment, the rule returns unknown rather than a guess.",
+    own: true,
+  },
+]
+
+/**
+ * The shortlist as it actually arrives, which teaches the grading vocabulary
+ * better than defining it. The thresholds ride along as annotation; the
+ * artifact is the point.
+ */
+const SHORTLIST = [
   {
     grade: "S",
     variant: "gradeS",
     verdict: "Bid",
     threshold: "0.78 +",
+    title: "Supply and installation of network infrastructure, 14 upazila offices",
+    entity: "Bangladesh Computer Council",
+    closes: "11 days",
     note: "Close to everything you have done before.",
   },
   {
@@ -92,6 +153,9 @@ const GRADES = [
     variant: "gradeA",
     verdict: "Bid",
     threshold: "0.70 +",
+    title: "Construction of RCC road and surface drain, Package WD-07",
+    entity: "LGED, Rangpur",
+    closes: "6 days",
     note: "Clearly within your capability.",
   },
   {
@@ -99,6 +163,9 @@ const GRADES = [
     variant: "gradeB",
     verdict: "Hold",
     threshold: "0.62 +",
+    title: "Periodic maintenance of rural roads, Zone 3",
+    entity: "Roads and Highways Department",
+    closes: "19 days",
     note: "Plausible, but read it before committing.",
   },
   {
@@ -106,6 +173,9 @@ const GRADES = [
     variant: "gradeC",
     verdict: "Skip",
     threshold: "under 0.62",
+    title: "Procurement of laboratory reagents and consumables",
+    entity: "Directorate General of Health Services",
+    closes: "8 days",
     note: "Far enough away that it is not worth the week.",
   },
 ] as const
@@ -115,7 +185,7 @@ function AssessmentCard() {
   return (
     <figure className="m-0">
       <div className="overflow-hidden rounded-2xl bg-card ring-1 shadow-xl ring-foreground/10">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-6 py-4">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-5 py-4 sm:px-6">
           <Badge variant="gradeA" className="h-6 w-7 justify-center text-sm">
             {SAMPLE.grade}
           </Badge>
@@ -127,7 +197,7 @@ function AssessmentCard() {
           </span>
         </div>
 
-        <div className="px-6 py-5">
+        <div className="px-5 py-5 sm:px-6">
           <h2 className="text-pretty text-lg leading-snug font-medium">
             {SAMPLE.title}
           </h2>
@@ -143,7 +213,7 @@ function AssessmentCard() {
           {SAMPLE.facts.map((fact) => (
             <div
               key={fact.label}
-              className="border-r border-b px-6 py-3 last:border-r-0 sm:border-b-0 sm:px-4 sm:py-4"
+              className="border-r border-b px-5 py-3 last:border-r-0 sm:border-b-0 sm:px-4 sm:py-4"
             >
               <dt className="text-xs text-muted-foreground">{fact.label}</dt>
               <dd className="mt-1 text-sm font-medium tabular-nums">
@@ -157,14 +227,14 @@ function AssessmentCard() {
           {SAMPLE.rules.map((rule) => (
             <li
               key={rule.requirement}
-              className="flex gap-3 border-b px-6 py-3.5 last:border-b-0"
+              className="flex flex-wrap gap-x-3 gap-y-1 border-b px-5 py-3.5 last:border-b-0 sm:px-6"
             >
               {rule.status === "met" ? (
                 <CheckCircle2Icon className="mt-0.5 size-4 shrink-0 text-success" />
               ) : (
                 <HelpCircleIcon className="mt-0.5 size-4 shrink-0 text-warning" />
               )}
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">{rule.requirement}</p>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {rule.detail}
@@ -173,8 +243,8 @@ function AssessmentCard() {
               <span
                 className={
                   rule.status === "met"
-                    ? "ml-auto shrink-0 self-center text-xs font-medium text-success"
-                    : "ml-auto shrink-0 self-center text-xs font-medium text-warning"
+                    ? "shrink-0 self-center text-xs font-medium text-success"
+                    : "shrink-0 self-center text-xs font-medium text-warning"
                 }
               >
                 {rule.status === "met" ? "Met" : "Needs checking"}
@@ -182,6 +252,34 @@ function AssessmentCard() {
             </li>
           ))}
         </ul>
+
+        {/*
+          The evidence itself, in the script it was published in. A grade with
+          no quoted line behind it is the thing this product exists not to be,
+          so the card that argues for it has to carry one.
+        */}
+        <figure className="m-0 border-t bg-muted/40 px-5 py-4 sm:px-6">
+          <div className="flex gap-3">
+            <QuoteIcon
+              aria-hidden
+              className="mt-1 size-4 shrink-0 text-muted-foreground"
+            />
+            <div className="min-w-0">
+              <blockquote
+                lang="bn"
+                className="text-sm leading-[1.7] text-foreground"
+              >
+                {SAMPLE.evidence.quote}
+              </blockquote>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                {SAMPLE.evidence.gloss}
+              </p>
+              <figcaption className="mt-1.5 text-xs text-muted-foreground">
+                The line behind the turnover rule — {SAMPLE.evidence.field}
+              </figcaption>
+            </div>
+          </div>
+        </figure>
       </div>
 
       <figcaption className="mt-3 text-xs text-muted-foreground">
@@ -208,8 +306,15 @@ function LandingPage() {
             >
               Sign in
             </Button>
+            {/*
+              Two buttons, a theme control and the mark do not fit in 390px,
+              and the page scrolled sideways because of it. The primary action
+              is a screen-height below in the hero, so on a phone the header
+              carries the way back in and nothing else.
+            */}
             <Button
               size="sm"
+              className="hidden sm:inline-flex"
               render={<Link to="/register" />}
               nativeButton={false}
             >
@@ -263,8 +368,78 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* Pipeline: numbers hang in the margin; the rules do the separating. */}
+        {/*
+          The distinction, drawn as three answers to the same question rather
+          than a feature table with ticks. Columns, not cards: the comparison is
+          the structure, and boxing each one would make three objects out of one
+          argument.
+        */}
         <section className="border-b">
+          <div className="mx-auto w-full max-w-6xl px-6 py-20 lg:px-10 lg:py-24">
+            <h2 className="max-w-2xl text-balance text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+              A keyword alert cannot tell you that you are not qualified
+            </h2>
+            <p className="mt-4 max-w-prose text-pretty text-sm leading-relaxed text-muted-foreground">
+              Three kinds of tool answer three different questions. Only one of
+              them answers the one a bid manager actually has, which is whether
+              this notice is worth two weeks of preparation.
+            </p>
+
+            {/*
+              Subgrid, because a comparison is read across as much as down: with
+              each column laying out independently the second label landed at
+              three different heights, and "cannot tell you" stopped being one
+              row of the argument. Without subgrid support the columns simply
+              stack, which is what they do on a phone anyway.
+            */}
+            <div className="mt-12 grid gap-x-10 gap-y-8 border-t pt-8 sm:grid-cols-3 sm:grid-rows-[auto_auto_1fr_auto_1fr]">
+              {ALTERNATIVES.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex flex-col gap-3 border-t pt-6 first:border-t-0 first:pt-0 sm:row-span-5 sm:grid sm:grid-rows-subgrid sm:gap-0 sm:border-t-0 sm:pt-0"
+                >
+                  {/*
+                    The product's own column is marked by ink weight, not by a
+                    tinted card or a coloured border — brand blue is for action,
+                    and a highlighted pricing-table column is the tell of a page
+                    that needs one.
+                  */}
+                  <h3
+                    className={
+                      item.own
+                        ? "text-base font-semibold"
+                        : "text-base font-medium text-muted-foreground"
+                    }
+                  >
+                    {item.name}
+                  </h3>
+                  <p className="text-xs font-medium text-muted-foreground sm:pt-4">
+                    Answers
+                  </p>
+                  <p
+                    className={
+                      item.own
+                        ? "text-pretty text-sm leading-relaxed sm:pt-1"
+                        : "text-pretty text-sm leading-relaxed text-muted-foreground sm:pt-1"
+                    }
+                  >
+                    {item.answers}
+                  </p>
+                  <p className="text-xs font-medium text-muted-foreground sm:pt-4">
+                    {item.own ? "Does not do yet" : "Cannot tell you"}
+                  </p>
+                  <p className="text-pretty text-sm leading-relaxed text-muted-foreground sm:pt-1">
+                    {item.cannot}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Pipeline: the sequence drawn as a spine, because the order is the
+            argument — a notice is only worth grading once it has been read. */}
+        <section className="border-b bg-muted/30">
           <div className="mx-auto w-full max-w-6xl px-6 py-20 lg:px-10 lg:py-24">
             <div className="grid gap-x-14 gap-y-10 lg:grid-cols-12">
               <div className="lg:col-span-4">
@@ -277,19 +452,28 @@ function LandingPage() {
                 </p>
               </div>
 
-              <ol className="flex flex-col lg:col-span-8">
+              <ol className="relative flex flex-col lg:col-span-8">
                 {PIPELINE.map((step, index) => (
                   <li
                     key={step.title}
-                    className="grid grid-cols-[2.5rem_1fr] gap-x-5 border-t py-6 first:border-t-0 first:pt-0"
+                    className="relative grid grid-cols-[1.75rem_1fr] gap-x-5 pb-8 last:pb-0 sm:grid-cols-[2.25rem_1fr]"
                   >
+                    {/* The rule connects one step to the next, so the sequence
+                        is visible rather than merely numbered. It stops at the
+                        last step rather than trailing into nothing. */}
+                    {index < PIPELINE.length - 1 && (
+                      <span
+                        aria-hidden
+                        className="absolute top-7 bottom-1 left-[0.6875rem] w-px bg-border sm:left-[0.9375rem]"
+                      />
+                    )}
                     <span
                       aria-hidden
-                      className="text-sm leading-6 font-medium text-muted-foreground tabular-nums"
+                      className="relative z-10 flex size-6 items-center justify-center rounded-full bg-background text-xs font-medium text-muted-foreground ring-1 ring-border tabular-nums sm:size-8 sm:text-sm"
                     >
-                      {String(index + 1).padStart(2, "0")}
+                      {index + 1}
                     </span>
-                    <div>
+                    <div className="pt-0.5 sm:pt-1">
                       <h3 className="text-base leading-6 font-medium">
                         {step.title}
                       </h3>
@@ -304,67 +488,80 @@ function LandingPage() {
           </div>
         </section>
 
-        {/* Grades */}
-        <section className="border-b bg-muted/30">
+        {/*
+          Grades, shown as the shortlist they arrive in rather than defined in a
+          glossary. The vocabulary is learned from the artifact, which is also
+          the only honest way to show what a morning actually looks like.
+        */}
+        <section className="border-b">
           <div className="mx-auto w-full max-w-6xl px-6 py-20 lg:px-10 lg:py-24">
-            <div className="grid gap-x-14 gap-y-10 lg:grid-cols-12">
-              <div className="lg:col-span-4">
-                <h2 className="text-balance text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
-                  Four grades, and a recommendation you can argue with
-                </h2>
-                <p className="mt-4 text-pretty text-sm leading-relaxed text-muted-foreground">
-                  The grade measures how close the notice sits to your profile.
-                  The recommendation weighs that against your eligibility rules —
-                  so a perfect match you are not qualified for is still a skip,
-                  and it will name the requirement that stopped it.
-                </p>
-              </div>
-
-              <div className="lg:col-span-8">
-                <dl className="flex flex-col">
-                  {GRADES.map((row) => (
-                    <div
-                      key={row.grade}
-                      className="grid grid-cols-[2rem_4rem_1fr] items-baseline gap-x-5 border-t py-4 first:border-t-0 sm:grid-cols-[2rem_4rem_6rem_1fr]"
-                    >
-                      <dt>
-                        <Badge
-                          variant={row.variant}
-                          className="w-7 justify-center"
-                        >
-                          {row.grade}
-                        </Badge>
-                      </dt>
-                      <dd className="text-sm font-medium">{row.verdict}</dd>
-                      <dd className="hidden text-sm text-muted-foreground tabular-nums sm:block">
-                        {row.threshold}
-                      </dd>
-                      <dd className="col-span-3 text-sm text-muted-foreground sm:col-span-1">
-                        {row.note}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-
-                <p className="mt-8 max-w-prose text-pretty text-sm leading-relaxed text-muted-foreground">
-                  Where a notice does not state a requirement, the rule returns{" "}
-                  <span className="font-medium text-warning">
-                    needs checking
-                  </span>{" "}
-                  rather than a guess. Bidding documents are not parsed yet, so
-                  that happens more often than it eventually will — and you are
-                  always told which field it was.
-                </p>
-              </div>
+            <div className="max-w-2xl">
+              <h2 className="text-balance text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
+                Four grades, and a recommendation you can argue with
+              </h2>
+              <p className="mt-4 text-pretty text-sm leading-relaxed text-muted-foreground">
+                The grade measures how close the notice sits to your profile. The
+                recommendation weighs that against your eligibility rules — so a
+                perfect match you are not qualified for is still a skip, and it
+                will name the requirement that stopped it.
+              </p>
             </div>
+
+            <ul className="mt-12 flex flex-col border-t">
+              {SHORTLIST.map((row) => (
+                <li
+                  key={row.grade}
+                  className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 border-b py-5 sm:grid-cols-[auto_1fr_auto] sm:items-baseline sm:gap-x-6"
+                >
+                  <Badge
+                    variant={row.variant}
+                    className="h-6 w-7 shrink-0 justify-center self-start text-sm"
+                  >
+                    {row.grade}
+                  </Badge>
+                  <div className="min-w-0">
+                    <p className="text-pretty text-base font-medium">
+                      {row.title}
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {row.entity}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        {row.verdict}
+                      </span>{" "}
+                      · {row.note}
+                    </p>
+                  </div>
+                  {/* Both figures together, right-aligned and tabular, so the
+                      note stays a sentence rather than trailing a number. */}
+                  <div className="col-start-2 flex gap-4 sm:col-start-3 sm:flex-col sm:gap-1 sm:text-right">
+                    <p className="text-sm font-medium text-muted-foreground tabular-nums">
+                      Closes in {row.closes}
+                    </p>
+                    <p className="text-sm text-muted-foreground tabular-nums">
+                      Similarity {row.threshold}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <p className="mt-8 max-w-prose text-pretty text-sm leading-relaxed text-muted-foreground">
+              Where a notice does not state a requirement, the rule returns{" "}
+              <span className="font-medium text-warning">needs checking</span>{" "}
+              rather than a guess. Bidding documents are not parsed yet, so that
+              happens more often than it eventually will — and you are always
+              told which field it was.
+            </p>
           </div>
         </section>
 
-        {/* Close */}
+        {/* Close: what the next hour looks like, not the same button again. */}
         <section>
           <div className="mx-auto w-full max-w-6xl px-6 py-20 lg:px-10 lg:py-24">
-            <div className="grid items-end gap-x-14 gap-y-8 lg:grid-cols-12">
-              <div className="lg:col-span-7">
+            <div className="grid gap-x-14 gap-y-10 lg:grid-cols-12">
+              <div className="lg:col-span-5">
                 <h2 className="text-balance text-2xl font-semibold tracking-[-0.02em] sm:text-3xl">
                   Set up your profile once.
                 </h2>
@@ -373,17 +570,54 @@ function LandingPage() {
                   afternoon. After that the shortlist arrives on its own, every
                   morning, at the hour you choose.
                 </p>
+                <div className="mt-8">
+                  <Button
+                    size="lg"
+                    render={<Link to="/register" />}
+                    nativeButton={false}
+                  >
+                    Create account
+                    <ArrowRightIcon data-icon="inline-end" />
+                  </Button>
+                </div>
               </div>
-              <div className="lg:col-span-5 lg:justify-self-end">
-                <Button
-                  size="lg"
-                  render={<Link to="/register" />}
-                  nativeButton={false}
-                >
-                  Create account
-                  <ArrowRightIcon data-icon="inline-end" />
-                </Button>
-              </div>
+
+              <ol className="flex flex-col lg:col-span-7 lg:justify-self-end">
+                {[
+                  {
+                    title: "Describe what you build",
+                    body: "Services, past projects, sectors and the districts you work in. The matching reads this, so it is worth an hour.",
+                  },
+                  {
+                    title: "Set the rules you actually bid under",
+                    body: "Turnover floor, certifications held, years of experience, joint-venture terms.",
+                  },
+                  {
+                    title: "Choose who hears about it, and when",
+                    body: "Recipients, the digest hour in your timezone, and whether a strong match should interrupt the day.",
+                  },
+                ].map((step, index) => (
+                  <li
+                    key={step.title}
+                    className="grid grid-cols-[1.5rem_1fr] gap-x-4 border-t py-5 first:border-t-0 first:pt-0"
+                  >
+                    <span
+                      aria-hidden
+                      className="text-sm leading-6 font-medium text-muted-foreground tabular-nums"
+                    >
+                      {index + 1}
+                    </span>
+                    <div>
+                      <p className="text-sm leading-6 font-medium">
+                        {step.title}
+                      </p>
+                      <p className="mt-1 max-w-prose text-pretty text-sm leading-relaxed text-muted-foreground">
+                        {step.body}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </div>
           </div>
         </section>
@@ -391,11 +625,24 @@ function LandingPage() {
 
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-start justify-between gap-4 px-6 py-8 sm:flex-row sm:items-center lg:px-10">
-          <Logo size={22} />
-          <p className="text-xs text-muted-foreground">
-            Public procurement intelligence for Bangladesh and the multilateral
-            development banks.
-          </p>
+          <div className="flex flex-col gap-2">
+            <Logo size={22} />
+            <p className="text-xs text-muted-foreground">
+              Public procurement intelligence for Bangladesh and the multilateral
+              development banks.
+            </p>
+          </div>
+          <div className="flex items-center gap-4 text-sm">
+            <Link
+              to="/login"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Sign in
+            </Link>
+            <Link to="/register" className="font-medium text-primary hover:underline">
+              Create account
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

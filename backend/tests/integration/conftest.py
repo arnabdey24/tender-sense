@@ -58,6 +58,10 @@ async def reset_rate_limits() -> AsyncIterator[None]:
 
     Every test shares a client address. The limiters themselves are exercised
     deliberately in the rate-limiting tests.
+
+    Cooldowns are cleared with them, and for a sharper reason: the portal sync
+    cooldown is ten minutes long and deployment-wide, so one test pressing that
+    button would otherwise silence it for the rest of the run.
     """
     await _clear_rate_limits()
     yield
@@ -65,6 +69,8 @@ async def reset_rate_limits() -> AsyncIterator[None]:
 
 async def _clear_rate_limits() -> None:
     redis = await get_queue()
-    keys = [key async for key in redis.scan_iter("ratelimit:*")]
+    keys = [
+        key for prefix in ("ratelimit:*", "cooldown:*") async for key in redis.scan_iter(prefix)
+    ]
     if keys:
         await redis.delete(*keys)

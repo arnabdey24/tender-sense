@@ -17,8 +17,6 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Spinner } from "@/components/ui/spinner"
-import { useTriggerJob } from "@/features/admin/api"
 import {
   Table,
   TableBody,
@@ -28,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
+import { PortalSyncPanel } from "@/features/sources/PortalSync"
 import { SourceHealthBadge } from "@/features/sources/SourceHealthBadge"
 import {
   useAdminSources,
@@ -130,7 +129,6 @@ function SourceTable() {
 
 function OperatorControls() {
   const sources = useAdminSources(true)
-  const syncAll = useTriggerJob()
   const runSource = useRunSource()
   const checkSource = useCheckSource()
   const reparseSource = useReparseSource()
@@ -141,34 +139,6 @@ function OperatorControls() {
     <div className="flex flex-col gap-4">
       <ApiErrorAlert error={sources.error} />
 
-      {/*
-        The cron visits the portals four times a day, which leaves two moments
-        with no control for them: the first pull on a fresh deployment, where
-        waiting for 02:00 means an empty product, and the hour after a portal
-        publishes something you already know is there. Scraping every portal by
-        hand, one button at a time, was the only way to cover either.
-
-        It queues the same dispatch the cron calls — one job per portal on a
-        queue capped at one at a time, so this stays as polite to an old portal
-        as the schedule is.
-      */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-surface-sunken p-3 ring-1 ring-foreground/10">
-        <div className="min-w-0">
-          <p className="text-sm font-medium">Sync every portal now</p>
-          <p className="text-sm text-muted-foreground">
-            For a first pull, or when you need today&rsquo;s notices before the
-            next scheduled run at 02:00, 08:00, 14:00 or 20:00.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          disabled={syncAll.isPending}
-          onClick={() => syncAll.mutate("scrape_all_sources")}
-        >
-          {syncAll.isPending ? <Spinner /> : <RefreshCwIcon />}
-          Sync now
-        </Button>
-      </div>
       {sources.data?.map((source) => (
         <div
           key={source.id}
@@ -287,6 +257,16 @@ function SourcesSettingsPage() {
           caption="The tender pool is shared, so every portal here feeds every organization's matches. A portal marked degraded or down means notices may be missing from your feed."
         >
           <SourceTable />
+          {/*
+            Not an operator control, and no longer filed as one. The schedule
+            visits the portals four times a day, which leaves the two moments
+            that matter to a member with nothing to press: the first pull on a
+            deployment whose pool is still empty, and the hour after a portal
+            publishes something they already know is there. Neither person is
+            usually platform staff, and telling them to find someone who is was
+            the whole of the previous answer.
+          */}
+          <PortalSyncPanel className="mt-4" />
         </PageSection>
 
         {isSuperuser && (

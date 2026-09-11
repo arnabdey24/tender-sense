@@ -333,6 +333,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assistant/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capabilities */
+        get: operations["capabilities_api_v1_assistant_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Conversations */
+        get: operations["list_conversations_api_v1_assistant_conversations_get"];
+        put?: never;
+        /** Create Conversation */
+        post: operations["create_conversation_api_v1_assistant_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Conversation */
+        get: operations["get_conversation_api_v1_assistant_conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Conversation */
+        delete: operations["delete_conversation_api_v1_assistant_conversations__conversation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}/turns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn */
+        post: operations["turn_api_v1_assistant_conversations__conversation_id__turns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assistant/conversations/{conversation_id}/voice-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Voice Ticket */
+        post: operations["voice_ticket_api_v1_assistant_conversations__conversation_id__voice_ticket_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me": {
         parameters: {
             query?: never;
@@ -839,6 +926,42 @@ export interface paths {
         get: operations["list_sources_api_v1_sources_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sync Status
+         * @description Where each portal stands, and whether a sync can be started now.
+         */
+        get: operations["sync_status_api_v1_sources_sync_get"];
+        put?: never;
+        /**
+         * Sync Sources
+         * @description Pull every portal now.
+         *
+         *     Any signed-in member, deliberately, rather than platform staff only. A
+         *     deployment whose pool has never been filled shows an organization nothing at
+         *     all, and the person looking at that empty screen is exactly the one who
+         *     needs the button — telling them to find an operator, or to come back after
+         *     the next cron pass, is not an answer.
+         *
+         *     What it starts is the same work the schedule starts: one job per portal on a
+         *     queue that runs one at a time. A deployment-wide cooldown keeps ten
+         *     organizations from meaning ten times the traffic to a portal that has been
+         *     running since 2011. Pressing inside that window is answered with the wait,
+         *     not an error — see ``service.sync_sources``.
+         */
+        post: operations["sync_sources_api_v1_sources_sync_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1743,6 +1866,76 @@ export interface components {
             /** Rows */
             rows?: components["schemas"]["AiUsageRow"][];
         };
+        /** AnalysisRow */
+        AnalysisRow: {
+            /** Label */
+            label: string;
+            /** Value */
+            value?: number | null;
+            /** Baseline */
+            baseline?: number | null;
+            /**
+             * Detail
+             * @default
+             */
+            detail: string;
+            /** Status */
+            status?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+        };
+        /** AnalyzeInput */
+        AnalyzeInput: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "capabilities" | "eligibility" | "calculation" | "checklist" | "timeline" | "scenario";
+            /**
+             * Adjustment Percent
+             * @default 0
+             */
+            adjustment_percent: number;
+        };
+        /** Artifact */
+        Artifact: {
+            /** Id */
+            id: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "capabilities" | "eligibility" | "calculation" | "checklist" | "timeline" | "scenario";
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Rows */
+            rows?: components["schemas"]["AnalysisRow"][];
+            /** Formulas */
+            formulas?: string[];
+            /** Assumptions */
+            assumptions?: string[];
+            /** Sources */
+            sources?: components["schemas"]["Source"][];
+            /**
+             * Unit
+             * @default
+             */
+            unit: string;
+            /** Context Version */
+            context_version: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /**
          * AttributeType
          * @enum {string}
@@ -1757,6 +1950,20 @@ export interface components {
         Body_verify_recipient_api_v1_notifications_verify_recipient_post: {
             /** Token */
             token: string;
+        };
+        /** Capabilities */
+        Capabilities: {
+            /** Enabled */
+            enabled: boolean;
+            /** Voice Enabled */
+            voice_enabled: boolean;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "gemini" | "demo" | "unavailable";
+            /** Voice Max Seconds */
+            voice_max_seconds: number;
         };
         /** CatalogueAttribute */
         CatalogueAttribute: {
@@ -1857,6 +2064,57 @@ export interface components {
             complete: boolean;
             /** Weight */
             weight: number;
+        };
+        /** ConversationCreate */
+        ConversationCreate: {
+            /** Tender Id */
+            tender_id?: string | null;
+        };
+        /** ConversationDetail */
+        ConversationDetail: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Tender Id */
+            tender_id: string | null;
+            /** Title */
+            title: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Messages */
+            messages: components["schemas"]["MessageRead"][];
+        };
+        /** ConversationRead */
+        ConversationRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Tender Id */
+            tender_id: string | null;
+            /** Title */
+            title: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
         };
         /**
          * Decision
@@ -2326,6 +2584,42 @@ export interface components {
             org_slug: string;
             role: components["schemas"]["OrgRole"];
         };
+        /** MessageRead */
+        MessageRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Content */
+            content: string;
+            /** Status */
+            status: string;
+            /** Sources */
+            sources?: components["schemas"]["Source"][];
+            /** Artifacts */
+            artifacts?: components["schemas"]["Artifact"][];
+            /**
+             * Context Version
+             * @default
+             */
+            context_version: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** MessageResponse */
         MessageResponse: {
             /** Message */
@@ -2587,6 +2881,38 @@ export interface components {
              * Format: uuid
              */
             id: string;
+        };
+        /**
+         * PortalSyncState
+         * @description One portal, as the sync control needs to describe it.
+         *
+         *     ``last_run_at`` on its own cannot tell a waiting person whether anything is
+         *     happening — a timestamp from four hours ago looks the same whether a pass is
+         *     running right now or the portal has been silent since. So the run in flight
+         *     is reported separately from the last one that finished.
+         */
+        PortalSyncState: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Enabled */
+            enabled: boolean;
+            health: components["schemas"]["SourceHealth"];
+            /** Running */
+            running: boolean;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Success At */
+            last_success_at?: string | null;
+            last_status?: components["schemas"]["RunStatus"] | null;
+            /** Last Notices Added */
+            last_notices_added?: number | null;
         };
         /** PreviewCounts */
         PreviewCounts: {
@@ -3065,6 +3391,11 @@ export interface components {
             /** Errors */
             errors?: components["schemas"]["RuleValidationError"][];
         };
+        /**
+         * RunStatus
+         * @enum {string}
+         */
+        RunStatus: "running" | "succeeded" | "failed" | "partial";
         /** ScraperRunRead */
         ScraperRunRead: {
             /**
@@ -3166,6 +3497,17 @@ export interface components {
          * @enum {string}
          */
         Severity: "hard" | "soft";
+        /** Source */
+        Source: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Quote */
+            quote: string;
+            /** Url */
+            url?: string | null;
+        };
         /** SourceAdminRead */
         SourceAdminRead: {
             /**
@@ -3305,6 +3647,28 @@ export interface components {
              * Format: uuid
              */
             org_id: string;
+        };
+        /**
+         * SyncState
+         * @description What the sync control shows, and what pressing it did.
+         *
+         *     The same shape answers both the poll and the press, so the interface has one
+         *     thing to render rather than a status and a result that can disagree.
+         */
+        SyncState: {
+            /** Portals */
+            portals: components["schemas"]["PortalSyncState"][];
+            /** Running */
+            running: boolean;
+            /** Retry After Seconds */
+            retry_after_seconds: number;
+            /** Cooldown Seconds */
+            cooldown_seconds: number;
+            /**
+             * Queued
+             * @default []
+             */
+            queued: string[];
         };
         /**
          * TaxonomiesRead
@@ -3535,6 +3899,27 @@ export interface components {
             /** To Email */
             to_email: string;
         };
+        /** TurnInput */
+        TurnInput: {
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+            /** Text */
+            text: string;
+            /**
+             * Language
+             * @default auto
+             * @enum {string}
+             */
+            language: "auto" | "en" | "bn";
+            /** Page */
+            page?: string | null;
+            artifact?: components["schemas"]["AnalyzeInput"] | null;
+            /** Active Artifact */
+            active_artifact?: ("capabilities" | "eligibility" | "calculation" | "checklist" | "timeline" | "scenario") | null;
+        };
         /** UnreadCount */
         UnreadCount: {
             /** Unread */
@@ -3611,6 +3996,16 @@ export interface components {
         VerifyEmailRequest: {
             /** Token */
             token: string;
+        };
+        /** VoiceTicket */
+        VoiceTicket: {
+            /** Ticket */
+            ticket: string;
+            /**
+             * Expires In
+             * @default 30
+             */
+            expires_in: number;
         };
     };
     responses: never;
@@ -4052,6 +4447,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    capabilities_api_v1_assistant_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Capabilities"];
+                };
+            };
+        };
+    };
+    list_conversations_api_v1_assistant_conversations_get: {
+        parameters: {
+            query?: {
+                tender_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_conversation_api_v1_assistant_conversations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_api_v1_assistant_conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_conversation_api_v1_assistant_conversations__conversation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    turn_api_v1_assistant_conversations__conversation_id__turns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TurnInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    voice_ticket_api_v1_assistant_conversations__conversation_id__voice_ticket_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoiceTicket"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4964,6 +5569,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceRead"][];
+                };
+            };
+        };
+    };
+    sync_status_api_v1_sources_sync_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncState"];
+                };
+            };
+        };
+    };
+    sync_sources_api_v1_sources_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncState"];
                 };
             };
         };

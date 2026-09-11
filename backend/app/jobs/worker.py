@@ -167,5 +167,15 @@ class ScrapeWorkerSettings:
     max_jobs = 1
     job_timeout = 3600
     max_tries = 3
-    keep_result = 3600
+    #: Results are not kept, and that is load-bearing rather than tidy.
+    #:
+    #: Every scrape is deduplicated on a job id derived from the source, so that
+    #: pressing "run" twice does not send two passes at one portal. arq refuses
+    #: an id that is queued, running *or* still holding a stored result — so
+    #: while results were kept for an hour, a completed pass went on blocking
+    #: the next one, and both the operator's run button and the members' sync
+    #: quietly did nothing for the hour after every cron pass. Nothing reads
+    #: these results: what a run did is written to `scraper_runs` by
+    #: `tracked_job`, which is where the admin surfaces read it from.
+    keep_result = 0
     health_check_interval = 30

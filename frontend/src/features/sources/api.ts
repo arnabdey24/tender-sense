@@ -11,6 +11,8 @@ export type SourceRead = components["schemas"]["SourceRead"]
 export type SourceAdminRead = components["schemas"]["SourceAdminRead"]
 export type ScraperRun = components["schemas"]["ScraperRunRead"]
 export type SourceHealth = components["schemas"]["SourceHealth"]
+export type SyncState = components["schemas"]["SyncState"]
+export type PortalSyncState = components["schemas"]["PortalSyncState"]
 
 /**
  * Everyone sees the portals and their health — "where do these notices come
@@ -123,5 +125,48 @@ export function useReparseSource() {
       void queryClient.invalidateQueries({ queryKey: qk.admin.all() })
     },
     onError: (error) => reportFailure(error, "Could not queue the replay"),
+  })
+}
+
+/**
+ * Where the portals stand. Polled while a pass is in flight and left alone
+ * otherwise: a control that says "syncing" has to stop saying it by itself, but
+ * a settled one has nothing to watch and no reason to keep asking.
+ */
+export function useSyncState() {
+  return useQuery<SyncState, ApiError>({
+    queryKey: qk.tenders.sync(),
+    queryFn: () => unwrap(api.GET("/api/v1/sources/sync")),
+    refetchInterval: (query) => (query.state.data?.running ? 4000 : false),
+  })
+}
+
+/**
+ * Pull every portal now. Available to any member, because the person staring at
+ * an empty pool is rarely platform staff.
+ *
+ * A press inside the cooldown is not an error and is not reported as one — the
+ * server answers with the wait, and the button shows a countdown.
+ */
+export function useSyncSources() {
+  const queryClient = useQueryClient()
+  return useMutation<SyncState, ApiError, void>({
+    mutationFn: () => unwrap(api.POST("/api/v1/sources/sync")),
+    onSuccess: (state) => {
+      queryClient.setQueryData(qk.tenders.sync(), state)
+      void queryClient.invalidateQueries({ queryKey: qk.tenders.sources() })
+      if (state.queued.length) {
+        toast.add({
+          type: "success",
+          title:
+            state.queued.length === 1
+              ? "Syncing one portal"
+              : `Syncing ${state.queued.length} portals`,
+          description:
+            "Notices appear as each pass works through. This page follows along.",
+        })
+      }
+    },
+    onError: (error) => reportFailure(error, "Could not start the sync"),
   })
 }

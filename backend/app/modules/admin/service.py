@@ -127,21 +127,10 @@ async def enqueue_scrape(session: AsyncSession, source_id: UUID) -> str | None:
     passes over the same portal — which is exactly the impolite behaviour the
     adapter is careful to avoid.
     """
-    from app.jobs.queue import QUEUE_SCRAPE, get_queue
+    from app.jobs.tasks.scraping import enqueue_scrape_source
 
     source = await get_source(session, source_id)
-    try:
-        queue = await get_queue()
-        job = await queue.enqueue_job(
-            "scrape_source",
-            str(source.id),
-            _queue_name=QUEUE_SCRAPE,
-            _job_id=f"scrape:{source.id}",
-        )
-    except Exception as exc:  # pragma: no cover - Redis down must not 500
-        logger.warning("scrape_enqueue_failed", source=source.code, error=str(exc))
-        return None
-    return job.job_id if job else None
+    return await enqueue_scrape_source(source.id, source.code)
 
 
 async def probe_source(session: AsyncSession, source_id: UUID) -> tuple[str, bool, str | None]:

@@ -29,6 +29,7 @@ export const qk = {
       ["tenders", "facets", params] as const,
     detail: (id: string) => ["tenders", "detail", id] as const,
     sources: () => ["tenders", "sources"] as const,
+    sync: () => ["tenders", "sources", "sync"] as const,
   },
   matches: {
     all: () => ["matches"] as const,

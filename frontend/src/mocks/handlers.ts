@@ -12,6 +12,7 @@ import {
   profile,
   recipients,
   session,
+  syncState,
   taxonomies,
   user,
 } from "@/mocks/fixtures"
@@ -21,9 +22,20 @@ import {
  * override the cases they care about with `server.use(...)`.
  */
 export const handlers = [
-  http.get("*/api/v1/assistant/capabilities", () => HttpResponse.json({ enabled: true, voice_enabled: false, mode: "demo", voice_max_seconds: 600 })),
+  http.get("*/api/v1/assistant/capabilities", () =>
+    HttpResponse.json({
+      enabled: true,
+      voice_enabled: false,
+      mode: "demo",
+      voice_max_seconds: 600,
+    })
+  ),
   http.get("*/api/v1/assistant/conversations", () => HttpResponse.json([])),
   http.get("*/api/v1/health/live", () => HttpResponse.json({ status: "ok" })),
+  http.get("*/api/v1/sources/sync", () => HttpResponse.json(syncState)),
+  http.post("*/api/v1/sources/sync", () =>
+    HttpResponse.json({ ...syncState, queued: ["egp_bd", "wb"], running: true })
+  ),
 
   // Signed out by default: the silent refresh finds no cookie.
   http.post("*/api/v1/auth/refresh", () =>

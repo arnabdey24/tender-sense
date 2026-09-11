@@ -10,7 +10,7 @@ costs the portals nothing.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -210,17 +210,39 @@ class TestScopedAnalysis:
     """
 
     async def test_the_fan_out_narrows_to_the_organization_that_asked(self) -> None:
-        """`orgs_with_profiles` is what decides who a notice gets scored for."""
+        """`orgs_with_profiles` is what decides who a notice gets scored for.
+
+        The tenant is made here rather than borrowed from whatever the database
+        happens to hold. Reading ambient state passed on a developer's machine,
+        where a dozen organizations have accumulated, and failed on the first
+        clean database it met — which was a release, after the images were
+        built.
+        """
         from app.modules.matching.service import orgs_with_profiles
+        from app.modules.orgs.models import Organization
+        from app.modules.profiles.models import CompanyProfile
 
+        slug = f"scoped-{uuid4().hex[:12]}"
         async with session_scope() as session:
-            everyone = await orgs_with_profiles(session)
-            assert everyone, "the fixture pool should leave at least one tenant"
-            target = str(everyone[0][0].id)
+            org = Organization(name="Scoped Sync Tenant", slug=slug)
+            session.add(org)
+            await session.flush()
+            session.add(CompanyProfile(org_id=org.id, overview="Civil works."))
+            target = str(org.id)
 
-            scoped = await orgs_with_profiles(session, only_org_id=target)
+        try:
+            async with session_scope() as session:
+                everyone = await orgs_with_profiles(session)
+                assert target in {str(org.id) for org, _ in everyone}
 
-        assert [str(org.id) for org, _ in scoped] == [target]
+                scoped = await orgs_with_profiles(session, only_org_id=target)
+
+            assert [str(org.id) for org, _ in scoped] == [target]
+        finally:
+            async with session_scope() as session:
+                found = await session.get(Organization, UUID(target))
+                if found is not None:
+                    await session.delete(found)
 
     async def test_a_scoped_run_and_a_full_one_do_not_cancel_each_other(self) -> None:
         """Both are deduplicated per tender. Sharing one job id would let

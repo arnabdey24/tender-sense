@@ -65,6 +65,13 @@ class SyncState(BaseModel):
     """Seconds until a sync may be started. ``0`` means now."""
     cooldown_seconds: int
     """The configured gap, so the interface can say how long the wait will be."""
+    pool_size: int
+    """Notices held, across every portal.
+
+    Reported here so one request answers both "may I sync" and "is there
+    anything to sync for". Zero is the only emptiness a sync can fix: an
+    organization with a full pool and no matches has a profile or a rule
+    problem, and pulling the portals again would change nothing for it."""
     queued: list[str] = []
     """Portal codes this request put on the queue. Empty on a poll, and empty on
     a press that was refused or found every portal already running."""

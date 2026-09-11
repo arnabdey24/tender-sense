@@ -71,3 +71,48 @@ export function usePortalSync(): SyncControl {
     press: () => sync.mutate(),
   }
 }
+
+
+/**
+ * Start a pull, once, when the pool is empty and nothing else is happening.
+ *
+ * The case this exists for is a deployment nobody has filled yet: a new
+ * organization lands on a dashboard with nothing on it, and the honest next
+ * step is the one thing they cannot be expected to know to go and do. So it
+ * happens for them.
+ *
+ * Four guards, and each one is load-bearing:
+ *
+ * * **Only an empty pool.** A full pool and no matches is a profile or rules
+ *   problem; pulling the portals again would change nothing and would spend a
+ *   cooldown somebody else may need.
+ * * **Once per tab.** A module-level flag rather than component state, so
+ *   navigating back to the dashboard, or React remounting it, does not fire a
+ *   second time.
+ * * **Never while one is running or the cooldown is live.** The server would
+ *   refuse anyway; not asking is politer and keeps the toast honest.
+ * * **The cooldown is deployment-wide.** Ten people opening an empty dashboard
+ *   at nine in the morning produce one pull between them, not ten.
+ */
+let attemptedThisSession = false
+
+export function useAutoSyncEmptyPool(enabled = true): void {
+  const state = useSyncState()
+  const sync = useSyncSources()
+  const data = state.data
+
+  React.useEffect(() => {
+    if (!enabled || attemptedThisSession || !data) return
+    if (data.pool_size !== 0) return
+    if (data.running || data.retry_after_seconds > 0) return
+    if (sync.isPending) return
+
+    attemptedThisSession = true
+    sync.mutate()
+  }, [enabled, data, sync])
+}
+
+/** Test seam: forget that this tab has already tried. */
+export function resetAutoSync(): void {
+  attemptedThisSession = false
+}

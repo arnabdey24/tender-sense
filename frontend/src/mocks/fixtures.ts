@@ -246,6 +246,9 @@ export const syncState: SyncState = {
   running: false,
   retry_after_seconds: 0,
   cooldown_seconds: 600,
+  // A pool with notices in it: the default fixture is a working deployment, so
+  // nothing auto-syncs unless a test asks for an empty one.
+  pool_size: 146,
   queued: [],
   portals: [
     {

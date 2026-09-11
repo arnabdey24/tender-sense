@@ -10,7 +10,12 @@ import {
   LogOutIcon,
   SettingsIcon,
   TargetIcon,
-  WrenchIcon,
+  ActivityIcon,
+  Building2Icon,
+  DatabaseIcon,
+  ListChecksIcon,
+  SatelliteDishIcon,
+  SlidersHorizontalIcon,
   UserRoundIcon,
   UsersIcon,
 } from "lucide-react"
@@ -102,13 +107,26 @@ function NavCount({ kind }: { kind: CountKind }) {
   )
 }
 
-//: Platform staff only. Kept out of NAV_ITEMS so it never renders for a
-//: customer, who would only get a redirect from it anyway.
-const STAFF_NAV = {
-  title: "Operations",
-  to: "/admin",
-  icon: WrenchIcon,
-} as const
+/**
+ * The operations console, opened out rather than folded into one entry.
+ *
+ * It was a single "Operations" link whose six sections lived in a tab strip
+ * inside the page — two navigations for one thing, and the persistent one
+ * carried the least information. Section navigation belongs in the rail that
+ * is always on screen.
+ *
+ * Icons are flat and single-weight, like every other icon in the product. They
+ * are here to make a row findable at a glance in a list of thirteen, not to
+ * decorate it.
+ */
+const STAFF_NAV = [
+  { title: "Overview", to: "/admin", icon: ActivityIcon, exact: true },
+  { title: "Portals", to: "/admin/sources", icon: SatelliteDishIcon },
+  { title: "Tender pool", to: "/admin/pool", icon: DatabaseIcon },
+  { title: "Tenants", to: "/admin/tenants", icon: Building2Icon },
+  { title: "Jobs & mail", to: "/admin/jobs", icon: ListChecksIcon },
+  { title: "Limits", to: "/admin/limits", icon: SlidersHorizontalIcon },
+] as const
 
 function initials(name: string | undefined, email: string | undefined) {
   const source = name?.trim() || email || "?"
@@ -177,7 +195,13 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {NAV_GROUPS.map((group) => (
+        {/*
+          The workspace is per-organization, so an operator who belongs to none
+          was being shown seven links that all bounce to onboarding — an
+          invitation to invent a company in the tenant list they administer.
+          A rail should list what this person can do.
+        */}
+        {(activeOrg ? NAV_GROUPS : []).map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -207,16 +231,22 @@ export function AppSidebar() {
             <SidebarGroupLabel>Platform</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    tooltip={STAFF_NAV.title}
-                    isActive={pathname.startsWith(STAFF_NAV.to)}
-                    render={<Link to={STAFF_NAV.to} />}
-                  >
-                    <STAFF_NAV.icon />
-                    <span>{STAFF_NAV.title}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {STAFF_NAV.map((item) => (
+                  <SidebarMenuItem key={item.to}>
+                    <SidebarMenuButton
+                      tooltip={item.title}
+                      isActive={
+                        "exact" in item && item.exact
+                          ? pathname === item.to
+                          : pathname.startsWith(item.to)
+                      }
+                      render={<Link to={item.to} />}
+                    >
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

@@ -1,8 +1,7 @@
-import { createFileRoute, Link, Outlet, redirect } from "@tanstack/react-router"
+import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 
 import { PageHeader } from "@/components/layout/PageHeader"
 import { useAuthStore } from "@/lib/auth/store"
-import { cn } from "@/lib/utils"
 
 /**
  * The platform operator console.
@@ -21,28 +20,6 @@ export const Route = createFileRoute("/_app/admin")({
   component: AdminLayout,
 })
 
-type AdminPage = {
-  to:
-    | "/admin"
-    | "/admin/sources"
-    | "/admin/pool"
-    | "/admin/tenants"
-    | "/admin/jobs"
-    | "/admin/limits"
-  label: string
-  /** Overview is the section root, so every child would match it loosely. */
-  exact?: boolean
-}
-
-const PAGES: AdminPage[] = [
-  { to: "/admin", label: "Overview", exact: true },
-  { to: "/admin/sources", label: "Portals" },
-  { to: "/admin/pool", label: "Tender pool" },
-  { to: "/admin/tenants", label: "Tenants" },
-  { to: "/admin/jobs", label: "Jobs & mail" },
-  { to: "/admin/limits", label: "Limits" },
-]
-
 function AdminLayout() {
   return (
     <>
@@ -52,35 +29,11 @@ function AdminLayout() {
       />
 
       {/*
-        A rail of links rather than one page of stacked cards. The console had
-        grown three cards on a single route while source registration, the
-        tender pool, tenants and accounts had no screen at all, which is how an
-        operator ends up in psql for questions the API already answers.
+        The sections live in the sidebar now. A strip here repeated them, and
+        two navigations for one thing makes both less trustworthy — the rail is
+        the one that is always on screen, so it is the one that carries them.
       */}
-      <nav
-        aria-label="Operations sections"
-        className="-mb-px flex gap-1 overflow-x-auto border-b"
-      >
-        {PAGES.map((page) => (
-          <Link
-            key={page.to}
-            to={page.to}
-            activeOptions={{ exact: page.exact ?? false }}
-            className={cn(
-              "shrink-0 border-b-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors",
-              "hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            )}
-            activeProps={{
-              className: "border-primary text-foreground",
-              "aria-current": "page",
-            }}
-          >
-            {page.label}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="pt-6">
+      <div className="pt-2">
         <Outlet />
       </div>
     </>

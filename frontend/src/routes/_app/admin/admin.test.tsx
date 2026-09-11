@@ -91,6 +91,35 @@ describe("the operations console", () => {
     ).not.toBeInTheDocument()
   })
 
+  it("shows an operator the console sections, not a workspace they cannot open", async () => {
+    // Seven of eight sidebar links used to bounce an org-less operator to
+    // onboarding — an invitation to invent a company in the tenant list they
+    // are there to administer.
+    server.use(
+      http.get("*/api/v1/admin/overview", () => HttpResponse.json(OVERVIEW))
+    )
+
+    await renderRoute("/admin", { session: orglessStaffSession() })
+    await screen.findByRole("heading", { name: "Operations" })
+
+    expect(screen.getAllByRole("link", { name: /Portals/ }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole("link", { name: /Limits/ }).length).toBeGreaterThan(0)
+    expect(screen.queryAllByRole("link", { name: /^Dashboard/ })).toHaveLength(0)
+    expect(screen.queryAllByRole("link", { name: /^Pipeline/ })).toHaveLength(0)
+  })
+
+  it("keeps the workspace for an operator who is also a member", async () => {
+    server.use(
+      http.get("*/api/v1/admin/overview", () => HttpResponse.json(OVERVIEW))
+    )
+
+    await renderRoute("/admin", { session: staffSession() })
+    await screen.findByRole("heading", { name: "Operations" })
+
+    expect(screen.getAllByRole("link", { name: /^Dashboard/ }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole("link", { name: /Portals/ }).length).toBeGreaterThan(0)
+  })
+
   it("leads with the verdict, not the totals", async () => {
     server.use(
       http.get("*/api/v1/admin/overview", () => HttpResponse.json(OVERVIEW))
@@ -98,9 +127,8 @@ describe("the operations console", () => {
 
     await renderRoute("/admin", { session: staffSession() })
 
-    expect(
-      await screen.findByText("Nothing is failing right now")
-    ).toBeInTheDocument()
+    // The board states each subsystem's condition in words, never colour alone.
+    expect(await screen.findAllByText("Healthy")).not.toHaveLength(0)
   })
 
   it("says what is wrong when something is", async () => {
@@ -119,10 +147,8 @@ describe("the operations console", () => {
 
     await renderRoute("/admin", { session: staffSession() })
 
-    expect(await screen.findByText("Wants attention")).toBeInTheDocument()
-    expect(
-      screen.getByText(/1 portal not answering · 3 failed job runs/)
-    ).toBeInTheDocument()
+    expect(await screen.findByText("Failing")).toBeInTheDocument()
+    expect(screen.getByText(/egp_bd not answering/)).toBeInTheDocument()
   })
 
   it("does not count a source that is never scraped as a broken portal", async () => {

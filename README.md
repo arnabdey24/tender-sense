@@ -255,6 +255,7 @@ The VM then pulls those images rather than building on the box:
 
 ```bash
 RELEASE=v1.1.0 ./scripts/deploy.sh      # by hand, on the VM
+./scripts/email-doctor.sh               # why mail is not going out
 ```
 
 The Deploy workflow does the same thing over SSH once `DEPLOY_HOST` and its

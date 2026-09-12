@@ -72,20 +72,46 @@ curl -sS -X POST -H "Authorization: Bearer $STAFF_TOKEN" \
 
 ### Nobody is receiving email
 
+Start here. It is read-only, prints no secret, and answers the whole question
+in one pass:
+
 ```bash
-curl -sS -H "Authorization: Bearer $STAFF_TOKEN" \
-  https://$DOMAIN/api/v1/admin/email-outbox | jq '.[0:5]'
+./scripts/email-doctor.sh                 # on the VM, in DEPLOY_PATH
 ```
 
-The `last_error` on a row names the cause. In order of likelihood:
+The trap this exists for is that **none of the common causes produce an
+error**. The outbox row is written, the pump claims it, the transport reports
+success, and the message is swallowed by a sink or refused for a sender no
+receiver accepts. Every counter reads healthy, so "no `last_error` anywhere"
+rules nothing out — it is the expected symptom.
 
-1. **The relay rejects the credentials.** `SMTP_USER` / `SMTP_PASSWORD` are
+The console says the same thing: `/admin` shows a panel naming any
+configuration fault, and its mail tile separates *gave up* from *stuck
+mid-send* from *never configured to send*.
+
+In order of likelihood:
+
+1. **The deployment is not configured to send at all.** A sender on a reserved
+   domain (`.local`, `.test`, `.invalid`), or `SMTP_HOST` still pointing at a
+   development sink such as `mailpit`. Both discard mail and report success.
+   The shipped `.env.example`, deployed unchanged, has both. Section 3 of the
+   doctor output lists these; so does the console.
+2. **The relay rejects the credentials.** `SMTP_USER` / `SMTP_PASSWORD` are
    passed through by compose; confirm they reached the container with
-   `dc exec api printenv SMTP_HOST SMTP_USER`.
-2. **The relay rejects the sender.** `EMAIL_FROM` must be a domain whose SPF
-   record lists the relay. This is the single most common cause of mail that
-   sends successfully and is never delivered.
-3. **Nobody is a verified recipient.** An organization with no confirmed
+   `dc exec api printenv SMTP_HOST SMTP_USER`. Gmail needs a 16-character App
+   Password, not the account password.
+3. **The relay rejects the sender.** `EMAIL_FROM` must be a domain whose SPF
+   record lists the relay, and on Gmail an address the account is verified to
+   send as — otherwise Google rewrites it.
+4. **The links are dead even though the mail arrived.** `APP_URL` pointing at
+   `localhost` makes every verification and reset link unreachable, which gets
+   reported as "the email never worked".
+5. **A message was stranded by a restart.** A worker killed mid-send used to
+   leave its row in `sending` where nothing retried it, nothing listed it and
+   the retry button could not reach it. Workers restart on every deploy. Since
+   1.11.1 the pump reclaims these; `email_reclaimed_stalled` in the worker log
+   is it happening.
+6. **Nobody is a verified recipient.** An organization with no confirmed
    address receives nothing by design. Check
    `GET /api/v1/notification-recipients` as one of its admins.
 

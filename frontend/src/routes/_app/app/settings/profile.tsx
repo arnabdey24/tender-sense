@@ -161,15 +161,33 @@ function CapabilityForm({ profile }: { profile: Profile }) {
   )
 }
 
+/**
+ * Suggestions here matter more than they do on certifications, not less.
+ *
+ * A certification is checked by a rule that canonicalises what it is given, so
+ * a typo mostly survives. A service is *embedded* and every grade on the site
+ * is scored against it — "netwrk integration" becomes a facet that resembles
+ * nothing, silently dragging the profile's matches down with no error to read.
+ * The field that feeds the matcher was the one field with nothing to pick from.
+ */
 function ServicesCard({ profile }: { profile: Profile }) {
   const add = useAddService()
   const remove = useDeleteService()
+  const taxonomies = useTaxonomies()
   const [name, setName] = React.useState("")
+
+  // Do not re-offer what is already on the list.
+  const taken = new Set(
+    (profile.services ?? []).map((s) => s.name.trim().toLowerCase())
+  )
+  const suggestions = (taxonomies.data?.common_services ?? []).filter(
+    (item) => !taken.has(item.toLowerCase())
+  )
 
   return (
     <PageSection
       title="Services"
-      caption="Each service is matched separately, so a tender only has to fit one of them."
+      caption="Each service is matched separately, so a tender only has to fit one of them. Unlike certifications, the wording is read by the matcher — pick a suggestion where one fits."
     >
       <div className="flex flex-col gap-4">
         <form
@@ -189,7 +207,13 @@ function ServicesCard({ profile }: { profile: Profile }) {
             onChange={(e) => setName(e.target.value)}
             placeholder="Network integration"
             aria-label="Service name"
+            list="common-services"
           />
+          <datalist id="common-services">
+            {suggestions.map((item) => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
           <Button type="submit" disabled={add.isPending}>
             <PlusIcon data-icon="inline-start" />
             Add

@@ -142,6 +142,7 @@ class TaxonomiesRead(BaseModel):
 
     sectors: list[dict[str, str]]
     common_certifications: list[str]
+    common_services: list[str]
 
 
 class RematchResponse(BaseModel):

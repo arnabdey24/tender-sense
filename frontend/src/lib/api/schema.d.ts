@@ -4019,6 +4019,8 @@ export interface components {
             }[];
             /** Common Certifications */
             common_certifications: string[];
+            /** Common Services */
+            common_services: string[];
         };
         /**
          * TenderCreate

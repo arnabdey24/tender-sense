@@ -221,6 +221,26 @@ describe("capability profile", () => {
     )
   })
 
+  /**
+   * Certifications offered suggestions and services did not, which was exactly
+   * backwards: a certification is canonicalised by the rule that reads it, and
+   * a service is embedded and scored against every notice in the pool.
+   */
+  it("suggests services, minus the ones already on the profile", async () => {
+    await renderRoute("/app/settings/profile", { session: session() })
+
+    const field = await screen.findByLabelText("Service name")
+    expect(field).toHaveAttribute("list", "common-services")
+
+    const options = Array.from(
+      document.querySelectorAll("#common-services option")
+    ).map((option) => option.getAttribute("value"))
+
+    expect(options).toContain("Civil construction")
+    // Already listed on the profile, so re-offering it would be noise.
+    expect(options).not.toContain("Network integration")
+  })
+
   it("hides the whole section from a plain member", async () => {
     await renderRoute("/app/settings/profile", { session: memberSession() })
 

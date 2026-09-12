@@ -273,6 +273,9 @@ class TestProfile:
         body = response.json()
         assert {"value": "it", "label": "It"} in body["sectors"]
         assert "ISO 9001" in body["common_certifications"]
+        # Services feed the matcher directly, so the form suggests them too —
+        # a misspelled service is a facet that scores against nothing.
+        assert "Network integration" in body["common_services"]
 
 
 class TestMatches:

@@ -58,6 +58,69 @@ COMMON_CERTIFICATIONS = [
     "BASIS Membership",
 ]
 
+#: Starting points for the services list, grouped loosely by the sectors the
+#: matcher knows. Offered as suggestions only — a service is embedded and
+#: compared by meaning, so anything typed is valid.
+#:
+#: The suggestions exist because a service is not free text in effect even
+#: though it is in form: it is one of the vectors every grade is computed
+#: against, and "netwrk integration" scores against nothing. Certifications
+#: already had this list and services, which matter more to a grade, did not.
+COMMON_SERVICES = [
+    # it / telecom
+    "Software development",
+    "Web and mobile application development",
+    "Systems integration",
+    "Network integration",
+    "Data centre design and build",
+    "Cloud migration and managed hosting",
+    "Cybersecurity assessment",
+    "IT support and maintenance",
+    "ERP implementation",
+    "Data analytics and business intelligence",
+    "Fibre optic network installation",
+    # construction / works
+    "Civil construction",
+    "Road construction and maintenance",
+    "Bridge construction",
+    "Building construction",
+    "Electrical installation",
+    "Mechanical installation",
+    "Plumbing and sanitary works",
+    "Architectural design",
+    "Structural engineering design",
+    "Surveying and site investigation",
+    # energy / water / environment
+    "Solar power installation",
+    "Power distribution works",
+    "Water supply and distribution",
+    "Water treatment plant construction",
+    "Waste management",
+    "Environmental impact assessment",
+    "Irrigation works",
+    # supply and services
+    "Equipment supply and installation",
+    "Medical equipment supply",
+    "Laboratory equipment supply",
+    "Furniture supply",
+    "Vehicle supply and leasing",
+    "Printing and publishing",
+    "Facility management",
+    "Security services",
+    "Cleaning services",
+    "Catering services",
+    "Logistics and freight forwarding",
+    "Warehousing and distribution",
+    # consulting
+    "Management consulting",
+    "Feasibility study",
+    "Monitoring and evaluation",
+    "Training and capacity building",
+    "Financial audit",
+    "Procurement advisory",
+    "Project management consultancy",
+]
+
 
 async def get_or_create_profile(session: AsyncSession, org_id: UUID) -> CompanyProfile:
     """One profile per organization, created empty on first read.

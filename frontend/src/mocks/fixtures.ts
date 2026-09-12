@@ -239,6 +239,7 @@ export const taxonomies: TaxonomiesRead = {
     { value: "healthcare", label: "Healthcare" },
   ],
   common_certifications: ["ISO 9001", "ISO 27001"],
+  common_services: ["Network integration", "Civil construction"],
 }
 
 /** Portals settled: nothing running, nothing to wait for, both pulled today. */

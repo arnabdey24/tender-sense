@@ -92,6 +92,7 @@ async def read_taxonomies(_: CurrentOrg) -> TaxonomiesRead:
             for sector in Sector
         ],
         common_certifications=service.COMMON_CERTIFICATIONS,
+        common_services=service.COMMON_SERVICES,
     )
 
 

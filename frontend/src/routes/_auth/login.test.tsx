@@ -38,7 +38,7 @@ describe("/login", () => {
       http.post("/api/v1/auth/login", () =>
         HttpResponse.json(
           errorEnvelope("validation_error", "Some fields need attention.", [
-            { field: "password", message: "Password must be at least 8 characters" },
+            { field: "password", message: "Password must be at least 10 characters" },
           ]),
           { status: 422 }
         )
@@ -49,7 +49,7 @@ describe("/login", () => {
     await fillAndSubmit()
 
     expect(
-      await screen.findByText("Password must be at least 8 characters")
+      await screen.findByText("Password must be at least 10 characters")
     ).toBeInTheDocument()
     // A field-level error is shown inline, not as a banner.
     expect(screen.queryByTestId("api-error")).not.toBeInTheDocument()

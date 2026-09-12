@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { GoogleButton } from "@/features/auth/GoogleButton"
 import { PasswordStrength } from "@/features/auth/PasswordStrength"
+import { PASSWORD_MIN_LENGTH, PASSWORD_RULE } from "@/features/auth/password"
 import { ResendVerificationButton } from "@/features/auth/ResendVerificationButton"
 import { applyFieldErrors, unwrap } from "@/lib/api/call"
 import { api } from "@/lib/api/client"
@@ -36,7 +37,7 @@ const registerSchema = z.object({
     .trim()
     .min(1, "Email is required")
     .email("Enter a valid email"),
-  password: z.string().min(8, "Use at least 8 characters"),
+  password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_RULE),
 })
 
 type RegisterValues = z.infer<typeof registerSchema>
@@ -129,6 +130,7 @@ export function RegisterForm({
           form={form}
           name="password"
           label="Password"
+          description={PASSWORD_RULE}
           below={<PasswordStrength password={password ?? ""} />}
         >
           <Input type="password" autoComplete="new-password" />

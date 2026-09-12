@@ -15,6 +15,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { toast } from "@/components/ui/toast"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { PasswordStrength } from "@/features/auth/PasswordStrength"
+import { PASSWORD_MIN_LENGTH, PASSWORD_RULE } from "@/features/auth/password"
 import { applyFieldErrors, unwrap } from "@/lib/api/call"
 import { api } from "@/lib/api/client"
 import { isApiError, type ApiError } from "@/lib/api/errors"
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/_app/account")({
 
 const schema = z.object({
   current_password: z.string().optional(),
-  new_password: z.string().min(8, "Use at least 8 characters"),
+  new_password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_RULE),
 })
 
 export function ChangePasswordForm({
@@ -93,6 +94,7 @@ export function ChangePasswordForm({
           form={form}
           name="new_password"
           label="New password"
+          description={PASSWORD_RULE}
           below={<PasswordStrength password={newPassword ?? ""} />}
         >
           <Input type="password" autoComplete="new-password" />

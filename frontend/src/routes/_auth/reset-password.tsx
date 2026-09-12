@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { PasswordStrength } from "@/features/auth/PasswordStrength"
+import { PASSWORD_MIN_LENGTH, PASSWORD_RULE } from "@/features/auth/password"
 import { applyFieldErrors, unwrap } from "@/lib/api/call"
 import { api } from "@/lib/api/client"
 import { isApiError, type ApiError } from "@/lib/api/errors"
@@ -29,7 +30,7 @@ export const Route = createFileRoute("/_auth/reset-password")({
 
 const schema = z
   .object({
-    password: z.string().min(8, "Use at least 8 characters"),
+    password: z.string().min(PASSWORD_MIN_LENGTH, PASSWORD_RULE),
     confirm: z.string().min(1, "Confirm your new password"),
   })
   .refine((v) => v.password === v.confirm, {
@@ -87,6 +88,7 @@ export function ResetPasswordForm({ token }: { token?: string }) {
           form={form}
           name="password"
           label="New password"
+          description={PASSWORD_RULE}
           below={<PasswordStrength password={password ?? ""} />}
         >
           <Input type="password" autoComplete="new-password" />

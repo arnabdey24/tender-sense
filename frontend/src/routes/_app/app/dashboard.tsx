@@ -52,6 +52,17 @@ const SEGMENTS: {
   id: SegmentId
   label: string
   count: (s?: MatchStats) => number
+  /**
+   * What the tab's rows have in common, said whether or not there are any.
+   *
+   * The tabs each carried a sentence that only appeared when the queue was
+   * empty, so the one case where the label had to carry its own meaning —
+   * rows on screen, being acted on — was the case with no explanation at all.
+   * "Needs checking" is the one that could not survive that: a bare count
+   * beside those two words reads either as a system error or as a rejection,
+   * and it is neither.
+   */
+  caption: string
   empty: { title: string; description: string }
   query?: MatchQuery
 }[] = [
@@ -59,6 +70,8 @@ const SEGMENTS: {
     id: "new",
     label: "New today",
     count: (s) => s?.new_today ?? 0,
+    caption:
+      "Graded S or A since yesterday, and not already ruled out by your rules.",
     empty: {
       title: "Nothing new today",
       description: NOTHING_NEW_DESCRIPTION,
@@ -68,6 +81,7 @@ const SEGMENTS: {
     id: "closing",
     label: "Closing this week",
     count: (s) => s?.closing_within_7_days ?? 0,
+    caption: "Open matches whose deadline falls in the next seven days.",
     query: {
       deadline_within_days: 7,
       open_only: true,
@@ -84,6 +98,8 @@ const SEGMENTS: {
     id: "checking",
     label: "Needs checking",
     count: (s) => s?.by_eligibility?.needs_verification ?? 0,
+    caption:
+      "The notice did not state something one of your rules needs, so eligibility cannot be decided from it. Not a rejection — these are waiting on a person.",
     query: { eligibility: "needs_verification", open_only: true, page_size: 8 },
     empty: {
       title: "Nothing is waiting on a check",
@@ -95,6 +111,7 @@ const SEGMENTS: {
     id: "open",
     label: "All open",
     count: (s) => s?.total ?? 0,
+    caption: "Every graded tender that can still be bid on, best fit first.",
     query: {
       open_only: true,
       sort: "similarity",
@@ -217,6 +234,10 @@ function DashboardPage() {
             stats={stats.data}
             isLoading={stats.isPending}
           />
+
+          <p className="text-xs text-pretty text-muted-foreground">
+            {segment.caption}
+          </p>
 
           <ApiErrorAlert error={source.error} />
 

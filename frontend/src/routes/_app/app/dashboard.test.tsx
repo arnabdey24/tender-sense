@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event"
 import { HttpResponse, http } from "msw"
 import { afterEach, describe, expect, it, vi } from "vitest"
 
@@ -118,5 +119,31 @@ describe("the sync control on the daily surfaces", () => {
     expect(
       sync.compareDocumentPosition(onward) & Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy()
+  })
+})
+
+/**
+ * A count beside two words is not a definition. "Needs checking: 3" reads
+ * either as three broken records or as three rejections, and it is neither —
+ * it is three notices that did not say enough for a rule to decide, waiting
+ * on a person. Both misreadings stop somebody bidding.
+ */
+describe("what each dashboard queue actually contains", () => {
+  it("says it, with rows on screen rather than only when empty", async () => {
+    const user = userEvent.setup()
+    watchSync({ pool_size: 146 })
+
+    await renderRoute("/app/dashboard", { session: session() })
+
+    expect(
+      await screen.findByText(/Graded S or A since yesterday/)
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole("tab", { name: /Needs checking/ }))
+
+    expect(
+      await screen.findByText(/eligibility cannot be decided from it/)
+    ).toBeInTheDocument()
+    expect(screen.getByText(/Not a rejection/)).toBeInTheDocument()
   })
 })

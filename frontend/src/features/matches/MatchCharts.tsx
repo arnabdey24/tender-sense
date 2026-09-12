@@ -7,7 +7,9 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart"
 import { Skeleton } from "@/components/ui/skeleton"
+import { VerdictLegend } from "@/features/matches/VerdictLegend"
 import type { MatchStats } from "@/features/matches/api"
+import { DEFAULT_THRESHOLDS } from "@/features/matches/grades"
 
 /**
  * Two questions a count cannot answer.
@@ -49,16 +51,34 @@ const gradeConfig = {
 function Panel({
   title,
   hint,
+  headline,
+  action,
   children,
 }: {
   title: string
   hint: string
+  /**
+   * The panel's answer, in words, above the chart that supports it.
+   *
+   * "Grade mix" asked whether the profile is finding strong fits and then
+   * drew four bars of raw counts, leaving the reader to do the division. On
+   * nine matches those bars are a few pixels apart and the question goes
+   * unanswered by the thing that posed it.
+   */
+  headline?: React.ReactNode
+  action?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <section className="min-w-0 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
-      <h3 className="font-heading text-sm font-medium">{title}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-heading text-sm font-medium">{title}</h3>
+        {action}
+      </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
+      {headline ? (
+        <p className="mt-2 text-sm font-medium tabular-nums">{headline}</p>
+      ) : null}
       <div className="mt-3">{children}</div>
     </section>
   )
@@ -91,6 +111,10 @@ export function MatchCharts({
     fill: grade.fill,
     count: stats?.by_grade?.[grade.key] ?? 0,
   }))
+  const graded = grades.reduce((sum, grade) => sum + grade.count, 0)
+  const strong = grades
+    .filter((grade) => grade.label === "S" || grade.label === "A")
+    .reduce((sum, grade) => sum + grade.count, 0)
 
   // Every bucket empty means there is nothing to describe, and an axis with
   // six zeroes on it describes nothing.
@@ -139,6 +163,24 @@ export function MatchCharts({
       <Panel
         title="Grade mix"
         hint="Whether the capability profile is finding strong fits at all."
+        headline={
+          graded === 0 ? (
+            "Nothing graded yet"
+          ) : (
+            <>
+              {strong} of {graded} are S or A{" "}
+              <span className="font-normal text-muted-foreground">
+                ({Math.round((strong / graded) * 100)}%)
+              </span>
+            </>
+          )
+        }
+        action={
+          <VerdictLegend
+            thresholds={DEFAULT_THRESHOLDS}
+            className="-mt-1 -mr-1.5 text-muted-foreground"
+          />
+        }
       >
         <ChartContainer config={gradeConfig} className="aspect-auto h-40 w-full">
           <BarChart

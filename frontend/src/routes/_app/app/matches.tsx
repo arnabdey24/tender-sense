@@ -7,11 +7,13 @@ import { Paginator } from "@/components/layout/Paginator"
 import { usePersistentState } from "@/hooks/use-persistent-state"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { MatchList } from "@/features/matches/MatchList"
+import { VerdictLegend } from "@/features/matches/VerdictLegend"
 import {
   useMatchStats,
   useMatches,
   type MatchQuery,
 } from "@/features/matches/api"
+import { thresholdsFrom } from "@/features/matches/grades"
 import { TenderFilterSelect } from "@/features/tenders/TenderFilterSelect"
 
 
@@ -203,6 +205,14 @@ function MatchesPage() {
               </button>
             </>
           )}
+
+          {/* Pushed to the end of the row the counts live on: reference text,
+              reachable from the page that asks the reader to filter by a
+              vocabulary nothing on screen defines. */}
+          <VerdictLegend
+            thresholds={thresholdsFrom(matches.data?.items ?? [])}
+            className="-my-1 ml-auto text-muted-foreground"
+          />
         </div>
 
         <ApiErrorAlert error={matches.error} />

@@ -29,6 +29,13 @@ x-backend-env: &backend-env
   AI_PROVIDER: ${AI_PROVIDER:-gemini}
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
   AI_DAILY_TOKEN_BUDGET: ${AI_DAILY_TOKEN_BUDGET:-2000000}
+  # The throughput of the whole pipeline, not a safety valve. One limiter per
+  # process, and a single `process_tender` spends about six requests against it
+  # — extraction, one per tender chunk, and one per explanation — so a job at 12
+  # rpm sits five minutes holding a worker slot it is not using. Raise it to
+  # whatever the deployment's model key actually allows.
+  AI_REQUESTS_PER_MINUTE: ${AI_REQUESTS_PER_MINUTE:-12}
+  AI_MAX_CONCURRENCY: ${AI_MAX_CONCURRENCY:-5}
   ASSISTANT_ENABLED: ${ASSISTANT_ENABLED:-true}
   ASSISTANT_VOICE_ENABLED: ${ASSISTANT_VOICE_ENABLED:-false}
   ASSISTANT_MODEL: ${ASSISTANT_MODEL:-gemini-3.1-flash-lite}

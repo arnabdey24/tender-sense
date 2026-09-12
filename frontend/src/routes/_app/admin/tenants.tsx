@@ -1,10 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import * as React from "react"
-import {
-  Building2Icon,
-  SearchIcon,
-  UsersIcon,
-} from "lucide-react"
+import { Building2Icon, SearchIcon, UsersIcon } from "lucide-react"
 
 import { ConsoleSection } from "@/components/layout/ConsoleSection"
 import { Badge } from "@/components/ui/badge"
@@ -63,7 +59,9 @@ function Organizations({ q }: { q: string }) {
       <TableHeader>
         <TableRow>
           <TableHead>Organization</TableHead>
-          <TableHead numeric className="w-24">People</TableHead>
+          <TableHead numeric className="w-24">
+            People
+          </TableHead>
           <TableHead className="w-32">Last decision</TableHead>
           <TableHead className="w-28">Joined</TableHead>
           <TableHead className="w-28">State</TableHead>
@@ -150,24 +148,43 @@ function Accounts({ q }: { q: string }) {
           const self = user.id === me?.id
           return (
             <TableRow key={user.id}>
-              <TableCell>
-                <div className="font-medium">{user.full_name}</div>
-                <div className="text-xs text-muted-foreground">
+              {/*
+                `max-w-0` is what makes truncation work inside a fixed table:
+                without it the cell sizes to its content and one unbroken
+                string — a name somebody pasted a keyboard into — pushes every
+                other column off the page. The full value stays reachable as a
+                tooltip rather than being lost.
+              */}
+              <TableCell className="max-w-0">
+                <div className="truncate font-medium" title={user.full_name}>
+                  {user.full_name}
+                </div>
+                <div
+                  className="truncate text-xs text-muted-foreground"
+                  title={user.email}
+                >
                   {user.email}
                   {!user.email_verified && " · unverified"}
                 </div>
               </TableCell>
-              <TableCell className="text-sm">
-                {user.organizations?.length
-                  ? user.organizations.join(", ")
-                  : "—"}
+              <TableCell className="max-w-0 text-sm">
+                <div
+                  className="truncate"
+                  title={user.organizations?.join(", ") || undefined}
+                >
+                  {user.organizations?.length
+                    ? user.organizations.join(", ")
+                    : "—"}
+                </div>
               </TableCell>
               <TableCell className="text-sm text-muted-foreground">
                 {user.last_login_at ? timeAgo(user.last_login_at) : "Never"}
               </TableCell>
               <TableCell>
                 <div className="flex items-center justify-end gap-2">
-                  {user.is_superuser && <Badge variant="secondary">Staff</Badge>}
+                  {user.is_superuser && (
+                    <Badge variant="secondary">Staff</Badge>
+                  )}
                   {!user.is_active && (
                     <Badge variant="destructive">Suspended</Badge>
                   )}
@@ -181,7 +198,9 @@ function Accounts({ q }: { q: string }) {
                     size="sm"
                     variant="outline"
                     disabled={self || update.isPending}
-                    title={self ? "You cannot change your own access" : undefined}
+                    title={
+                      self ? "You cannot change your own access" : undefined
+                    }
                     onClick={() =>
                       update.mutate({
                         userId: user.id,
@@ -195,7 +214,9 @@ function Accounts({ q }: { q: string }) {
                     size="sm"
                     variant="ghost"
                     disabled={self || update.isPending}
-                    title={self ? "You cannot change your own access" : undefined}
+                    title={
+                      self ? "You cannot change your own access" : undefined
+                    }
                     onClick={() =>
                       update.mutate({
                         userId: user.id,

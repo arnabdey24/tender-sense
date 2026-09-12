@@ -1081,6 +1081,43 @@ turnover and certifications are worth 20 points between them and produce none.
 A profile can score 20 and match nothing, which is why the warning names a
 score rather than claiming the profile is empty.
 
+**A backlog must not starve the schedule.** *(planned)*
+
+Found in production: invitations and a verification email sat `pending` with
+zero attempts and no error for over an hour, while `j_ongoing=10` and a
+`process_tender` backlog drained slowly behind them. Nothing had failed. The
+pump had simply never run.
+
+arq pulls from a Redis sorted set **scored by enqueue time, lowest first**. A
+cron job is enqueued at the moment it fires, so its score is *now* — behind
+every bulk job queued minutes or hours earlier. A persistent backlog therefore
+delays `pump_email_outbox`, `digest_dispatcher`, `deadline_reminder_sweep` and
+`age_match_urgency` indefinitely, and the delay is invisible: no failure, no
+retry, no error column. The outbox looks healthy because it is healthy; nobody
+is reading it.
+
+Raising `AI_REQUESTS_PER_MINUTE` shortens the backlog but does not change the
+ordering, so it treats the symptom. Two directions worth weighing:
+
+* **A schedule queue with its own worker.** `worker-scrape` already proves the
+  pattern — a second queue, `max_jobs` of its own, and the crons registered
+  there instead. Bulk work then cannot delay a cron at all, at the cost of a
+  fourth container and a second place to look when something is not running.
+* **Defer bulk work instead.** Enqueue `process_tender` with a small
+  `_defer_by`, so a cron firing now always outscores work queued for later.
+  One line, no new container, but it is a trick played on the scoring rule
+  rather than a statement of intent, and the next person to read it would have
+  to rediscover why.
+
+The first is the honest one and matches how scraping is already isolated.
+
+Recorded alongside it: `AI_REQUESTS_PER_MINUTE` and `AI_MAX_CONCURRENCY` were
+absent from the `x-backend-env` anchor, so setting them in `.env` did nothing
+and the deployment ran on the free-tier default of 12 no matter what the file
+said. They are in the anchor now. The same trap as `POSTGRES_HOST`: compose
+passes an explicit list, and a variable not on it simply does not exist inside
+the container.
+
 ## Verification
 - **Unit**: rule engine table-driven per operator/type incl. unknown → verify and FX; grading + recommendation matrix; urgency at timezone boundaries (time-machine); score aggregation with synthetic vectors; adapter `normalize()` against golden fixtures (`tests/fixtures/egp_bd/*.html`, `worldbank/*.json`); template snapshots; refresh rotation/reuse.
 - **Integration** (testcontainers `pgvector/pgvector:pg17` + Redis, ARQ burst mode, `FakeAIClient` with hash-seeded deterministic embeddings): register→verify→org→invite→accept; profile→rules→seed→feed grades; bid decision → reminder ledger + outbox; digest dispatcher timezone; org isolation.

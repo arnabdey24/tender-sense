@@ -420,6 +420,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai/research-company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft a profile from a company website
+         * @description Read a company's website and draft its profile for the user to correct.
+         *
+         *     The provider fetches the page, not this process — a server-side fetcher
+         *     aimed at a user-supplied address is a request-forgery hole pointed at our
+         *     own network, and the feature does not need one.
+         *
+         *     Ten an hour. A person setting up types one address, maybe three while they
+         *     find the right one; a hundred is somebody using our key to read the web.
+         */
+        post: operations["research_api_v1_ai_research_company_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai/improve-text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rewrite one profile field
+         * @description Tighten a sentence the user wrote, keeping every fact in it.
+         */
+        post: operations["improve_text_api_v1_ai_improve_text_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/me": {
         parameters: {
             query?: never;
@@ -2209,6 +2256,67 @@ export interface components {
             new_password: string;
         };
         /**
+         * CompanyResearch
+         * @description A draft profile read off a company's website.
+         *
+         *     Every field is optional and bounded. The caller shows this in a form; it is
+         *     never written straight to the profile.
+         */
+        CompanyResearch: {
+            /**
+             * Reachable
+             * @description False when the page could not be read. All other fields empty.
+             */
+            reachable: boolean;
+            /**
+             * Company Name
+             * @default
+             */
+            company_name: string;
+            /**
+             * Country
+             * @default
+             */
+            country: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Overview
+             * @default
+             */
+            overview: string;
+            /** Sectors */
+            sectors?: components["schemas"]["Sector"][];
+            /** Geographies */
+            geographies?: string[];
+            /** Keywords */
+            keywords?: string[];
+            /** Services */
+            services?: string[];
+            /** Certifications */
+            certifications?: string[];
+            /** Annual Turnover */
+            annual_turnover?: number | null;
+            /**
+             * Turnover Currency
+             * @default
+             */
+            turnover_currency: string;
+            /** Years In Business */
+            years_in_business?: number | null;
+            /** Employee Count */
+            employee_count?: number | null;
+            /**
+             * Evidence
+             * @description Verbatim quote supporting the overview.
+             * @default
+             */
+            evidence: string;
+        };
+        /**
          * CompletenessRead
          * @description What is filled in, and what to nudge the user towards next.
          */
@@ -3527,6 +3635,28 @@ export interface components {
             /** Job Id */
             job_id?: string | null;
         };
+        /** ResearchRequest */
+        ResearchRequest: {
+            /** Url */
+            url: string;
+        };
+        /**
+         * ResearchResponse
+         * @description The draft, and where it came from, for the form to show and the user to edit.
+         */
+        ResearchResponse: {
+            draft: components["schemas"]["CompanyResearch"];
+            /**
+             * Retrieved Url
+             * @default
+             */
+            retrieved_url: string;
+            /**
+             * Model
+             * @default
+             */
+            model: string;
+        };
         /** ResetPasswordRequest */
         ResetPasswordRequest: {
             /** Token */
@@ -4430,6 +4560,28 @@ export interface components {
              */
             expires_in: number;
         };
+        /**
+         * WritingField
+         * @description Which field is being rewritten. Each gets one line of guidance.
+         * @enum {string}
+         */
+        WritingField: "overview" | "org_description" | "project_description";
+        /** WritingRequest */
+        WritingRequest: {
+            field: components["schemas"]["WritingField"];
+            /** Text */
+            text: string;
+        };
+        /** WritingResponse */
+        WritingResponse: {
+            /** Text */
+            text: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -5071,6 +5223,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VoiceTicket"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    research_api_v1_ai_research_company_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    improve_text_api_v1_ai_improve_text_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WritingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WritingResponse"];
                 };
             };
             /** @description Validation Error */

@@ -38,6 +38,7 @@ import {
 } from "@/features/profile/api"
 import { formatDate, formatValue } from "@/features/tenders/format"
 import { countryName } from "@/lib/data/locale"
+import { ImproveButton } from "@/features/aiassist/ImproveButton"
 import { RhfField } from "@/lib/forms/RhfField"
 import { useZodForm } from "@/lib/forms/useZodForm"
 
@@ -117,6 +118,8 @@ function ProjectDialog({
     schema,
     defaultValues: formValues(profile, project),
   })
+
+  const description = form.watch("description")
 
   // Reopening after a cancelled edit should show what is stored, not the
   // half-finished text the abandoned attempt left behind.
@@ -201,6 +204,15 @@ function ProjectDialog({
               name="description"
               label="Scope"
               description="Compared against the substance of each notice, so prose beats a list of nouns."
+              below={
+                <ImproveButton
+                  field="project_description"
+                  value={description ?? ""}
+                  onChange={(next) =>
+                    form.setValue("description", next, { shouldDirty: true })
+                  }
+                />
+              }
             >
               <Textarea
                 rows={3}

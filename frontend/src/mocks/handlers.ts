@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw"
 
 import {
+  companyResearch,
   completeness,
   decisions,
   errorEnvelope,
@@ -231,6 +232,23 @@ export const handlers = [
   http.post("*/api/v1/profile/rematch", () =>
     HttpResponse.json({ enqueued: true, job_id: "job-1", reason: "manual" })
   ),
+
+  http.post("*/api/v1/ai/research-company", async ({ request }) => {
+    const { url } = (await request.json()) as { url: string }
+    // Mirrors the backend: an address that cannot be read is an error, never
+    // a confidently invented company.
+    if (url.includes("unreadable") || url.includes(".invalid")) {
+      return HttpResponse.json(
+        errorEnvelope("research_failed", "We could not read that website."),
+        { status: 502 }
+      )
+    }
+    return HttpResponse.json({ ...companyResearch, retrieved_url: url })
+  }),
+  http.post("*/api/v1/ai/improve-text", async ({ request }) => {
+    const { text } = (await request.json()) as { text: string }
+    return HttpResponse.json({ text: `${text.trim()} (tightened)`, note: "" })
+  }),
 
   http.get("*/api/v1/invitations/:token", () =>
     HttpResponse.json(invitationPreview)

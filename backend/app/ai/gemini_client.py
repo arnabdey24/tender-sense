@@ -41,6 +41,7 @@ from app.ai.base import (
     AIError,
     EmbeddingResult,
     GenerationResult,
+    GroundedResult,
     Usage,
     document_text,
     query_text,
@@ -237,6 +238,82 @@ class GeminiClient:
             ),
         )
 
+    async def generate_grounded[M: BaseModel](
+        self,
+        *,
+        prompt: str,
+        schema: type[M],
+        urls: list[str],
+        system_instruction: str | None = None,
+        temperature: float = 0.0,
+        max_output_tokens: int | None = None,
+    ) -> GroundedResult[M]:
+        """Structured generation that may read the web pages it is given.
+
+        Two things here were learned the hard way against the live API and are
+        the reason this is not just `generate_structured` with a tool bolted on.
+
+        **`max_output_tokens` is mandatory, not a tuning knob.** Left unset,
+        `gemini-3.8-flash` re-fetched one URL twenty-four times and terminated
+        with `TOO_MANY_TOOL_CALLS` and an empty body — a total failure, several
+        seconds of latency, and a bill. Capped, the same call returns first
+        time. The default below is generous for the schemas we ask for and
+        still well inside the loop.
+
+        **The retrieval status is the only honest answer to "did it read the
+        page".** The provider reports it per URL, out of band from anything the
+        model wrote, and it is the one signal a model cannot talk itself into.
+        Asked about a domain that does not resolve, a model will write a
+        plausible company from the name; this refuses to pass that on.
+        """
+        config = types.GenerateContentConfig(
+            tools=[types.Tool(url_context=types.UrlContext())],
+            response_mime_type="application/json",
+            response_schema=schema,
+            temperature=temperature,
+            system_instruction=system_instruction,
+            max_output_tokens=max_output_tokens or settings.research_max_output_tokens,
+        )
+
+        started = time.perf_counter()
+        async with self._semaphore, self._limiter:
+            try:
+                response = await self._client.aio.models.generate_content(
+                    model=settings.research_model, contents=prompt, config=config
+                )
+            except Exception as exc:
+                raise AIError(f"Grounded generation failed: {exc}") from exc
+
+        candidates = response.candidates or []
+        candidate = candidates[0] if candidates else None
+        finish = getattr(candidate, "finish_reason", None)
+        if finish is not None and str(finish).endswith("TOO_MANY_TOOL_CALLS"):
+            raise AIError("The model kept re-reading the page and gave up.")
+
+        retrieved = _retrieved_urls(candidate)
+
+        parsed = response.parsed
+        if parsed is None:
+            raise AIError("Model returned no parseable JSON.")
+        if not isinstance(parsed, schema):
+            try:
+                parsed = schema.model_validate(parsed)
+            except Exception as exc:
+                raise AIError(f"Model output did not match {schema.__name__}: {exc}") from exc
+
+        usage = response.usage_metadata
+        return GroundedResult(
+            parsed=parsed,
+            raw_text=response.text or "",
+            retrieved_urls=retrieved,
+            usage=Usage(
+                model=settings.research_model,
+                tokens_in=getattr(usage, "prompt_token_count", 0) or 0,
+                tokens_out=getattr(usage, "candidates_token_count", 0) or 0,
+                latency_ms=int((time.perf_counter() - started) * 1000),
+            ),
+        )
+
     async def healthcheck(self) -> bool:
         try:
             await self._embed(["ping"], task_type="RETRIEVAL_QUERY")
@@ -244,6 +321,24 @@ class GeminiClient:
             logger.warning("gemini_healthcheck_failed", error=str(exc))
             return False
         return True
+
+
+def _retrieved_urls(candidate: Any) -> list[str]:
+    """URLs the provider reports it actually fetched, deduplicated in order.
+
+    A single page routinely appears several times when the model re-reads it,
+    and only a `SUCCESS` counts — an `ERROR` entry means the fetch failed, and
+    a failed fetch beside confident prose is the case this exists to catch.
+    """
+    metadata = getattr(candidate, "url_context_metadata", None)
+    entries = getattr(metadata, "url_metadata", None) or []
+    seen: list[str] = []
+    for entry in entries:
+        status = str(getattr(entry, "url_retrieval_status", ""))
+        url = getattr(entry, "retrieved_url", "") or ""
+        if url and status.endswith("SUCCESS") and url not in seen:
+            seen.append(url)
+    return seen
 
 
 def _token_count(response: Any) -> int:

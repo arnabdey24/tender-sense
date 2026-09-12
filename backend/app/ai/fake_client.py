@@ -19,10 +19,12 @@ import math
 import re
 import time
 from typing import Any, cast
+from urllib.parse import urlparse
 
 from pydantic import BaseModel
 
-from app.ai.base import AIError, EmbeddingResult, GenerationResult, Usage
+from app.ai.base import AIError, EmbeddingResult, GenerationResult, GroundedResult, Usage
+from app.ai.research import CompanyResearch
 from app.ai.schemas import (
     FieldEvidence,
     MatchExplanation,
@@ -30,6 +32,7 @@ from app.ai.schemas import (
     Sector,
     TenderAttributes,
 )
+from app.ai.writing import WritingSuggestion
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
@@ -337,6 +340,65 @@ def fake_explanation(prompt: str) -> MatchExplanation:
     )
 
 
+#: Domains the fake treats as unreachable, so the "we could not read it" path
+#: is exercised offline. A real unresolvable domain is the case where a model
+#: is most tempted to invent a company from the name alone.
+FAKE_UNREACHABLE_MARKERS = ("unreachable", "does-not-exist", ".invalid")
+
+
+def fake_research(url: str) -> tuple[CompanyResearch, list[str]]:
+    """A deterministic company draft, and the URLs "fetched" to get it.
+
+    Derived from the host so a test can assert on a stable value, and empty
+    for a host that is meant to be unreachable — the caller must be able to
+    prove it refuses a draft in that case rather than passing one on.
+    """
+    host = urlparse(url if "//" in url else f"https://{url}").hostname or url
+    if any(marker in url for marker in FAKE_UNREACHABLE_MARKERS):
+        return CompanyResearch(reachable=False), []
+
+    stem = host.removeprefix("www.").split(".")[0].replace("-", " ").title() or "Acme"
+    sector = _pick([Sector.CONSTRUCTION, Sector.IT, Sector.ENERGY], host)
+    return (
+        CompanyResearch(
+            reachable=True,
+            company_name=f"{stem} Ltd",
+            country="BD",
+            description=f"{stem} Ltd delivers {sector.value} projects for public sector clients.",
+            overview=(
+                f"{stem} Ltd is a {sector.value} contractor working for government "
+                "and donor-funded clients. It delivers design, construction and "
+                "maintenance under open tender."
+            ),
+            sectors=[sector],
+            geographies=["BD"],
+            keywords=[sector.value, "public sector"],
+            services=[f"{sector.value.title()} works", "Maintenance"],
+            certifications=["ISO 9001"],
+            years_in_business=12,
+            employee_count=140,
+            evidence=f"{stem} Ltd has delivered projects since 2014.",
+        ),
+        [url],
+    )
+
+
+def fake_writing(prompt: str) -> WritingSuggestion:
+    """Echo the draft back, tightened in a visible, deterministic way.
+
+    The marker matters: a test asserting the field changed must be able to
+    tell an actual rewrite from the draft being handed straight back, and so
+    must a developer running the stack offline.
+    """
+    draft = ""
+    if "<draft>" in prompt and "</draft>" in prompt:
+        draft = prompt.split("<draft>", 1)[1].split("</draft>", 1)[0].strip()
+    if not draft:
+        return WritingSuggestion(text="", note="Nothing to improve.")
+    tightened = " ".join(draft.split())
+    return WritingSuggestion(text=f"{tightened} (tightened)", note="")
+
+
 class FakeAIClient:
     """Implements :class:`~app.ai.base.AIClient` with no I/O."""
 
@@ -402,6 +464,8 @@ class FakeAIClient:
             parsed: BaseModel = fake_attributes(prompt)
         elif schema is MatchExplanation:
             parsed = fake_explanation(prompt)
+        elif schema is WritingSuggestion:
+            parsed = fake_writing(prompt)
         else:  # pragma: no cover - a new schema must add a branch here
             parsed = schema()
 
@@ -412,6 +476,38 @@ class FakeAIClient:
                 model=self.generation_model,
                 tokens_in=len(_tokens(prompt)),
                 tokens_out=64,
+                latency_ms=1,
+            ),
+        )
+
+    async def generate_grounded[M: BaseModel](
+        self,
+        *,
+        prompt: str,
+        schema: type[M],
+        urls: list[str],
+        system_instruction: str | None = None,
+        temperature: float = 0.0,
+        max_output_tokens: int | None = None,
+    ) -> GroundedResult[M]:
+        self.calls.append({"op": "grounded", "schema": schema.__name__, "urls": list(urls)})
+        if self.fail_generation:
+            raise AIError("FakeAIClient is configured to fail generation.")
+
+        if schema is CompanyResearch:
+            draft, retrieved = fake_research(urls[0] if urls else "")
+            parsed: BaseModel = draft
+        else:  # pragma: no cover - a new grounded schema must add a branch
+            parsed, retrieved = schema(), list(urls)
+
+        return GroundedResult(
+            parsed=cast("M", parsed),
+            raw_text=parsed.model_dump_json(),
+            retrieved_urls=retrieved,
+            usage=Usage(
+                model=self.generation_model,
+                tokens_in=len(_tokens(prompt)),
+                tokens_out=128,
                 latency_ms=1,
             ),
         )

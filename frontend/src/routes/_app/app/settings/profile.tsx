@@ -13,6 +13,11 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
+import { AutoSetup } from "@/features/aiassist/AutoSetup"
+import { ImproveButton } from "@/features/aiassist/ImproveButton"
+import type { CompanyResearch } from "@/features/aiassist/api"
+import { takeProfileDraft } from "@/features/aiassist/draft"
+import { useCurrentOrg } from "@/features/org/api"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { PastProjectsCard } from "@/features/profile/PastProjectsCard"
 import {
@@ -56,6 +61,7 @@ function toList(value: string | undefined): string[] {
 function CapabilityForm({ profile }: { profile: Profile }) {
   const update = useUpdateProfile()
   const taxonomies = useTaxonomies()
+  const organization = useCurrentOrg()
 
   const form = useZodForm({
     schema,
@@ -70,6 +76,49 @@ function CapabilityForm({ profile }: { profile: Profile }) {
   })
 
   const known = new Set((taxonomies.data?.sectors ?? []).map((s) => s.value))
+  const overview = form.watch("overview")
+
+  /**
+   * Fill the empty fields from a website reading, leave the rest alone.
+   *
+   * Sectors are intersected with what the matcher understands before they go
+   * in, for the same reason the save path filters them: a sector the scorer
+   * has never heard of is dropped silently on submit, and showing it in the
+   * box first would promise something the save then quietly removes.
+   */
+  const applyDraft = React.useCallback(
+    (draft: CompanyResearch) => {
+      const fill = (
+        field: "overview" | "sectors" | "geographies" | "keywords",
+        value: string
+      ) => {
+        if (!value) return
+        if ((form.getValues(field) ?? "").trim()) return
+        form.setValue(field, value, { shouldDirty: true })
+      }
+      const sectors = (draft.sectors ?? []).filter((s) =>
+        known.size ? known.has(s) : true
+      )
+      fill("overview", draft.overview ?? "")
+      fill("sectors", sectors.join(", "))
+      fill("geographies", (draft.geographies ?? []).join(", "))
+      fill("keywords", (draft.keywords ?? []).join(", "))
+    },
+    // `known` is rebuilt each render from a query with `staleTime: Infinity`,
+    // so keying on its size is stable and avoids a new callback per keystroke.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form, known.size]
+  )
+
+  /*
+    Pick up the half of the onboarding reading that had nowhere to go at the
+    time. Runs once, and only into fields that are still empty, so it can
+    never overwrite something typed since.
+  */
+  React.useEffect(() => {
+    const carried = takeProfileDraft()
+    if (carried) applyDraft(carried)
+  }, [applyDraft])
 
   const onSubmit = form.handleSubmit(async (values) => {
     const turnover = values.annual_turnover?.trim()
@@ -91,11 +140,35 @@ function CapabilityForm({ profile }: { profile: Profile }) {
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
       <FieldGroup>
+        {/* The one press of Auto setup that onboarding offered is often long
+            past by the time anyone opens this page, and the organization's
+            website is already on file — so the button is here too, with the
+            address it should read already known. */}
+        <AutoSetup
+          url={organization.data?.website ?? ""}
+          onDraft={applyDraft}
+          label="Auto setup from your website"
+          hint={
+            organization.data?.website
+              ? `We read ${organization.data.website} and fill in the empty fields below. Nothing is saved until you press save.`
+              : "Add your website under Settings → Organization and this can fill the form in for you."
+          }
+        />
+
         <RhfField
           form={form}
           name="overview"
           label="What your company does"
           description="The single biggest influence on which tenders you are shown."
+          below={
+            <ImproveButton
+              field="overview"
+              value={overview ?? ""}
+              onChange={(next) =>
+                form.setValue("overview", next, { shouldDirty: true })
+              }
+            />
+          }
         >
           <Textarea
             rows={4}

@@ -20,6 +20,10 @@ import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "@/components/ui/toast"
+import { AutoSetup } from "@/features/aiassist/AutoSetup"
+import { stashProfileDraft } from "@/features/aiassist/draft"
+import type { CompanyResearch } from "@/features/aiassist/api"
+import { ImproveButton } from "@/features/aiassist/ImproveButton"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
 import { applyFieldErrors, unwrap } from "@/lib/api/call"
 import { api } from "@/lib/api/client"
@@ -79,6 +83,35 @@ export function CreateOrganizationForm({
       timezone: guessTimezone(),
     },
   })
+
+  const website = form.watch("website")
+  const description = form.watch("description")
+
+  /**
+   * Drop the draft into the form, without trampling what is already there.
+   *
+   * A field the person has already filled in is theirs — they typed it after
+   * looking at the same website, and overwriting it would make pressing the
+   * button a risk rather than a convenience. Empty fields are filled; the
+   * rest are left alone, and everything remains editable either way.
+   *
+   * The capability half of the draft (overview, sectors, services) has no
+   * home on this form yet; the organization does not exist, so neither does
+   * its profile. It is carried over in session storage and picked up by the
+   * capability profile page, so the one website read fills both forms.
+   */
+  function applyDraft(draft: CompanyResearch) {
+    const fill = (field: "name" | "country" | "description", value: string) => {
+      if (!value) return
+      const current = (form.getValues(field) ?? "").trim()
+      if (current) return
+      form.setValue(field, value, { shouldDirty: true, shouldValidate: true })
+    }
+    fill("name", draft.company_name ?? "")
+    fill("country", draft.country ?? "")
+    fill("description", draft.description ?? draft.overview ?? "")
+    stashProfileDraft(draft)
+  }
 
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null)
@@ -146,7 +179,23 @@ export function CreateOrganizationForm({
           )}
         </RhfField>
 
-        <RhfField form={form} name="website" label="Website">
+        <RhfField
+          form={form}
+          name="website"
+          label="Website"
+          /*
+            The research button lives under the field it reads, not in the
+            page header. It is an action on this address, and a person who has
+            just typed one should not have to look elsewhere to use it.
+          */
+          below={
+            <AutoSetup
+              url={website ?? ""}
+              onDraft={applyDraft}
+              hint="We read your website and fill in the rest of this form. You can edit everything afterwards."
+            />
+          }
+        >
           <Input type="url" placeholder="https://acme.com" />
         </RhfField>
 
@@ -155,6 +204,15 @@ export function CreateOrganizationForm({
           name="description"
           label="What do you do?"
           description="Used to match tenders to your capabilities."
+          below={
+            <ImproveButton
+              field="org_description"
+              value={description ?? ""}
+              onChange={(next) =>
+                form.setValue("description", next, { shouldDirty: true })
+              }
+            />
+          }
         >
           <Textarea rows={3} placeholder="Civil works, road construction…" />
         </RhfField>

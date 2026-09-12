@@ -47,6 +47,19 @@ class GenerationResult[T: BaseModel](BaseModel):
     usage: Usage
 
 
+class GroundedResult[T: BaseModel](GenerationResult[T]):
+    """A generation that was allowed to read web pages first.
+
+    ``retrieved_urls`` is the provider's own account of what it fetched, and
+    carries only successes. It is separate from anything the model wrote,
+    which is the point: whether a page was read is a fact about the network,
+    and a model asked the same question will answer from its training data
+    without noticing it did.
+    """
+
+    retrieved_urls: list[str] = Field(default_factory=list)
+
+
 class AIError(Exception):
     """A call failed in a way the caller is expected to handle.
 
@@ -88,6 +101,25 @@ class AIClient(Protocol):
         max_output_tokens: int | None = None,
     ) -> GenerationResult[M]:
         """Generate JSON conforming to ``schema`` and return it parsed."""
+        ...
+
+    async def generate_grounded[M: BaseModel](
+        self,
+        *,
+        prompt: str,
+        schema: type[M],
+        urls: list[str],
+        system_instruction: str | None = None,
+        temperature: float = 0.0,
+        max_output_tokens: int | None = None,
+    ) -> GroundedResult[M]:
+        """Generate JSON after reading ``urls``, reporting what was fetched.
+
+        The provider does the fetching. That is a deliberate choice rather than
+        an implementation detail: a server-side fetcher pointed at a
+        user-supplied address is a request-forgery hole aimed at our own
+        network, and declining to own one is worth more than the control.
+        """
         ...
 
     async def healthcheck(self) -> bool:

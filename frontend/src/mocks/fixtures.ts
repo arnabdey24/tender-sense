@@ -17,6 +17,7 @@ type SyncState = components["schemas"]["SyncState"]
 type TenderSummary = components["schemas"]["TenderSummary"]
 type DecisionWithTender = components["schemas"]["DecisionWithTender"]
 type MatchRead = components["schemas"]["MatchRead"]
+type ResearchResponse = components["schemas"]["ResearchResponse"]
 
 export const ORG_ID = "11111111-1111-4111-8111-111111111111"
 export const OTHER_ORG_ID = "22222222-2222-4222-8222-222222222222"
@@ -360,6 +361,31 @@ export const decisions: DecisionWithTender[] = [
     verdict: null,
   },
 ]
+
+/** What reading a company's website comes back with. */
+export const companyResearch: ResearchResponse = {
+  draft: {
+    reachable: true,
+    company_name: "Padma Infrastructure Ltd",
+    country: "BD",
+    description:
+      "Padma Infrastructure Ltd builds and maintains rural roads and bridges for local government clients in Bangladesh.",
+    overview:
+      "Padma Infrastructure Ltd is a civil works contractor delivering rural road construction, box culverts and small bridges under LGED and RHD contracts. It has operated since 2009 and self-performs earthworks and paving.",
+    sectors: ["construction", "transport"],
+    geographies: ["BD"],
+    keywords: ["rural roads", "culverts", "earthworks"],
+    services: ["Road construction and maintenance", "Bridge construction"],
+    certifications: ["ISO 9001"],
+    annual_turnover: null,
+    turnover_currency: "",
+    years_in_business: 17,
+    employee_count: 220,
+    evidence: "Operating since 2009 on LGED and RHD rural road packages.",
+  },
+  retrieved_url: "https://padma-infra.com.bd",
+  model: "gemini-3.8-flash",
+}
 
 /** Portals settled: nothing running, nothing to wait for, both pulled today. */
 export const syncState: SyncState = {

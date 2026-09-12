@@ -93,6 +93,16 @@ class Settings(BaseSettings):
     embedding_fallback_model: str = "gemini-embedding-001"
     embedding_dims: int = 768
     generation_model: str = "gemini-3.1-flash-lite"
+    #: Website research is a different job from bulk extraction: it runs once
+    #: per company, reads live pages, and its output is read word-for-word by
+    #: the person it describes. It gets the stronger model for that, while the
+    #: pipeline keeps the cheap one it runs thousands of times a day.
+    research_model: str = "gemini-3.8-flash"
+    #: Not a tuning knob. Uncapped, the model re-fetched one page twenty-four
+    #: times and terminated with TOO_MANY_TOOL_CALLS and an empty body.
+    research_max_output_tokens: int = 4096
+    #: Rewriting a sentence is frequent, small and cheap; it keeps the lite model.
+    writing_model: str = "gemini-3.1-flash-lite"
     ai_max_concurrency: int = 5
     ai_requests_per_minute: int = 12
     ai_daily_token_budget: int = 2_000_000

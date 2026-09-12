@@ -102,3 +102,22 @@ async def test_reserve_is_disabled_by_a_zero_limit(monkeypatch) -> None:
 
     monkeypatch.setattr(service, "get_queue", explode)
     await service.reserve(uuid4(), "voice seconds", 600, 0)
+
+
+def test_the_assistant_is_told_to_refuse_form_filling_out_loud() -> None:
+    """Read-only is a deliberate design, silence about it is not.
+
+    Asked to put values into the capability profile, the assistant has no tool
+    that could and never had one — but the prompt only stated that as a fact
+    about the world, not as an instruction about what to say. The observed
+    result was a field that stayed empty with nothing on screen admitting why.
+    """
+    from app.modules.assistant.provider import SYSTEM, instruction
+
+    assert "cannot fill in, save, or edit any form field" in SYSTEM
+    # Not merely a refusal: the reply has to leave the person something to use.
+    assert "write out" in SYSTEM
+    assert "open_in_app" in SYSTEM
+
+    built = instruction({"version": "v1"}, "en", page="/app/settings/profile")
+    assert "cannot fill in, save, or edit any form field" in built

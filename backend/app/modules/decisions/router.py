@@ -16,7 +16,12 @@ from app.core.deps import CurrentOrg, DbSession
 from app.core.pagination import Page, PageParams, page_params
 from app.modules.decisions import service
 from app.modules.decisions.models import Decision
-from app.modules.decisions.schemas import DecisionRead, DecisionWithTender, DecisionWrite
+from app.modules.decisions.schemas import (
+    DecisionRead,
+    DecisionVerdict,
+    DecisionWithTender,
+    DecisionWrite,
+)
 from app.modules.tenders.service import to_summary
 
 router = APIRouter(tags=["decisions"])
@@ -83,8 +88,11 @@ async def list_decisions(
             DecisionWithTender(
                 **DecisionRead.model_validate(row).model_dump(),
                 tender=to_summary(tender, code),
+                # Absent for a tender this organization has never scored, which
+                # is the ordinary state before a capability profile exists.
+                verdict=DecisionVerdict.model_validate(match) if match else None,
             )
-            for row, tender, code in rows
+            for row, tender, code, match in rows
         ],
         params,
         total,

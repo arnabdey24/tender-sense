@@ -12,6 +12,7 @@ from app.core.deps import CurrentOrg, DbSession
 from app.core.exceptions import NotFoundError
 from app.core.pagination import Page, PageParams, page_params
 from app.core.time import to_timezone, utcnow
+from app.modules.decisions.models import Decision
 from app.modules.matching import repository as repo
 from app.modules.matching.models import (
     EligibilityStatus,
@@ -38,7 +39,9 @@ Pagination = Annotated[PageParams, Depends(page_params)]
 TenderId = Annotated[UUID, Path(description="Tender identifier")]
 
 
-def _to_read(match: TenderMatch, tender: Tender, source_code: str) -> MatchRead:
+def _to_read(
+    match: TenderMatch, tender: Tender, source_code: str, decision: Decision | None = None
+) -> MatchRead:
     return MatchRead(
         id=match.id,
         tender_id=match.tender_id,
@@ -55,6 +58,7 @@ def _to_read(match: TenderMatch, tender: Tender, source_code: str) -> MatchRead:
         first_matched_at=match.first_matched_at,
         created_at=match.created_at,
         tender=to_summary(tender, source_code),
+        decision=decision,
     )
 
 
@@ -69,7 +73,9 @@ async def list_matches(
     """
     rows, total = await repo.list_matches(db, org_id=ctx.org_id, filters=filters, params=params)
     return Page[MatchRead].build(
-        [_to_read(match, tender, code) for match, tender, code in rows], params, total
+        [_to_read(match, tender, code, decision) for match, tender, code, decision in rows],
+        params,
+        total,
     )
 
 
@@ -142,7 +148,9 @@ async def today_shortlist(
     )
     rows, total = await repo.list_matches(db, org_id=ctx.org_id, filters=shortlist, params=params)
     return Page[MatchRead].build(
-        [_to_read(match, tender, code) for match, tender, code in rows], params, total
+        [_to_read(match, tender, code, decision) for match, tender, code, decision in rows],
+        params,
+        total,
     )
 
 
@@ -152,9 +160,9 @@ async def get_match(tender_id: TenderId, ctx: CurrentOrg, db: DbSession) -> Matc
     row = await repo.get_match(db, org_id=ctx.org_id, tender_id=tender_id)
     if row is None:
         raise NotFoundError("No match for this tender.", code="match_not_found")
-    match, tender, code = row
+    match, tender, code, decision = row
     return MatchDetail(
-        **_to_read(match, tender, code).model_dump(),
+        **_to_read(match, tender, code, decision).model_dump(),
         profile_version=match.profile_version,
         thresholds_version=match.thresholds_version,
         embedding_model=match.embedding_model,
@@ -178,5 +186,7 @@ async def pipeline(
     )
     rows, total = await repo.list_matches(db, org_id=ctx.org_id, filters=working, params=params)
     return Page[MatchRead].build(
-        [_to_read(match, tender, code) for match, tender, code in rows], params, total
+        [_to_read(match, tender, code, decision) for match, tender, code, decision in rows],
+        params,
+        total,
     )

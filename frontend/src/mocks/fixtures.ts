@@ -14,6 +14,9 @@ type ProfileRead = components["schemas"]["ProfileRead"]
 type CompletenessRead = components["schemas"]["CompletenessRead"]
 type TaxonomiesRead = components["schemas"]["TaxonomiesRead"]
 type SyncState = components["schemas"]["SyncState"]
+type TenderSummary = components["schemas"]["TenderSummary"]
+type DecisionWithTender = components["schemas"]["DecisionWithTender"]
+type MatchRead = components["schemas"]["MatchRead"]
 
 export const ORG_ID = "11111111-1111-4111-8111-111111111111"
 export const OTHER_ORG_ID = "22222222-2222-4222-8222-222222222222"
@@ -241,6 +244,122 @@ export const taxonomies: TaxonomiesRead = {
   common_certifications: ["ISO 9001", "ISO 27001"],
   common_services: ["Network integration", "Civil construction"],
 }
+
+function notice(over: Partial<TenderSummary> & { id: string; title: string }): TenderSummary {
+  return {
+    source_code: "egp",
+    external_id: `EGP-${over.id.slice(0, 4)}`,
+    summary: null,
+    procuring_entity: "Roads and Highways Department",
+    country: "BD",
+    procurement_method: "open",
+    procurement_category: "works",
+    published_at: "2026-09-01T00:00:00Z",
+    deadline_at: "2026-10-01T00:00:00Z",
+    currency: "BDT",
+    estimated_value: 25000000,
+    status: "open",
+    canonical_url: "https://example.test/notice",
+    days_to_deadline: 19,
+    ...over,
+  }
+}
+
+/**
+ * A graded feed with one row already acted on.
+ *
+ * The decided row is what proves the feed carries the organization's own
+ * verdict alongside the matcher's: `recommendation` is what the model
+ * suggests, `decision` is what the team chose, and they disagree here on
+ * purpose.
+ */
+export const matches: MatchRead[] = [
+  {
+    id: "1111aaaa-1111-4111-8111-111111111111",
+    tender_id: "aaaa2222-2222-4222-8222-aaaaaaaaaaaa",
+    similarity: 0.81,
+    grade: "S",
+    eligibility_status: "eligible",
+    recommendation: "bid",
+    urgency: "normal",
+    explanation_kind: "templated",
+    explanation: { summary: "Core switching work, which you do." },
+    explanation_text: "Core switching work, which you do.",
+    score_breakdown: {
+      calculation: { thresholds: { S: 0.78, A: 0.7, B: 0.62 } },
+    },
+    rule_results: [],
+    first_matched_at: "2026-09-10T00:00:00Z",
+    created_at: "2026-09-10T00:00:00Z",
+    tender: notice({
+      id: "aaaa2222-2222-4222-8222-aaaaaaaaaaaa",
+      title: "Upgrade of the Dhaka bypass",
+    }),
+    decision: null,
+  },
+  {
+    id: "2222aaaa-2222-4222-8222-222222222222",
+    tender_id: "cccc2222-2222-4222-8222-cccccccccccc",
+    similarity: 0.64,
+    grade: "B",
+    eligibility_status: "needs_verification",
+    recommendation: "hold",
+    urgency: "high",
+    explanation_kind: "templated",
+    explanation: {},
+    explanation_text: "Partial overlap with your services.",
+    score_breakdown: {},
+    rule_results: [],
+    first_matched_at: "2026-09-09T00:00:00Z",
+    created_at: "2026-09-09T00:00:00Z",
+    tender: notice({
+      id: "cccc2222-2222-4222-8222-cccccccccccc",
+      title: "Rural electrification phase two",
+    }),
+    // Already triaged: the matcher says hold, the team said skip.
+    decision: "skip",
+  },
+]
+
+/**
+ * Two live decisions, one of them on a notice this org has never scored.
+ *
+ * The unscored one is the whole point: a company that records a bid before
+ * finishing its capability profile has decisions and no matches, and that row
+ * is exactly the one the pipeline used to drop.
+ */
+export const decisions: DecisionWithTender[] = [
+  {
+    id: "aaaa1111-1111-4111-8111-aaaaaaaaaaaa",
+    tender_id: "aaaa2222-2222-4222-8222-aaaaaaaaaaaa",
+    decision: "bid",
+    note: "We have done three of these for the same buyer.",
+    is_current: true,
+    decided_by_id: USER_ID,
+    created_at: "2026-09-10T09:00:00Z",
+    tender: notice({
+      id: "aaaa2222-2222-4222-8222-aaaaaaaaaaaa",
+      title: "Upgrade of the Dhaka bypass",
+    }),
+    verdict: { similarity: 0.81, grade: "S", eligibility_status: "eligible" },
+  },
+  {
+    id: "bbbb1111-1111-4111-8111-bbbbbbbbbbbb",
+    tender_id: "bbbb2222-2222-4222-8222-bbbbbbbbbbbb",
+    decision: "bid",
+    note: null,
+    is_current: true,
+    decided_by_id: USER_ID,
+    created_at: "2026-09-11T09:00:00Z",
+    tender: notice({
+      id: "bbbb2222-2222-4222-8222-bbbbbbbbbbbb",
+      title: "Supply of laboratory equipment",
+      procurement_category: "goods",
+    }),
+    // Never scored: no capability profile when the bid was recorded.
+    verdict: null,
+  },
+]
 
 /** Portals settled: nothing running, nothing to wait for, both pulled today. */
 export const syncState: SyncState = {

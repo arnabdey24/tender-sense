@@ -437,6 +437,28 @@ class TestDecisions:
         assert all(d["decision"] == "bid" for d in bids["items"])
         assert any(d["tender_id"] == str(tender.id) for d in bids["items"])
 
+    async def test_a_decision_survives_having_no_match(
+        self, api: AsyncClient, tenant: Tenant, tender: Tender
+    ) -> None:
+        """The state every company is in before it finishes its profile.
+
+        Nothing has been scored, so there is no match row to join to. The
+        decision is still a decision, and the pipeline is built from this
+        list — an inner join here is what made a recorded bid appear on no
+        screen in the product.
+        """
+        await api.put(
+            f"/api/v1/tenders/{tender.id}/decision",
+            headers=tenant.headers,
+            json={"decision": "bid"},
+        )
+
+        listed = (await api.get("/api/v1/decisions", headers=tenant.headers)).json()
+
+        row = next(d for d in listed["items"] if d["tender_id"] == str(tender.id))
+        assert row["verdict"] is None
+        assert row["tender"]["title"] == "Supply of enterprise network switches"
+
     async def test_a_member_may_decide(self, api: AsyncClient, tender: Tender) -> None:
         """The person who spots a tender is often not the admin."""
         member = await make_tenant(role=OrgRole.MEMBER, name="Padma")

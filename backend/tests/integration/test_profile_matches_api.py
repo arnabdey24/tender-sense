@@ -328,6 +328,50 @@ class TestMatches:
         assert row["explanation_text"]
         assert row["grade"] in {"S", "A", "B", "C"}
 
+    async def test_a_row_carries_this_org_s_own_decision(
+        self, api: AsyncClient, tenant: Tenant, matched: dict[str, Any]
+    ) -> None:
+        """Distinct from ``recommendation``, which is what the matcher thinks.
+
+        Without it the Bid button on a feed row wrote a record the row then
+        rendered no differently, so pressing it looked like it had done
+        nothing, and the same notice kept asking to be triaged.
+        """
+        good = matched["good"]
+        undecided = (await api.get("/api/v1/matches", headers=tenant.headers)).json()
+        assert all(row["decision"] is None for row in undecided["items"])
+
+        await api.put(
+            f"/api/v1/tenders/{good.id}/decision",
+            headers=tenant.headers,
+            json={"decision": "skip", "note": "Buyer is on hold"},
+        )
+
+        body = (await api.get("/api/v1/matches", headers=tenant.headers)).json()
+
+        rows = {row["tender_id"]: row for row in body["items"]}
+        assert rows[str(good.id)]["decision"] == "skip"
+        assert rows[str(matched["bad"].id)]["decision"] is None
+        # One row per match still: the outer join must not multiply them.
+        assert len(body["items"]) == len(rows)
+
+    async def test_a_decided_match_reaches_the_pipeline_with_its_grade(
+        self, api: AsyncClient, tenant: Tenant, matched: dict[str, Any]
+    ) -> None:
+        good = matched["good"]
+        await api.put(
+            f"/api/v1/tenders/{good.id}/decision",
+            headers=tenant.headers,
+            json={"decision": "bid"},
+        )
+
+        listed = (await api.get("/api/v1/decisions", headers=tenant.headers)).json()
+
+        row = next(d for d in listed["items"] if d["tender_id"] == str(good.id))
+        assert row["verdict"] is not None
+        assert row["verdict"]["grade"] in {"S", "A", "B", "C"}
+        assert 0.0 <= row["verdict"]["similarity"] <= 1.0
+
     async def test_filtering_by_grade(
         self, api: AsyncClient, tenant: Tenant, matched: dict[str, Any]
     ) -> None:

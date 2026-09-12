@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
@@ -18,6 +18,7 @@ from app.core.logging import get_logger
 from app.core.pagination import PageParams
 from app.modules.decisions.models import Decision, TenderDecision
 from app.modules.decisions.schemas import DecisionWrite
+from app.modules.matching.models import TenderMatch
 from app.modules.tenders.models import Tender, TenderSource
 
 logger = get_logger(__name__)
@@ -111,14 +112,24 @@ async def list_current(
     org_id: UUID,
     decision: Decision | None,
     params: PageParams,
-) -> tuple[list[tuple[TenderDecision, Tender, str]], int]:
-    """Live decisions with their notices, soonest deadline first."""
-    from sqlalchemy import func
+) -> tuple[list[tuple[TenderDecision, Tender, str, TenderMatch | None]], int]:
+    """Live decisions with their notices, soonest deadline first.
 
+    The match is joined in as an *outer* join and may be ``None``. A decision
+    belongs to a tender, not to a match: a company that has recorded a bid
+    before finishing its capability profile has decisions and no scores at all,
+    and an inner join here would silently drop precisely those rows — which is
+    how a recorded bid managed to appear nowhere in the application.
+    """
     base = (
-        select(TenderDecision, Tender, TenderSource.code)
+        select(TenderDecision, Tender, TenderSource.code, TenderMatch)
         .join(Tender, Tender.id == TenderDecision.tender_id)
         .join(TenderSource, TenderSource.id == Tender.source_id)
+        .outerjoin(
+            TenderMatch,
+            (TenderMatch.tender_id == TenderDecision.tender_id)
+            & (TenderMatch.org_id == TenderDecision.org_id),
+        )
         .where(TenderDecision.org_id == org_id, TenderDecision.is_current.is_(True))
     )
     counting = (
@@ -138,4 +149,4 @@ async def list_current(
             .limit(params.limit)
         )
     ).all()
-    return [(row[0], row[1], row[2]) for row in rows], total
+    return [(row[0], row[1], row[2], row[3]) for row in rows], total

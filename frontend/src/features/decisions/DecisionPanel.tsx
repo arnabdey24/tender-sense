@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { CheckIcon, PauseIcon, XIcon } from "lucide-react"
 import * as React from "react"
 
@@ -17,6 +18,7 @@ import {
   useRecordDecision,
   type Decision,
 } from "@/features/decisions/api"
+import { useMatch } from "@/features/matches/api"
 
 const OPTIONS: {
   value: Decision
@@ -42,6 +44,10 @@ export function DecisionPanel({ tenderId }: { tenderId: string }) {
   const history = useDecisionHistory(tenderId)
   const record = useRecordDecision(tenderId)
   const clear = useClearDecision(tenderId)
+  // Null means this organization has never scored the notice, which is the
+  // ordinary state before a capability profile exists. The query is already
+  // cached by the panels above this one, so this costs no extra request.
+  const match = useMatch(tenderId)
   const [note, setNote] = React.useState("")
 
   const entries = history.data ?? []
@@ -58,6 +64,39 @@ export function DecisionPanel({ tenderId }: { tenderId: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
+        {/*
+          Said here rather than enforced by disabling the buttons.
+
+          Recording a decision on an ungraded notice is legitimate — somebody
+          read the tender and knows their own business — and blocking it would
+          throw away a real judgement to protect a score nobody asked for. But
+          the two panels that normally sit above this one render nothing at
+          all when there is no match, so the page silently omitted the reason
+          its grade was missing, and a bid recorded here looked like it had
+          gone nowhere.
+        */}
+        {!match.isPending && match.data === null ? (
+          <p className="rounded-md bg-surface-sunken p-3 text-sm text-muted-foreground text-pretty">
+            This notice has not been graded for your organization yet, so there
+            is no fit score or eligibility check beside your decision. You can
+            still record one — it appears on the{" "}
+            <Link
+              to="/app/pipeline"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              pipeline
+            </Link>{" "}
+            either way.{" "}
+            <Link
+              to="/app/settings/profile"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Finish your capability profile
+            </Link>{" "}
+            to have it scored.
+          </p>
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
           {OPTIONS.map((option) => (
             <Button

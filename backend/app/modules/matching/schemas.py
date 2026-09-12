@@ -10,6 +10,7 @@ from uuid import UUID
 from fastapi import Query
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.modules.decisions.models import Decision
 from app.modules.matching.models import (
     EligibilityStatus,
     ExplanationKind,
@@ -52,6 +53,11 @@ class MatchRead(BaseModel):
     first_matched_at: datetime | None = None
     created_at: datetime
     tender: TenderSummary
+    #: What this organization decided, if anything. Distinct from
+    #: ``recommendation``, which is what the matcher suggests — a row can
+    #: recommend "bid" and be decided "skip", and a feed that showed only the
+    #: first would keep asking a question the team has already answered.
+    decision: Decision | None = None
 
 
 class MatchDetail(MatchRead):

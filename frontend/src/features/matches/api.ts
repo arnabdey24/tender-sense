@@ -71,16 +71,6 @@ export function useTodayShortlist(input: MatchQuery = {}) {
   })
 }
 
-export function usePipeline(input: MatchQuery = {}) {
-  const params = toParams(input)
-  return useQuery<MatchPage, ApiError>({
-    queryKey: qk.matches.pipeline(params),
-    placeholderData: keepPreviousData,
-    queryFn: () =>
-      unwrap(api.GET("/api/v1/pipeline", { params: { query: params } })),
-  })
-}
-
 /**
  * This organization's verdict on one tender. A 404 is expected and normal —
  * it means the tender has not been scored for this org yet — so it must not

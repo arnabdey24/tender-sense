@@ -39,8 +39,6 @@ export const qk = {
       ["matches", "stats", params] as const,
     today: (params: Record<string, unknown>) =>
       ["matches", "today", params] as const,
-    pipeline: (params: Record<string, unknown>) =>
-      ["matches", "pipeline", params] as const,
     detail: (tenderId: string) => ["matches", "detail", tenderId] as const,
   },
   profile: {

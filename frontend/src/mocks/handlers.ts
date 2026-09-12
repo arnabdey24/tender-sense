@@ -2,9 +2,11 @@ import { http, HttpResponse } from "msw"
 
 import {
   completeness,
+  decisions,
   errorEnvelope,
   invitationPreview,
   invitations,
+  matches,
   members,
   notificationSettings,
   notifications,
@@ -142,7 +144,41 @@ export const handlers = [
   http.get("*/api/v1/tenders", () =>
     HttpResponse.json({ items: [], page: 1, page_size: 20, total: 0 })
   ),
-  http.get("*/api/v1/matches/stats", () => HttpResponse.json({ total: 0 })),
+  http.get("*/api/v1/matches/stats", () =>
+    HttpResponse.json({
+      total: matches.length,
+      by_grade: { S: 1, B: 1 },
+      by_eligibility: { eligible: 1, needs_verification: 1 },
+      by_recommendation: { bid: 1, hold: 1 },
+      by_urgency: { normal: 1, high: 1 },
+      closing_within_7_days: 1,
+      new_today: 1,
+    })
+  ),
+  http.get("*/api/v1/matches/today", () =>
+    HttpResponse.json({
+      items: matches,
+      page: 1,
+      page_size: 20,
+      total: matches.length,
+    })
+  ),
+  http.get("*/api/v1/matches", () =>
+    HttpResponse.json({
+      items: matches,
+      page: 1,
+      page_size: 20,
+      total: matches.length,
+    })
+  ),
+  http.get("*/api/v1/decisions", () =>
+    HttpResponse.json({
+      items: decisions,
+      page: 1,
+      page_size: 20,
+      total: decisions.length,
+    })
+  ),
 
   http.get("*/api/v1/profile", () => HttpResponse.json(profile)),
   http.put("*/api/v1/profile", async ({ request }) =>

@@ -47,7 +47,8 @@ function invalidate(
   void queryClient.invalidateQueries({
     queryKey: qk.decisions.forTender(tenderId),
   })
-  // The pipeline view is built from decisions, so it moves too.
+  // Every match row renders the decision beside the grade, so the feeds move
+  // with it — the pipeline reads `decisions` and is already covered above.
   void queryClient.invalidateQueries({ queryKey: qk.matches.all() })
 }
 

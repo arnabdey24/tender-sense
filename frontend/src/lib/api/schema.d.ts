@@ -2313,6 +2313,23 @@ export interface components {
             created_at: string;
         };
         /**
+         * DecisionVerdict
+         * @description The grade behind a decision, when there is one.
+         *
+         *     Optional on purpose. A decision is recorded against a *tender*, which
+         *     exists whether or not this organization has scored it — an empty profile,
+         *     or a notice decided on before the pipeline reached it, both produce a real
+         *     decision with no match beside it. Making this required would have meant
+         *     dropping exactly those rows from the pipeline, which is how they became
+         *     invisible in the first place.
+         */
+        DecisionVerdict: {
+            /** Similarity */
+            similarity: number;
+            grade: components["schemas"]["MatchGrade"];
+            eligibility_status: components["schemas"]["EligibilityStatus"];
+        };
+        /**
          * DecisionWithTender
          * @description A decision plus enough of the notice to render a pipeline row.
          */
@@ -2340,6 +2357,7 @@ export interface components {
              */
             created_at: string;
             tender: components["schemas"]["TenderSummary"];
+            verdict?: components["schemas"]["DecisionVerdict"] | null;
         };
         /** DecisionWrite */
         DecisionWrite: {
@@ -2692,6 +2710,7 @@ export interface components {
              */
             created_at: string;
             tender: components["schemas"]["TenderSummary"];
+            decision?: components["schemas"]["Decision"] | null;
             /** Profile Version */
             profile_version: number;
             /** Thresholds Version */
@@ -2749,6 +2768,7 @@ export interface components {
              */
             created_at: string;
             tender: components["schemas"]["TenderSummary"];
+            decision?: components["schemas"]["Decision"] | null;
         };
         /**
          * MatchSortField

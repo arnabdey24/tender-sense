@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.pagination import PageParams
 from app.core.time import utcnow
+from app.modules.decisions.models import Decision, TenderDecision
 from app.modules.matching.models import TenderMatch
 from app.modules.matching.schemas import MatchFilters, MatchSortField
 from app.modules.tenders.models import Tender, TenderSource, TenderStatus
@@ -26,10 +27,24 @@ _TENDER_SORTS = {MatchSortField.DEADLINE, MatchSortField.PUBLISHED}
 
 
 def _base(org_id: UUID) -> Select[Any]:
+    """Match, notice, portal code, and this organization's own decision.
+
+    The decision is an outer join and usually null — most of the feed has not
+    been acted on. It travels with the row because a feed that cannot show
+    what you already decided keeps offering you the choice: the Bid button on
+    a match row wrote a record the same row then rendered no differently, so
+    pressing it looked like it had done nothing at all.
+    """
     return (
-        select(TenderMatch, Tender, TenderSource.code)
+        select(TenderMatch, Tender, TenderSource.code, TenderDecision.decision)
         .join(Tender, Tender.id == TenderMatch.tender_id)
         .join(TenderSource, TenderSource.id == Tender.source_id)
+        .outerjoin(
+            TenderDecision,
+            (TenderDecision.tender_id == TenderMatch.tender_id)
+            & (TenderDecision.org_id == TenderMatch.org_id)
+            & TenderDecision.is_current.is_(True),
+        )
         .where(TenderMatch.org_id == org_id)
     )
 
@@ -91,7 +106,7 @@ def _ordering(filters: MatchFilters) -> Any:
 
 async def list_matches(
     session: AsyncSession, *, org_id: UUID, filters: MatchFilters, params: PageParams
-) -> tuple[list[tuple[TenderMatch, Tender, str]], int]:
+) -> tuple[list[tuple[TenderMatch, Tender, str, Decision | None]], int]:
     total = (await session.scalar(_apply(_counting(org_id), filters))) or 0
     stmt = (
         _apply(_base(org_id), filters)
@@ -100,14 +115,14 @@ async def list_matches(
         .limit(params.limit)
     )
     rows = (await session.execute(stmt)).all()
-    return [(row[0], row[1], row[2]) for row in rows], total
+    return [(row[0], row[1], row[2], row[3]) for row in rows], total
 
 
 async def get_match(
     session: AsyncSession, *, org_id: UUID, tender_id: UUID
-) -> tuple[TenderMatch, Tender, str] | None:
+) -> tuple[TenderMatch, Tender, str, Decision | None] | None:
     row = (await session.execute(_base(org_id).where(TenderMatch.tender_id == tender_id))).first()
-    return (row[0], row[1], row[2]) if row else None
+    return (row[0], row[1], row[2], row[3]) if row else None
 
 
 async def count_by(

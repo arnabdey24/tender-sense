@@ -35,8 +35,8 @@ async def _shortlist(db: AsyncSession, org_id: UUID) -> tuple[list[dict[str, Any
         params=PageParams(page=1, page_size=WORKSPACE_MATCH_LIMIT),
     )
     matches = []
-    for assessment, notice, code in rows:
-        read = _to_read(assessment, notice, code).model_dump(mode="json")
+    for assessment, notice, code, decision in rows:
+        read = _to_read(assessment, notice, code, decision).model_dump(mode="json")
         matches.append(
             {
                 "tender_id": str(notice.id),
@@ -48,6 +48,9 @@ async def _shortlist(db: AsyncSession, org_id: UUID) -> tuple[list[dict[str, Any
                 "similarity": read["similarity"],
                 "deadline_at": read["tender"].get("deadline_at"),
                 "days_to_deadline": read["tender"].get("days_to_deadline"),
+                # What the company decided, so the assistant stops suggesting
+                # a notice the team has already skipped.
+                "decision": read["decision"],
             }
         )
     return matches, total
@@ -101,8 +104,8 @@ async def load_context(db: AsyncSession, org_id: UUID, tender_id: UUID | None) -
     row = await match_repo.get_match(db, org_id=org_id, tender_id=tender_id)
     match: dict[str, Any] | None = None
     if row:
-        assessment, notice, code = row
-        match = _to_read(assessment, notice, code).model_dump(mode="json")
+        assessment, notice, code, decision = row
+        match = _to_read(assessment, notice, code, decision).model_dump(mode="json")
         match["profile_version"] = assessment.profile_version
         match["thresholds_version"] = assessment.thresholds_version
         match["fingerprint"] = assessment.inputs_fingerprint

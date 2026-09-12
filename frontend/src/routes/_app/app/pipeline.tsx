@@ -1,70 +1,91 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { PageHeader } from "@/components/layout/PageHeader"
 import { ApiErrorAlert } from "@/features/auth/ApiErrorAlert"
-import { MatchList } from "@/features/matches/MatchList"
-import { usePipeline } from "@/features/matches/api"
+import { DecisionList } from "@/features/decisions/DecisionList"
+import { useDecisions } from "@/features/decisions/api"
 
 export const Route = createFileRoute("/_app/app/pipeline")({
   component: PipelinePage,
 })
 
+/**
+ * What this company decided, not what the matcher suggested.
+ *
+ * The page used to read `/pipeline`, which returns matches the *model*
+ * recommends bidding or holding. That made it a saved filter over Matches —
+ * on a pool where nothing was graded C it returned the identical set, and the
+ * two tabs showed the same nine rows. Worse, it meant the Bid button on every
+ * match row wrote to a table no screen in the product ever read: a recorded
+ * bid appeared nowhere, and the only way to see one was to reopen the notice
+ * you had recorded it on.
+ *
+ * `/decisions` is the list that was always meant to be here — the schema for
+ * its rows still says "enough of the notice to render a pipeline row". A
+ * decision belongs to a tender rather than to a match, so this page also shows
+ * the ones taken before the profile was finished, which have no grade to show.
+ */
 function PipelinePage() {
-  const pipeline = usePipeline({ page_size: 50 })
+  const decisions = useDecisions()
+  const entries = decisions.data?.items ?? []
+
+  // Skips are decisions too, and they are the ones nobody needs to look at.
+  // The pipeline is what is still live.
+  const live = entries.filter((entry) => entry.decision !== "skip")
+  const skipped = entries.length - live.length
 
   return (
     <>
       <PageHeader
         title="Pipeline"
-        description="Everything worth acting on, soonest deadline first."
+        description="What your team has committed to, soonest deadline first."
       />
 
-      {/* The page said what it was three times in 400px — description, card
-          header, empty state. The page description says it; the count counts. */}
-      {/*
-        No artificial measure. `max-w-4xl` left ~300px of dead gutter on a wide
-        screen while the rows inside it truncated their own titles — the page
-        was narrower than its content needed and wider than it used. A list of
-        notices is a dense panel, not prose: it is scanned, the grade and the
-        deadline are read together with the title, and the design system's
-        65–75ch rule is explicitly for prose, with dense panels free to run
-        wider. The width goes to the rows.
-      */}
       <section>
-        <div className="mb-3 border-b pb-3">
+        <div className="mb-3 flex flex-wrap items-baseline gap-x-2 border-b pb-3">
           <h2 className="font-heading text-base font-medium tabular-nums">
-            {pipeline.isPending
-              ? "Loading…"
-              : `${pipeline.data?.total ?? 0} in play`}
+            {decisions.isPending ? "Loading…" : `${live.length} in play`}
           </h2>
+          {skipped > 0 ? (
+            <p className="text-sm text-muted-foreground tabular-nums">
+              · {skipped} skipped, not shown
+            </p>
+          ) : null}
         </div>
-        <ApiErrorAlert error={pipeline.error} />
-        {/*
-          Split on the decision, because that is what the page is about.
-          A flat run of rows sorted by deadline answers "when", and the
-          question a bid manager brings here is "what have we actually
-          committed to" — two bids due this month is a different week from
-          five things still being weighed. Deadline order survives inside
-          each run, so nothing is lost.
-        */}
-        <MatchList
-          matches={pipeline.data?.items ?? []}
-          isLoading={pipeline.isPending}
+
+        <ApiErrorAlert error={decisions.error} />
+
+        <DecisionList
+          entries={live}
+          isLoading={decisions.isPending}
           emptyTitle="Nothing in the pipeline yet"
           emptyDescription="Mark a tender as a bid or a hold and it collects here."
           groups={[
             {
               key: "bid",
               label: "Bidding",
-              match: (m) => m.recommendation === "bid",
+              match: (entry) => entry.decision === "bid",
             },
             {
               key: "hold",
               label: "Still deciding",
-              match: (m) => m.recommendation !== "bid",
+              match: (entry) => entry.decision === "hold",
             },
           ]}
         />
+
+        {!decisions.isPending && live.length === 0 ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            The graded shortlist is on{" "}
+            <Link
+              to="/app/matches"
+              className="underline underline-offset-4 hover:text-foreground"
+            >
+              Matches
+            </Link>
+            .
+          </p>
+        ) : null}
       </section>
     </>
   )

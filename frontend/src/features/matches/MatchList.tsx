@@ -18,7 +18,7 @@ import {
   EligibilityBadge,
   RecommendationBadge,
 } from "@/features/matches/verdict"
-import { useRecordDecision } from "@/features/decisions/api"
+import { useClearDecision, useRecordDecision } from "@/features/decisions/api"
 import { Deadline } from "@/features/tenders/Deadline"
 import { GradeBadge } from "@/features/tenders/GradeBadge"
 import { categoryLabel, formatValue } from "@/features/tenders/format"
@@ -170,6 +170,7 @@ export function MatchList({
 function MatchRow({ match }: { match: Match }) {
   const [open, setOpen] = React.useState(false)
   const record = useRecordDecision(match.tender_id)
+  const clear = useClearDecision(match.tender_id)
   const explanation = explanationOf(match)
 
   const value = formatValue(
@@ -255,8 +256,18 @@ function MatchRow({ match }: { match: Match }) {
 
           Opacity rather than `hidden`, so the row reserves the space either
           way and a list does not reflow under the cursor as it moves down it.
+
+          A row that has been decided on opts out of the hiding entirely. The
+          pressed button is the only thing on the row that records the
+          decision, and state you have to hover to discover is state the
+          reader does not have.
         */}
-        <div className="relative z-10 col-start-2 flex items-center gap-1 transition-opacity duration-[var(--motion-fast)] group-focus-within/row:opacity-100 group-hover/row:opacity-100 sm:col-span-full sm:col-start-2 sm:-mt-1 [@media(hover:hover)]:opacity-0">
+        <div
+          className={cn(
+            "relative z-10 col-start-2 flex items-center gap-1 transition-opacity duration-[var(--motion-fast)] group-focus-within/row:opacity-100 group-hover/row:opacity-100 sm:col-span-full sm:col-start-2 sm:-mt-1",
+            !match.decision && "[@media(hover:hover)]:opacity-0"
+          )}
+        >
           {hasEvidence ? (
             <Button
               variant="ghost"
@@ -275,21 +286,41 @@ function MatchRow({ match }: { match: Match }) {
             </Button>
           ) : null}
 
+          {/*
+            Pressed state, because these buttons write something durable.
+
+            They used to be two identical ghost buttons whatever the row's
+            history: pressing Bid fired a toast, recorded a decision, and left
+            the row looking exactly as it had, so on the next scroll past there
+            was nothing to say the notice had already been dealt with. A
+            decision now shows as the pressed button, and pressing it again
+            withdraws it.
+          */}
           <span className="ml-auto flex items-center gap-1">
             <Button
-              variant="ghost"
+              variant={match.decision === "bid" ? "default" : "ghost"}
               size="xs"
-              disabled={record.isPending}
-              onClick={() => record.mutate({ decision: "bid" })}
+              aria-pressed={match.decision === "bid"}
+              disabled={record.isPending || clear.isPending}
+              onClick={() =>
+                match.decision === "bid"
+                  ? clear.mutate()
+                  : record.mutate({ decision: "bid" })
+              }
             >
               Bid
             </Button>
             <Button
-              variant="ghost"
+              variant={match.decision === "skip" ? "secondary" : "ghost"}
               size="xs"
-              disabled={record.isPending}
-              onClick={() => record.mutate({ decision: "skip" })}
-              className="text-muted-foreground"
+              aria-pressed={match.decision === "skip"}
+              disabled={record.isPending || clear.isPending}
+              onClick={() =>
+                match.decision === "skip"
+                  ? clear.mutate()
+                  : record.mutate({ decision: "skip" })
+              }
+              className={match.decision === "skip" ? undefined : "text-muted-foreground"}
             >
               Skip
             </Button>

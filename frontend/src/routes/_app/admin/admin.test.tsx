@@ -51,6 +51,8 @@ const OVERVIEW = {
   scrapes_failed_24h: 0,
   email_queued: 0,
   email_failed: 0,
+  email_stuck: 0,
+  email_config_problems: [],
   ai_tokens_today: 0,
   ai_daily_token_budget: 2_000_000,
 }
@@ -164,5 +166,57 @@ describe("the operations console", () => {
     expect(
       screen.queryByText(/portal not answering/)
     ).not.toBeInTheDocument()
+  })
+})
+
+/**
+ * Nothing on the send path errors when the relay is misconfigured: the row is
+ * written, claimed, handed to the transport and reported sent. The console is
+ * the only place the fault can become visible, and a mail tile reading "0
+ * failed" while nothing arrives is the most misleading number on the page.
+ */
+describe("mail that cannot be delivered", () => {
+  it("says what is wrong, not just that something is", async () => {
+    server.use(
+      http.get("*/api/v1/admin/overview", () =>
+        HttpResponse.json({
+          ...OVERVIEW,
+          email_config_problems: [
+            "EMAIL_FROM is on 'tendersense.local', a reserved domain that cannot receive mail.",
+            "SMTP_HOST is 'mailpit', a local mail sink.",
+          ],
+        })
+      )
+    )
+
+    await renderRoute("/admin", { session: staffSession() })
+
+    const alert = await screen.findByRole("alert")
+    expect(alert).toHaveTextContent(/cannot deliver email/i)
+    expect(alert).toHaveTextContent(/reserved domain/i)
+    expect(alert).toHaveTextContent(/mail sink/i)
+  })
+
+  it("says nothing at all when the relay is fine", async () => {
+    server.use(
+      http.get("*/api/v1/admin/overview", () => HttpResponse.json(OVERVIEW))
+    )
+
+    await renderRoute("/admin", { session: staffSession() })
+
+    await screen.findByText("Mail")
+    expect(screen.queryByText(/cannot deliver email/i)).not.toBeInTheDocument()
+  })
+
+  it("counts rows stuck mid-send, which used to be counted nowhere", async () => {
+    server.use(
+      http.get("*/api/v1/admin/overview", () =>
+        HttpResponse.json({ ...OVERVIEW, email_stuck: 3 })
+      )
+    )
+
+    await renderRoute("/admin", { session: staffSession() })
+
+    expect(await screen.findByText(/3 stuck/)).toBeInTheDocument()
   })
 })

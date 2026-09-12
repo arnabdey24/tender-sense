@@ -13,6 +13,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.logging import get_logger
 from app.core.platform_settings import get_limits
@@ -337,6 +338,7 @@ async def overview(session: AsyncSession) -> Overview:
     page that is half stale and disagrees with itself.
     """
     from app.modules.matching.ai_usage import spent_today
+    from app.modules.notifications.email.diagnostics import email_config_problems
     from app.modules.orgs.models import Organization
     from app.modules.users.models import User
 
@@ -403,6 +405,11 @@ async def overview(session: AsyncSession) -> Overview:
             session,
             select(func.count(EmailOutbox.id)).where(EmailOutbox.status == EmailStatus.FAILED),
         ),
+        email_stuck=await _count(
+            session,
+            select(func.count(EmailOutbox.id)).where(EmailOutbox.status == EmailStatus.SENDING),
+        ),
+        email_config_problems=[p.as_text() for p in email_config_problems(settings)],
         ai_tokens_today=await spent_today(session),
         ai_daily_token_budget=(await get_limits(session)).ai_daily_token_budget,
     )

@@ -124,6 +124,9 @@ function StatusBoard({ data }: { data: Overview }) {
   const budget = data.ai_daily_token_budget
   const unhealthy = sources.filter((s) => s.health !== "ok")
   const spend = budget > 0 ? data.ai_tokens_today / budget : 0
+  const mailProblems = data.email_config_problems ?? []
+  const misconfigured = mailProblems.length > 0
+  const stuck = data.email_stuck ?? 0
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -149,13 +152,38 @@ function StatusBoard({ data }: { data: Overview }) {
         value={String(data.jobs_failed_24h)}
         detail={`failed in 24h · ${data.scrapes_failed_24h} scrapes`}
       />
+      {/*
+        Three separate ways mail goes missing, and the tile has to distinguish
+        them, because "0 failed" was reported while nothing was arriving.
+
+        A failure gave up loudly and is visible. A *stuck* row was claimed by a
+        worker that died before reporting an outcome — it used to be counted
+        nowhere and listed nowhere, which is what let a verification email
+        vanish in silence. And a configuration fault means every message is
+        discarded or refused while the send path reports success, so the
+        healthy-looking zero is the most misleading number on the page.
+      */}
       <StatusTile
         icon={MailIcon}
         label="Mail"
         to="/admin/jobs"
-        health={data.email_failed === 0 ? "ok" : "bad"}
-        value={String(data.email_failed)}
-        detail={`gave up · ${data.email_queued} waiting`}
+        health={
+          misconfigured
+            ? "bad"
+            : data.email_failed === 0 && stuck === 0
+              ? "ok"
+              : data.email_failed > 0
+                ? "bad"
+                : "warn"
+        }
+        value={misconfigured ? "!" : String(data.email_failed)}
+        detail={
+          misconfigured
+            ? "not configured to send"
+            : stuck > 0
+              ? `${stuck} stuck · ${data.email_queued} waiting`
+              : `gave up · ${data.email_queued} waiting`
+        }
       />
       <StatusTile
         icon={CoinsIcon}
@@ -177,6 +205,51 @@ function StatusBoard({ data }: { data: Overview }) {
   )
 }
 
+/**
+ * Why mail is not arriving, in words, above everything else.
+ *
+ * A tile can say that outbound mail is broken; it cannot say that the sender
+ * address is on a reserved domain no receiver will accept. That sentence is
+ * the entire difference between an operator fixing it in a minute and a
+ * tester filing "no email arrived, nothing in spam" for the third time.
+ *
+ * Nothing on the send path errors in any of these cases — the row is written,
+ * claimed, handed to the transport and reported sent — so this is the only
+ * place the fault becomes visible at all.
+ */
+function MailConfigAlert({ problems }: { problems: string[] }) {
+  if (problems.length === 0) return null
+
+  return (
+    <div
+      role="alert"
+      className="flex flex-col gap-2 rounded-xl bg-destructive/5 p-4 ring-1 ring-destructive/25"
+    >
+      <div className="flex items-center gap-2">
+        <MailIcon className="size-4 shrink-0 text-destructive" aria-hidden />
+        <h2 className="text-sm font-medium">
+          This deployment cannot deliver email
+        </h2>
+      </div>
+      <ul className="flex flex-col gap-1.5">
+        {problems.map((problem) => (
+          <li key={problem} className="flex gap-2 text-sm text-pretty">
+            <span aria-hidden className="text-destructive">
+              &bull;
+            </span>
+            <span>{problem}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-muted-foreground text-pretty">
+        Verification, password reset and invitation mail all go through this.
+        Nothing on the send path reports an error when it is wrong, so the
+        queue below will look healthy either way.
+      </p>
+    </div>
+  )
+}
+
 function OverviewPage() {
   const overview = useOverview()
   const trends = useTrends()
@@ -193,6 +266,7 @@ function OverviewPage() {
   return (
     <div className="flex flex-col gap-8">
       <StatusBoard data={data} />
+      <MailConfigAlert problems={data.email_config_problems ?? []} />
 
       <ConsoleSection
         title="The pool"

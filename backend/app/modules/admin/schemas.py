@@ -209,6 +209,11 @@ class Overview(BaseModel):
     scrapes_failed_24h: int
     email_queued: int
     email_failed: int
+    #: Rows claimed by a worker that never reported an outcome. Invisible
+    #: before 1.11.0, and the reason a verification email could vanish.
+    email_stuck: int = 0
+    #: Why mail may not be arriving at all. Empty is the healthy answer.
+    email_config_problems: list[str] = Field(default_factory=list)
     ai_tokens_today: int
     ai_daily_token_budget: int
 

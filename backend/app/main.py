@@ -31,10 +31,30 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     configure_logging()
     init_sentry("api")
     logger.info("api_starting", environment=settings.environment)
+    _warn_about_email_configuration()
     yield
     await close_queue()
     await dispose_engine()
     logger.info("api_stopped")
+
+
+def _warn_about_email_configuration() -> None:
+    """Complain at boot when this deployment cannot deliver mail.
+
+    A warning rather than a refusal to start. A wrong sender address breaks
+    one feature; refusing to boot over it breaks the product, and the fault it
+    is guarding against is silence rather than damage. The console shows the
+    same list, so an operator who never reads a log still finds it.
+    """
+    from app.modules.notifications.email.diagnostics import email_config_problems
+
+    for problem in email_config_problems(settings):
+        logger.warning(
+            "email_configuration_problem",
+            code=problem.code,
+            blocking=problem.blocking,
+            detail=problem.message,
+        )
 
 
 def create_app() -> FastAPI:

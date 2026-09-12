@@ -3234,6 +3234,13 @@ export interface components {
             email_queued: number;
             /** Email Failed */
             email_failed: number;
+            /**
+             * Email Stuck
+             * @default 0
+             */
+            email_stuck: number;
+            /** Email Config Problems */
+            email_config_problems?: string[];
             /** Ai Tokens Today */
             ai_tokens_today: number;
             /** Ai Daily Token Budget */

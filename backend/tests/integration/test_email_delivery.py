@@ -23,6 +23,7 @@ from app.modules.notifications.email.outbox import (
     claim_batch,
     enqueue,
     mark_failed,
+    reclaim_stalled,
     requeue,
 )
 
@@ -238,3 +239,118 @@ async def test_a_transport_failure_reschedules_instead_of_raising() -> None:
     assert stored.last_error is not None
     assert "relay refused" in stored.last_error
     assert stored.next_attempt_at > utcnow()
+
+
+async def test_a_row_abandoned_mid_send_is_put_back() -> None:
+    """The bug behind "the verification email simply never arrived".
+
+    `claim_batch` commits the flip to SENDING before the slow part, so a worker
+    killed between the claim and the outcome leaves a row nothing rescues: the
+    pump claims only PENDING, so it is never retried; the console lists only
+    PENDING and FAILED, so nobody can see it; and `requeue` reset only FAILED,
+    so the retry button did not apply either.
+    """
+    async with session_scope() as session:
+        email = await _enqueue_verify(session)
+        email_id = email.id
+        claimed = await claim_batch(session)
+        assert email_id in {row.id for row in claimed}
+
+    # The worker dies here. Wind the row's clock back past the stall window.
+    async with session_scope() as session:
+        stranded = await session.get(EmailOutbox, email_id)
+        assert stranded is not None
+        assert stranded.status is EmailStatus.SENDING
+        stranded.updated_at = utcnow() - timedelta(minutes=settings.email_stalled_after_minutes + 1)
+
+    sender = RecordingSender()
+    result = await pump_email_outbox({"email_sender": sender})
+
+    assert result["reclaimed"] >= 1
+    # Reclaimed and delivered on the same pass, not the one after it.
+    assert email_id in {row.id for row in sender.sent}
+
+    async with session_scope() as session:
+        stored = await session.get(EmailOutbox, email_id)
+
+    assert stored is not None
+    assert stored.status is EmailStatus.SENT
+
+
+async def test_a_row_still_in_flight_is_left_alone() -> None:
+    """A slow relay is not a dead worker, and must never be sent twice."""
+    async with session_scope() as session:
+        email = await _enqueue_verify(session)
+        email_id = email.id
+        await claim_batch(session)
+
+    async with session_scope() as session:
+        reclaimed = await reclaim_stalled(session)
+
+    assert reclaimed == 0
+
+    async with session_scope() as session:
+        stored = await session.get(EmailOutbox, email_id)
+
+    assert stored is not None
+    assert stored.status is EmailStatus.SENDING
+
+
+async def test_reclaiming_counts_as_an_attempt() -> None:
+    """So a message that kills its worker every time cannot loop forever.
+
+    It walks the same backoff as any other failure and eventually lands in
+    FAILED, where the console shows it and a person can decide.
+    """
+    async with session_scope() as session:
+        email = await _enqueue_verify(session)
+        email_id = email.id
+        await claim_batch(session)
+
+    async with session_scope() as session:
+        stranded = await session.get(EmailOutbox, email_id)
+        assert stranded is not None
+        stranded.updated_at = utcnow() - timedelta(minutes=settings.email_stalled_after_minutes + 1)
+
+    async with session_scope() as session:
+        assert await reclaim_stalled(session) == 1
+
+    async with session_scope() as session:
+        stored = await session.get(EmailOutbox, email_id)
+
+    assert stored is not None
+    assert stored.status is EmailStatus.PENDING
+    assert stored.attempts == 1
+    assert stored.last_error is not None
+
+
+async def test_an_operator_can_retry_a_stuck_row_by_hand() -> None:
+    """The console's retry button is the obvious thing to press; it now works."""
+    async with session_scope() as session:
+        email = await _enqueue_verify(session)
+        email_id = email.id
+        await claim_batch(session)
+
+    async with session_scope() as session:
+        assert await requeue(session, email_id) is True
+
+    async with session_scope() as session:
+        stored = await session.get(EmailOutbox, email_id)
+
+    assert stored is not None
+    assert stored.status is EmailStatus.PENDING
+
+
+async def test_the_console_lists_a_stuck_row() -> None:
+    """Invisible was half the bug: there was nothing to press the button on."""
+    from app.modules.admin.service import list_failed_emails
+
+    async with session_scope() as session:
+        email = await _enqueue_verify(session)
+        email_id = email.id
+        await claim_batch(session)
+
+    async with session_scope() as session:
+        listed = await list_failed_emails(session, limit=200)
+
+    assert email_id in {row.id for row in listed}

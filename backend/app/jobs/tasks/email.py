@@ -10,7 +10,12 @@ from typing import Any
 
 from app.core.logging import get_logger
 from app.db.session import session_scope
-from app.modules.notifications.email.outbox import claim_batch, mark_failed, mark_sent
+from app.modules.notifications.email.outbox import (
+    claim_batch,
+    mark_failed,
+    mark_sent,
+    reclaim_stalled,
+)
 from app.modules.notifications.email.sender import Sender, get_sender
 
 logger = get_logger(__name__)
@@ -30,13 +35,20 @@ async def pump_email_outbox(ctx: dict[str, Any]) -> dict[str, int]:
     recording fake.
 
     Returns:
-        Counts of ``claimed``, ``sent`` and ``failed`` messages.
+        Counts of ``claimed``, ``sent``, ``failed`` and ``reclaimed`` messages.
     """
     sender: Sender = ctx.get("email_sender") or get_sender()
     sent = 0
     failed = 0
 
     async with session_scope() as session:
+        # Before claiming anything new, take back what a dead worker left
+        # behind. Runs first so a reclaimed row can go out on this same pass
+        # rather than waiting another thirty seconds.
+        reclaimed = await reclaim_stalled(session)
+        if reclaimed:
+            await session.commit()
+
         emails = await claim_batch(session, limit=EMAIL_BATCH_SIZE)
         # Publish the SENDING flip and drop the row locks before the slow part.
         await session.commit()
@@ -67,7 +79,7 @@ async def pump_email_outbox(ctx: dict[str, Any]) -> dict[str, int]:
                     message_id=message_id,
                 )
 
-    result = {"claimed": len(emails), "sent": sent, "failed": failed}
-    if emails:
+    result = {"claimed": len(emails), "sent": sent, "failed": failed, "reclaimed": reclaimed}
+    if emails or reclaimed:
         logger.info("email_pump_finished", **result)
     return result

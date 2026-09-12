@@ -277,7 +277,12 @@ async def trigger_job(job_name: str) -> str | None:
 async def list_failed_emails(session: AsyncSession, limit: int = 50) -> list[EmailOutbox]:
     stmt = (
         select(EmailOutbox)
-        .where(EmailOutbox.status.in_((EmailStatus.FAILED, EmailStatus.PENDING)))
+        # `SENDING` belongs here: a row abandoned by a worker that died
+        # mid-send is stuck, and listing only pending and failed is what made
+        # it invisible to the one person who could have done something.
+        .where(
+            EmailOutbox.status.in_((EmailStatus.FAILED, EmailStatus.PENDING, EmailStatus.SENDING))
+        )
         .order_by(EmailOutbox.created_at.desc())
         .limit(limit)
     )

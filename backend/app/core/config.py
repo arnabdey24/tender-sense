@@ -80,6 +80,11 @@ class Settings(BaseSettings):
     email_from: str = "TenderSense <no-reply@tendersense.local>"
     email_reply_to: str | None = None
     email_max_attempts: int = 6
+    #: How long a row may sit in `sending` before the pump assumes the worker
+    #: that claimed it died and puts it back. Comfortably longer than the
+    #: slowest plausible SMTP round trip, so a merely slow relay is never
+    #: treated as a crash and sent twice.
+    email_stalled_after_minutes: int = 15
 
     # --- AI ---
     ai_provider: Literal["gemini", "fake"] = "gemini"

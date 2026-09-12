@@ -42,6 +42,16 @@ services:
       - no-new-privileges:true
     restart: always
 
+  worker-schedule:
+    image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/api:${IMAGE_TAG:-latest}
+    environment:
+      ENVIRONMENT: production
+      LOG_JSON: "true"
+    mem_limit: 512m
+    security_opt:
+      - no-new-privileges:true
+    restart: always
+
   worker-scrape:
     image: ${IMAGE_PREFIX:-ghcr.io/arnabdey24/tender-sense}/worker:${IMAGE_TAG:-latest}
     environment:

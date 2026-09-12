@@ -280,11 +280,19 @@ def _digest_is_due(preferences: NotificationSettings, now: datetime) -> bool:
 
 
 async def _enqueue_digest(org_id: str) -> None:
-    from app.jobs.queue import get_queue
+    from app.jobs.queue import QUEUE_SCHEDULE, get_queue
 
     try:
         queue = await get_queue()
-        await queue.enqueue_job("send_daily_digest", org_id, _job_id=f"digest:{org_id}")
+        # Onto the schedule queue, not the default one: a digest queued behind
+        # a few thousand notices would arrive a day late, which is the whole
+        # failure this queue exists to prevent.
+        await queue.enqueue_job(
+            "send_daily_digest",
+            org_id,
+            _queue_name=QUEUE_SCHEDULE,
+            _job_id=f"digest:{org_id}",
+        )
     except Exception as exc:  # pragma: no cover - Redis down must not lose the day
         logger.warning("digest_enqueue_failed", org_id=org_id, error=str(exc))
 

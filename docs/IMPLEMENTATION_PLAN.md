@@ -1081,7 +1081,7 @@ turnover and certifications are worth 20 points between them and produce none.
 A profile can score 20 and match nothing, which is why the warning names a
 score rather than claiming the profile is empty.
 
-**A backlog must not starve the schedule.** *(planned)*
+**A backlog must not starve the schedule.** *(shipped)*
 
 Found in production: invitations and a verification email sat `pending` with
 zero attempts and no error for over an hour, while `j_ongoing=10` and a
@@ -1109,7 +1109,22 @@ ordering, so it treats the symptom. Two directions worth weighing:
   rather than a statement of intent, and the next person to read it would have
   to rediscover why.
 
-The first is the honest one and matches how scraping is already isolated.
+The first is the honest one and matches how scraping is already isolated, and
+is what shipped: `QUEUE_SCHEDULE`, a `ScheduleWorkerSettings` owning all
+thirteen crons, and a `worker-schedule` container. `WorkerSettings.cron_jobs`
+is now empty — bulk work and the schedule cannot queue behind each other in
+either direction.
+
+Two details that are easy to get wrong. `digest_dispatcher` fans out to
+`send_daily_digest`, and an `enqueue_job` without `_queue_name` lands on the
+*default* queue — so moving the cron alone would have left the digest behind
+the backlog it was moved to escape; it now names the schedule queue explicitly.
+And the cron targets stay registered on the default worker too, so anything
+already queued under the old arrangement still resolves.
+
+`max_jobs` is 4 there rather than 10. These jobs are light and mostly I/O, and
+the point of a small pool is that a slow weekly purge cannot crowd out an email
+pump that runs four times a minute.
 
 Recorded alongside it: `AI_REQUESTS_PER_MINUTE` and `AI_MAX_CONCURRENCY` were
 absent from the `x-backend-env` anchor, so setting them in `.env` did nothing

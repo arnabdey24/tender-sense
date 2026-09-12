@@ -39,6 +39,14 @@ services:
       - ./backend/app:/app/app
       - ./backend/data:/app/data
 
+  worker-schedule:
+    environment:
+      LOG_JSON: "false"
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/data:/app/data
+
   worker-scrape:
     environment:
       LOG_JSON: "false"

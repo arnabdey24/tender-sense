@@ -1,9 +1,16 @@
 """ARQ worker entrypoints.
 
-Two worker processes run from the same codebase:
+Three worker processes run from the same codebase:
 
-* ``arq app.jobs.worker.WorkerSettings``       — default queue, owns the cron schedule
-* ``arq app.jobs.worker.ScrapeWorkerSettings`` — scrape queue, one job at a time
+* ``arq app.jobs.worker.WorkerSettings``         — default queue, bulk AI work
+* ``arq app.jobs.worker.ScrapeWorkerSettings``   — scrape queue, one job at a time
+* ``arq app.jobs.worker.ScheduleWorkerSettings`` — schedule queue, owns the crons
+
+The schedule has a queue of its own because arq orders a queue by enqueue
+time. A cron fires *now*, so on a shared queue it sorts behind every bulk job
+queued earlier: a backlog of a few thousand notices left invitations and
+verification mail unsent for hours, with nothing failing and no error anywhere
+to read. Bulk work can no longer delay a scheduled one.
 
 Note: arq reads settings from ``settings_cls.__dict__``, so **inherited
 attributes are ignored**. Each class must therefore declare every attribute it
@@ -30,7 +37,12 @@ from app.db.session import dispose_engine
 
 # Importing the package registers every adapter, so `adapter_key` resolves.
 from app.ingestion import adapters as _adapters  # noqa: F401
-from app.jobs.queue import QUEUE_DEFAULT, QUEUE_SCRAPE, redis_settings
+from app.jobs.queue import (
+    QUEUE_DEFAULT,
+    QUEUE_SCHEDULE,
+    QUEUE_SCRAPE,
+    redis_settings,
+)
 from app.jobs.tasks.email import PUMP_CRON_SECOND, pump_email_outbox
 from app.jobs.tasks.explanations import generate_explanations
 from app.jobs.tasks.maintenance import (
@@ -75,6 +87,31 @@ COMMON_FUNCTIONS: list[Any] = [ping]
 #: live scrape writes, and the two running at once would fight over every notice.
 SCRAPE_QUEUE_FUNCTIONS: list[Any] = [*COMMON_FUNCTIONS, scrape_source, reparse_source]
 
+#: What the schedule worker runs: every cron target, plus ``send_daily_digest``
+#: because ``digest_dispatcher`` fans out to it and a digest queued behind the
+#: bulk backlog would arrive a day late.
+#:
+#: These stay registered on the default worker too. Removing them there would
+#: strand anything already queued under the old arrangement, and a duplicate
+#: registration costs nothing: a job runs on whichever queue it was put on.
+SCHEDULE_QUEUE_FUNCTIONS: list[Any] = [
+    *COMMON_FUNCTIONS,
+    pump_email_outbox,
+    scrape_all_sources,
+    sweep_unanalysed_tenders,
+    close_expired_tenders,
+    refresh_fx_rates,
+    purge_old_runs,
+    purge_old_notifications,
+    purge_orphan_blobs,
+    mark_source_health,
+    age_match_urgency,
+    digest_dispatcher,
+    send_daily_digest,
+    deadline_reminder_sweep,
+    alert_sources_down,
+]
+
 #: Tasks only the default worker runs. The scrape worker must not drain the
 #: outbox: it is capped at one job at a time and long scrapes would stall mail.
 DEFAULT_QUEUE_FUNCTIONS: list[Any] = [
@@ -117,9 +154,41 @@ async def shutdown(ctx: dict[str, Any]) -> None:
 
 
 class WorkerSettings:
-    """Default queue: AI, matching, notifications, maintenance."""
+    """Default queue: AI, matching, notifications, maintenance.
+
+    Bulk work. Long, numerous and rate-limited — which is exactly why the
+    schedule is not here.
+    """
 
     functions: list[Any] = DEFAULT_QUEUE_FUNCTIONS
+    #: None. The schedule lives on its own queue — see the module docstring.
+    cron_jobs: list[Any] = []
+    queue_name = QUEUE_DEFAULT
+    #: Seeds arq's job context so tasks and log lines know which queue they ran on.
+    ctx: dict[str, Any] = {"queue": QUEUE_DEFAULT}
+    redis_settings = redis_settings()
+    on_startup = startup
+    on_shutdown = shutdown
+    max_jobs = 10
+    job_timeout = 600
+    max_tries = 5
+    keep_result = 3600
+    health_check_interval = 30
+
+
+class ScheduleWorkerSettings:
+    """Schedule queue: every cron, and nothing that can be queued in bulk.
+
+    Deliberately not a subclass — see the module docstring on arq reading
+    ``__dict__``.
+
+    ``max_jobs`` is small on purpose. These are light and mostly I/O, and a
+    schedule that can run four things at once is already more parallel than a
+    schedule needs; keeping it low means a slow purge cannot crowd out the
+    email pump running four times a minute.
+    """
+
+    functions: list[Any] = SCHEDULE_QUEUE_FUNCTIONS
     cron_jobs: list[Any] = [
         cron(pump_email_outbox, second=set(PUMP_CRON_SECOND), run_at_startup=False),
         # Four passes a day, off-peak in Dhaka, to stay polite to an old portal.
@@ -149,13 +218,12 @@ class WorkerSettings:
         cron(deadline_reminder_sweep, minute={35}, run_at_startup=False),
         cron(alert_sources_down, hour={2}, minute=30, run_at_startup=False),
     ]
-    queue_name = QUEUE_DEFAULT
-    #: Seeds arq's job context so tasks and log lines know which queue they ran on.
-    ctx: dict[str, Any] = {"queue": QUEUE_DEFAULT}
+    queue_name = QUEUE_SCHEDULE
+    ctx: dict[str, Any] = {"queue": QUEUE_SCHEDULE}
     redis_settings = redis_settings()
     on_startup = startup
     on_shutdown = shutdown
-    max_jobs = 10
+    max_jobs = 4
     job_timeout = 600
     max_tries = 5
     keep_result = 3600

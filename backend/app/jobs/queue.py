@@ -12,6 +12,12 @@ logger = get_logger(__name__)
 
 QUEUE_DEFAULT = "arq:queue"
 QUEUE_SCRAPE = "arq:queue:scrape"
+#: The schedule runs on its own queue because arq orders a queue by enqueue
+#: time. A cron fires *now*, so on a shared queue it sorts behind every bulk
+#: job queued earlier — and a backlog of a few thousand notices therefore
+#: delays the email pump, the digests and the reminder sweep indefinitely,
+#: with no failure, no retry and nothing in any error column to notice.
+QUEUE_SCHEDULE = "arq:queue:schedule"
 
 _pool: ArqRedis | None = None
 

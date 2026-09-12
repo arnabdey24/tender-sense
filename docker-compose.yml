@@ -130,6 +130,27 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  # The schedule, on its own queue and its own process. arq orders a queue by
+  # enqueue time, so a cron sharing the default queue sorts behind every bulk
+  # job put there earlier — which is how a backlog of notices once left
+  # invitations and verification mail unsent for hours with nothing failing.
+  worker-schedule:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    environment: *backend-env
+    command: ["arq", "app.jobs.worker.ScheduleWorkerSettings"]
+    volumes:
+      - blob-data:/var/lib/tendersense/blobs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   worker-scrape:
     build:
       context: .
